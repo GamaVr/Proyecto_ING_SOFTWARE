@@ -1,17 +1,17 @@
 /** Coordina las pantallas, la sesión y la navegación principal. */
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { api, ApiError } from './api';
-import { AppContext, navigate } from './contexto';
-import { Ambient, Avatar, Brand, Icon, Button } from './componentes';
-import { AuthPage } from './pages/Acceso';
-import { HomePage } from './pages/Inicio';
-import { SetupPage } from './pages/PrepararPartida';
-import { GamePage, ResultsPage } from './pages/Partida';
-import { MultiplayerPage, LobbyPage } from './pages/Multijugador';
-import { SettingsPage } from './pages/Opciones';
-import { FriendsPage } from './pages/Amigos';
-import { SocialProvider, FriendNavBadge } from './social';
-import { DEFAULT_SETTINGS, type User, type Stats, type Settings } from '../shared/tipos';
+import { api, ApiError } from './servicios/api';
+import { AppContext, navigate } from './estado/contexto';
+import { Ambient, Avatar, Brand, Icon, Button } from './componentes/comunes';
+import { AuthPage } from './paginas/Acceso';
+import { HomePage } from './paginas/Inicio';
+import { SetupPage } from './paginas/PrepararPartida';
+import { GamePage, ResultsPage } from './paginas/Partida';
+import { MultiplayerPage, LobbyPage } from './paginas/Multijugador';
+import { SettingsPage } from './paginas/Opciones';
+import { FriendsPage } from './paginas/Amigos';
+import { SocialProvider, FriendNavBadge } from './estado/social';
+import { DEFAULT_SETTINGS, type User, type Stats, type Settings } from '../compartido/tipos';
 
 const initialStats: Stats = {
   played: 0,

@@ -1,7 +1,7 @@
 /** Aplica únicamente la columna para códigos de recuperación, sin sincronizar el catálogo musical. */
 import { readFile } from 'node:fs/promises';
 import mysql, { type RowDataPacket } from 'mysql2/promise';
-import { env } from '../server/configuracion.js';
+import { env } from '../servidor/configuracion.js';
 
 async function migrate(): Promise<void> {
   const adminConfig = (await readFile('.runtime/mysql-admin.env', 'utf8')).split('\n');
@@ -19,7 +19,7 @@ async function migrate(): Promise<void> {
       "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='recovery_code_hash'",
     );
     if (columns.length === 0) {
-      await db.query(await readFile('database/migrations/010_codigo_recuperacion.sql', 'utf8'));
+      await db.query(await readFile('base-datos/migraciones/010_codigo_recuperacion.sql', 'utf8'));
       console.log('Columna de código de recuperación agregada a MySQL.');
     } else {
       console.log('La columna de código de recuperación ya existe.');

@@ -1,6 +1,6 @@
 /** Actualiza los artistas y canciones oficiales del catálogo. */
-import { prepareRecordings } from '../server/musica.js';
-import { query, pool } from '../server/base-datos.js';
+import { prepareRecordings } from '../servidor/servicios/musica/catalogo.js';
+import { query, pool } from '../servidor/datos/base-datos.js';
 
 /** Actualiza referencias oficiales en MySQL sin descargar ni distribuir archivos musicales. */
 async function sync(): Promise<void> {

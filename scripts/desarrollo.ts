@@ -5,7 +5,7 @@ import path from 'node:path';
 /** Arranca cliente y API con el mismo ejecutable Node y termina ambos al cerrar la sesión. */
 function start(): void {
   const children = [
-    spawn(process.execPath, ['--watch', '--import', 'tsx', 'server/servidor.ts'], {
+    spawn(process.execPath, ['--watch', '--import', 'tsx', 'servidor/principal.ts'], {
       stdio: 'inherit',
       env: process.env,
     }),

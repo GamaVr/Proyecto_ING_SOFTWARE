@@ -23,7 +23,7 @@ if errorlevel 1 goto :error
 echo.
 echo Abre http://127.0.0.1:3001 en el navegador. Manten esta ventana abierta.
 echo MySQL debe estar iniciado y configurado en .env.
-node --import tsx server/servidor.ts
+node --import tsx servidor/principal.ts
 if errorlevel 1 goto :error
 exit /b 0
 

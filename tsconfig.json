@@ -13,5 +13,5 @@
     "types": ["node", "vite/client"],
     "noUnusedLocals": true
   },
-  "include": ["src", "server", "shared", "scripts/*.ts", "tests", "vite.config.ts"]
+  "include": ["src", "servidor", "compartido", "scripts/*.ts", "pruebas", "vite.config.ts"]
 }

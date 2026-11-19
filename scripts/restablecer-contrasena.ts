@@ -2,8 +2,8 @@
 import { createInterface } from 'node:readline/promises';
 import { Writable } from 'node:stream';
 import bcrypt from 'bcryptjs';
-import { query, write, transaction, pool } from '../server/base-datos.js';
-import { passwordSchema } from '../server/validacion.js';
+import { query, write, transaction, pool } from '../servidor/datos/base-datos.js';
+import { passwordSchema } from '../servidor/validacion.js';
 
 /** Recupera una cuenta desde la consola del administrador ocultando la contraseña y revocando sesiones. */
 async function resetPassword(): Promise<void> {

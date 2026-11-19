@@ -2,7 +2,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import mysql from 'mysql2/promise';
-import { env } from '../server/configuracion.js';
+import { env } from '../servidor/configuracion.js';
 
 /** Prepara una base separada para pruebas y ejecuta el conjunto contra MySQL real. */
 async function run(): Promise<void> {
@@ -53,9 +53,9 @@ async function run(): Promise<void> {
       'tsx',
       '--test',
       '--test-concurrency=1',
-      ...(await readdir('tests/integration'))
+      ...(await readdir('pruebas/integracion'))
         .filter((file) => file.endsWith('.test.ts'))
-        .map((file) => `tests/integration/${file}`),
+        .map((file) => `pruebas/integracion/${file}`),
     ],
     { stdio: 'inherit', env: { ...process.env, DB_NAME: database, NODE_ENV: 'test' } },
   );

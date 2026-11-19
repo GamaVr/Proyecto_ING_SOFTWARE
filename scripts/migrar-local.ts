@@ -1,7 +1,7 @@
 /** Aplica el esquema y las migraciones al MySQL portátil existente. */
 import { readFile } from 'node:fs/promises';
 import mysql from 'mysql2/promise';
-import { env } from '../server/configuracion.js';
+import { env } from '../servidor/configuracion.js';
 
 /** Aplica el esquema idempotente con el administrador local sin ampliar permisos del usuario de aplicación. */
 async function migrate(): Promise<void> {
@@ -17,14 +17,18 @@ async function migrate(): Promise<void> {
     multipleStatements: true,
   });
   try {
-    await db.query(await readFile('database/esquema.sql', 'utf8'));
-    await db.query(await readFile('database/migrations/002_amigos_y_salas.sql', 'utf8'));
-    await db.query(await readFile('database/migrations/004_grabaciones_reales.sql', 'utf8'));
-    await db.query(await readFile('database/migrations/005_grabaciones_oficiales.sql', 'utf8'));
-    await db.query(await readFile('database/migrations/006_retirar_generos.sql', 'utf8'));
-    await db.query(await readFile('database/migrations/007_sincronizacion_catalogo.sql', 'utf8'));
-    await db.query(await readFile('database/migrations/008_recuperacion_contrasena.sql', 'utf8'));
-    await db.query(await readFile('database/migrations/009_verificacion_correo.sql', 'utf8'));
+    await db.query(await readFile('base-datos/esquema.sql', 'utf8'));
+    await db.query(await readFile('base-datos/migraciones/002_amigos_y_salas.sql', 'utf8'));
+    await db.query(await readFile('base-datos/migraciones/004_grabaciones_reales.sql', 'utf8'));
+    await db.query(await readFile('base-datos/migraciones/005_grabaciones_oficiales.sql', 'utf8'));
+    await db.query(await readFile('base-datos/migraciones/006_retirar_generos.sql', 'utf8'));
+    await db.query(
+      await readFile('base-datos/migraciones/007_sincronizacion_catalogo.sql', 'utf8'),
+    );
+    await db.query(
+      await readFile('base-datos/migraciones/008_recuperacion_contrasena.sql', 'utf8'),
+    );
+    await db.query(await readFile('base-datos/migraciones/009_verificacion_correo.sql', 'utf8'));
     console.log(
       'Esquema actualizado para grabaciones reales. Usuarios y partidas conservados; melodías sintetizadas excluidas.',
     );
