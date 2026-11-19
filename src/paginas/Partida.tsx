@@ -545,22 +545,12 @@ export function PaginaPartida({ id }: { id: string }): ReactNode {
               <span>
                 {resultado.titulo} · {resultado.artista}
               </span>
-              {resultado.urlFuente && (
-                <small>
-                  <a href={resultado.urlFuente} target="_blank" rel="noreferrer">
-                    Artista y canción en Deezer ↗
-                  </a>{' '}
-                  ·{' '}
-                  <a href={resultado.urlLicencia!} target="_blank" rel="noreferrer">
-                    Condiciones del proveedor ↗
-                  </a>
-                </small>
-              )}
-              <small>
-                {resultado.correcta
-                  ? `+${puntos(resultado.puntos)} puntos · ${(resultado.transcurrido / 1000).toFixed(1)} s`
-                  : '+0 puntos · ¡A por la siguiente!'}
-              </small>
+              <p className="puntos-ronda">
+                +{puntos(resultado.puntos)} puntos
+                {resultado.correcta && (
+                  <small> · {(resultado.transcurrido / 1000).toFixed(1)} s</small>
+                )}
+              </p>
             </div>
           )}
           {partida.respondida &&
