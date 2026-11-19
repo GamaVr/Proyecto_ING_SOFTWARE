@@ -33,8 +33,7 @@ CREATE TABLE IF NOT EXISTS canciones (
   artista VARCHAR(150) NOT NULL,
   alias JSON NOT NULL,
   genero VARCHAR(40) NOT NULL,
-  anio_lanzamiento SMALLINT NOT NULL,
-  archivo_audio VARCHAR(100) NOT NULL
+  anio_lanzamiento SMALLINT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS partidas (
@@ -143,7 +142,6 @@ CREATE TABLE IF NOT EXISTS medios_cancion (
   habilitada BOOLEAN NOT NULL DEFAULT TRUE,
   inicio_fragmento SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   duracion SMALLINT UNSIGNED NOT NULL DEFAULT 12,
-  hash_contenido CHAR(64) NULL UNIQUE,
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY pista_proveedor (fuente,id_externo),

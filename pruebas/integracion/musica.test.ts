@@ -85,8 +85,8 @@ before(async () => {
   await almacenarGrabaciones(genero, pistas);
   canciones.push(...pistas.map((pista) => `deezer-${pista.id}`));
   await escribir(
-    'INSERT INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento,archivo_audio) VALUES (?,?,?,?,?,?,?)',
-    [`old-${prefijo}`, 'Melodía anterior', 'Sintetizada', '[]', genero, 2024, 'old.wav'],
+    'INSERT INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento) VALUES (?,?,?,?,?,?)',
+    [`old-${prefijo}`, 'Melodía anterior', 'Sintetizada', '[]', genero, 2024],
   );
   canciones.push(`old-${prefijo}`);
   await escribir(
@@ -98,8 +98,8 @@ before(async () => {
     for (let i = 0; i < 5; i++) {
       const id = `removed-${prefijo}-${indice}-${i}`;
       await escribir(
-        'INSERT INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento,archivo_audio) VALUES (?,?,?,?,?,?,?)',
-        [id, 'Canción retirada QA', 'Artista QA', '[]', eliminado, 2024, 'qa.mp3'],
+        'INSERT INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento) VALUES (?,?,?,?,?,?)',
+        [id, 'Canción retirada QA', 'Artista QA', '[]', eliminado, 2024],
       );
       canciones.push(id);
       await escribir(

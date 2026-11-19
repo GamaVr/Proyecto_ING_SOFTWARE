@@ -12,7 +12,7 @@ const pestanas = [
 ];
 
 /** Edita preferencias persistidas, opciones de accesibilidad y datos de la cuenta autenticada. */
-export function PaginaOpciones({ pestana: pestana = 'audio' }: { pestana?: string }): ReactNode {
+export function PaginaOpciones({ pestana = 'audio' }: { pestana?: string }): ReactNode {
   const { usuario, preferencias, fijarPreferencias, notificar, actualizar, cerrarSesion } =
       useAplicacion(),
     { ocupado, ejecutar } = useAccion(notificar);

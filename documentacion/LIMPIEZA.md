@@ -38,3 +38,5 @@ En la revisión del 21 de octubre de 2026 se retiraron además la copia temporal
 - Se retiró el flujo de correo que ya no se usaba: las rutas de verificación de cuenta y de restablecimiento por enlace, su código en la pantalla de acceso, las tablas `pending_registrations` y `password_reset_tokens` y las variables `PUBLIC_APP_URL`, `RESEND_API_KEY` y `EMAIL_FROM`.
 - `scripts/migrar-codigo-recuperacion.ts` se sustituyó por `scripts/aplicar-esquema.ts`, que aplica todas las migraciones necesarias.
 - Las pruebas de integración se actualizaron al registro con código de recuperación y a la pausa de 2,2 s entre rondas; antes fallaban las 21.
+- Se retiraron restos sin uso: la tabla `music_settings` (configuración del antiguo administrador de Jamendo), las columnas `jugadores_partida.hints_used` y `current_hint` (pistas), `medios_cancion.hash_contenido` (archivos subidos) y `canciones.archivo_audio` (audio local). `scripts/aplicar-esquema.ts` las elimina si existen.
+- En el cliente se quitaron cuatro reglas CSS sin referencias (`.badge.gold`, `.full`, `.check-box`, `.selected .check-box`) y el icono `sparkles` con su SVG.

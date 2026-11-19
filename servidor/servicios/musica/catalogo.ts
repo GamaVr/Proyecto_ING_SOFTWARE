@@ -78,8 +78,8 @@ export async function almacenarGrabaciones(
         pista.title_short && pista.title_short !== pista.title ? [pista.title_short] : [],
       );
       await escribir(
-        'INSERT INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento,archivo_audio) VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE titulo=VALUES(titulo),artista=VALUES(artista),alias=VALUES(alias),genero=VALUES(genero),anio_lanzamiento=VALUES(anio_lanzamiento)',
-        [id, pista.title, pista.artist.name, alias, genero, anio, `${id}.mp3`],
+        'INSERT INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE titulo=VALUES(titulo),artista=VALUES(artista),alias=VALUES(alias),genero=VALUES(genero),anio_lanzamiento=VALUES(anio_lanzamiento)',
+        [id, pista.title, pista.artist.name, alias, genero, anio],
         bd,
       );
       await escribir(

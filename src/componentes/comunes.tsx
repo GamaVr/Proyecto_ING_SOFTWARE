@@ -21,7 +21,6 @@ const iconos: Record<string, string> = {
   arrowPink: '53327',
   gamepad: '4d546',
   zap: '5f232',
-  sparkles: 'bc82e',
   radio: '9e193',
   mail: 'a1d15',
   lock: 'f5505',
@@ -73,7 +72,7 @@ export function Marca(): ReactNode {
 }
 
 /** Dibuja las luces ambientales con los archivos originales exportados desde Figma. */
-export function Ambiente({ acceso: acceso = false }: { acceso?: boolean }): ReactNode {
+export function Ambiente({ acceso = false }: { acceso?: boolean }): ReactNode {
   return (
     <div className={`ambient ${acceso ? 'ambient-auth' : ''}`} aria-hidden="true">
       <img className="glow-one" src={`/assets/figma/${acceso ? '90c35' : 'f2f21'}.svg`} alt="" />
@@ -85,7 +84,7 @@ export function Ambiente({ acceso: acceso = false }: { acceso?: boolean }): Reac
 /** Presenta una etiqueta compacta de estado sin depender exclusivamente del color. */
 export function Insignia({
   children,
-  tono: tono = 'cyan',
+  tono = 'cyan',
   icono,
 }: {
   children: ReactNode;
@@ -104,7 +103,7 @@ export function Insignia({
 export function Boton({
   children,
   onClick,
-  tono: tono = 'primary',
+  tono = 'primary',
   icono,
   disabled,
   type = 'button',
@@ -170,8 +169,8 @@ const alturas = [
 
 /** Representa la onda del diseño y anima sus barras solo mientras hay reproducción real. */
 export function FormaOnda({
-  reproduciendo: reproduciendo = false,
-  progreso: progreso = 0.62,
+  reproduciendo = false,
+  progreso = 0.62,
 }: {
   reproduciendo?: boolean;
   progreso?: number;
@@ -248,7 +247,7 @@ export function Metrica({
 export function Avatar({
   nombre,
   purple = false,
-  grande: grande = false,
+  grande = false,
 }: {
   nombre: string;
   purple?: boolean;

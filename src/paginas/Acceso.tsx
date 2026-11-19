@@ -7,7 +7,7 @@ import type { Usuario } from '../../compartido/tipos';
 /** Implementa inicio de sesión y registro reales conservando la composición de Figma. */
 export function PaginaAcceso({
   alIniciarSesion,
-  registroInicial: registroInicial = false,
+  registroInicial = false,
   errorServidor,
 }: {
   alIniciarSesion: (usuario: Usuario) => void;

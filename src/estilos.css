@@ -293,10 +293,6 @@ select:focus-visible {
   color: var(--pink);
   background: #41202f;
 }
-.badge.gold {
-  color: #c0a96a;
-  background: #302b20;
-}
 .badge.green {
   color: var(--green);
   background: #183a25;
@@ -829,24 +825,6 @@ input[type='checkbox'] {
   font-size: 12px;
   padding: 0;
   outline-offset: 4px;
-}
-.full {
-  grid-column: 1/-1;
-}
-.check-box {
-  width: 15px;
-  height: 15px;
-  border: 1px solid var(--border);
-  background: #1b241d;
-  border-radius: 4px;
-  font-size: 11px;
-  display: grid;
-  place-items: center;
-}
-.selected .check-box {
-  background: var(--cyan);
-  color: #07100a;
-  border-color: var(--cyan);
 }
 /* Reproductor, reloj y respuestas. */
 .waveform {

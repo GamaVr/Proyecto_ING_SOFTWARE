@@ -29,8 +29,8 @@ async function preparar(): Promise<void> {
         const idExterno = String(9000000000000 + i);
         const id = `deezer-${idExterno}`;
         await bd.execute(
-          'INSERT IGNORE INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento,archivo_audio) VALUES (?,?,?,?,?,?,?)',
-          [id, `Grabación de prueba ${i}`, 'Artista QA', '[]', 'Rock', 2024, `${id}.wav`],
+          'INSERT IGNORE INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento) VALUES (?,?,?,?,?,?)',
+          [id, `Grabación de prueba ${i}`, 'Artista QA', '[]', 'Rock', 2024],
         );
         await bd.execute(
           "INSERT INTO medios_cancion(cancion_id,fuente,id_externo,url_audio,url_licencia,url_fuente,duracion,inicio_fragmento) VALUES (?,'deezer',?,?,?,?,30,0) ON DUPLICATE KEY UPDATE habilitada=TRUE",

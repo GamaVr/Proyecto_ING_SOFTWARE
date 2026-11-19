@@ -116,5 +116,23 @@ export async function aplicarEsquema(bd: Connection): Promise<boolean> {
     convertida = true;
   }
   await bd.query(await sql('esquema.sql'));
+  await retirarRestos(bd);
   return convertida;
+}
+
+/** Columnas de funciones retiradas que ya no lee ni escribe ningún módulo. */
+const COLUMNAS_RETIRADAS: [tabla: string, columna: string][] = [
+  ['jugadores_partida', 'hints_used'], // sistema de pistas retirado
+  ['jugadores_partida', 'current_hint'], // sistema de pistas retirado
+  ['medios_cancion', 'hash_contenido'], // detección de archivos subidos (retirada)
+  ['canciones', 'archivo_audio'], // audio local; ahora se transmite desde Deezer
+];
+
+/** Elimina tablas y columnas sin uso que pueden quedar en bases creadas con versiones anteriores. */
+async function retirarRestos(bd: Connection): Promise<void> {
+  // Configuración del antiguo administrador de música (Jamendo), sin uso en la aplicación.
+  await bd.query('DROP TABLE IF EXISTS music_settings');
+  for (const [tabla, columna] of COLUMNAS_RETIRADAS)
+    if (await existe(bd, tabla, columna))
+      await bd.query(`ALTER TABLE \`${tabla}\` DROP COLUMN \`${columna}\``);
 }
