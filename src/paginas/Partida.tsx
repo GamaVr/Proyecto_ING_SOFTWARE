@@ -52,7 +52,10 @@ export function PaginaPartida({ id }: { id: string }): ReactNode {
     audioMuestra = useRef<HTMLAudioElement>(null),
     entrada = useRef<HTMLInputElement>(null),
     desfase = useRef(0),
-    tiempoEnvio = useRef(-1);
+    tiempoEnvio = useRef(-1),
+    // Estado más reciente de la ronda, para que el arranque automático no suene si ya terminó.
+    rondaAbierta = useRef(false);
+  rondaAbierta.current = !!partida && partida.estado === 'en_curso' && !partida.respondida;
   useEffect(() => {
     if (partida) desfase.current = partida.ahoraServidor - Date.now();
   }, [partida?.ahoraServidor]);
@@ -91,6 +94,8 @@ export function PaginaPartida({ id }: { id: string }): ReactNode {
     if (!iniciadaEn) return;
     const temporizador = window.setTimeout(
       () => {
+        // Al entrar o recargar una ronda ya respondida no se vuelve a reproducir la canción.
+        if (!rondaAbierta.current) return;
         entrada.current?.focus();
         if (preferencias.reproduccionAutomatica)
           void audio.current?.play().catch(() => fijarBloqueado(true));
