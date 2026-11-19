@@ -1,0 +1,347 @@
+# Artistas del catálogo oficial
+
+Selección representativa disponible en la instalación verificada: **315 artistas, cinco canciones por artista y 1.575 canciones**. Cada género contiene 35 artistas. La popularidad de las canciones procede del indicador `rank` de Deezer entre las pistas disponibles del perfil original; no es una clasificación histórica universal.
+
+[Lista completa de canciones y créditos](catalogo-oficial.csv). La disponibilidad del proveedor puede cambiar.
+
+## Alternativa
+
+- Arctic Monkeys
+- Audioslave
+- blink-182
+- Blur
+- Cage The Elephant
+- Coldplay
+- Deftones
+- Depeche Mode
+- Fall Out Boy
+- Foster the People
+- Gorillaz
+- Green Day
+- MGMT
+- My Chemical Romance
+- Nirvana
+- Oasis
+- Panic! At the Disco
+- Paramore
+- Pearl Jam
+- Pixies
+- R.E.M.
+- Radiohead
+- Rage Against the Machine
+- Red Hot Chili Peppers
+- Soundgarden
+- Sum 41
+- Tame Impala
+- The Cure
+- The Killers
+- The Offspring
+- The Smashing Pumpkins
+- The Smiths
+- The Strokes
+- Twenty One Pilots
+- Weezer
+
+## Electrónica
+
+- Above & Beyond
+- Afrojack
+- Alan Walker
+- Alesso
+- Armin van Buuren
+- Avicii
+- Calvin Harris
+- Daft Punk
+- David Guetta
+- Deadmau5
+- Dimitri Vegas & Like Mike
+- Diplo
+- Disclosure
+- DJ Snake
+- Don Diablo
+- Fatboy Slim
+- Hardwell
+- Kygo
+- Lost Frequencies
+- Major Lazer
+- Marshmello
+- Martin Garrix
+- Moby
+- Nicky Romero
+- Oliver Heldens
+- R3HAB
+- Robin Schulz
+- Skrillex
+- Steve Aoki
+- Swedish House Mafia
+- The Chainsmokers
+- The Chemical Brothers
+- The Prodigy
+- Tiësto
+- ZEDD
+
+## Hip hop / Rap
+
+- 21 Savage
+- 2Pac
+- 50 Cent
+- A$AP Rocky
+- Cardi B
+- Childish Gambino
+- Doja Cat
+- Dr. Dre
+- Drake
+- Eminem
+- Future
+- Ice Cube
+- J. Cole
+- JAY Z
+- Juice Wrld
+- Kanye West
+- Kendrick Lamar
+- Kid Cudi
+- Lil Uzi Vert
+- Lil Wayne
+- Ludacris
+- MAC MILLER
+- Megan Thee Stallion
+- Metro Boomin
+- Nas
+- Nicki Minaj
+- Outkast
+- Playboi Carti
+- Post Malone
+- Snoop Dogg
+- The Notorious B.I.G.
+- Travis Scott
+- Tyler, The Creator
+- Wu-Tang Clan
+- XXXTentacion
+
+## Latina
+
+- Alejandro Sanz
+- Anuel AA
+- Aventura
+- Bad Bunny
+- Banda MS de Sergio Lizárraga
+- Carin Leon
+- Chayanne
+- Christian Nodal
+- Daddy Yankee
+- Don Omar
+- Eladio Carrion
+- Enrique Iglesias
+- Farruko
+- Feid
+- Grupo Frontera
+- J Balvin
+- Juanes
+- Junior H
+- KAROL G
+- Luis Fonsi
+- Luis Miguel
+- Maluma
+- Maná
+- Marc Anthony
+- Myke Towers
+- Natanael Cano
+- Nicky Jam
+- Ozuna
+- Peso Pluma
+- Rauw Alejandro
+- Ricky Martin
+- Romeo Santos
+- Selena
+- Shakira
+- Wisin & Yandel
+
+## Metal
+
+- A Perfect Circle
+- Alice in Chains
+- Amon Amarth
+- Anthrax
+- Avenged Sevenfold
+- Black Sabbath
+- Bullet for My Valentine
+- Children of Bodom
+- Dio
+- Disturbed
+- Epica
+- Evanescence
+- Gojira
+- In Flames
+- Iron Maiden
+- Judas Priest
+- Killswitch Engage
+- KoЯn
+- Lamb of God
+- Limp Bizkit
+- Mastodon
+- Megadeth
+- Metallica
+- Motörhead
+- Nightwish
+- Ozzy Osbourne
+- Pantera
+- Rammstein
+- Sabaton
+- Slayer
+- Slipknot
+- System of a Down
+- TOOL
+- Trivium
+- Within Temptation
+
+## Pop
+
+- *NSYNC
+- ABBA
+- Adele
+- Ariana Grande
+- Avril Lavigne
+- Backstreet Boys
+- Benson Boone
+- Billie Eilish
+- Britney Spears
+- Carly Rae Jepsen
+- Charlie Puth
+- Christina Aguilera
+- Cyndi Lauper
+- Demi Lovato
+- Dua Lipa
+- Ed Sheeran
+- Harry Styles
+- Justin Bieber
+- Katy Perry
+- Kesha
+- Lady Gaga
+- Madonna
+- Meghan Trainor
+- Michael Jackson
+- Miley Cyrus
+- Olivia Rodrigo
+- One Direction
+- P!nk
+- Sabrina Carpenter
+- Sam Smith
+- Selena Gomez
+- Shawn Mendes
+- Sia
+- Tate McRae
+- Taylor Swift
+
+## R&B / Soul
+
+- Alicia Keys
+- Aretha Franklin
+- Beyoncé
+- Boyz II Men
+- Bruno Mars
+- Bryson Tiller
+- Chris Brown
+- Daniel Caesar
+- Destiny's Child
+- Frank Ocean
+- GIVĒON
+- H.E.R.
+- Janet Jackson
+- Jhené Aiko
+- John Legend
+- Kehlani
+- Khalid
+- Mariah Carey
+- Marvin Gaye
+- Mary J. Blige
+- Miguel
+- Ne-Yo
+- Otis Redding
+- PARTYNEXTDOOR
+- Prince
+- Rihanna
+- Sam Cooke
+- Stevie Wonder
+- Summer Walker
+- SZA
+- The Weeknd
+- TLC
+- Trey Songz
+- Usher
+- Whitney Houston
+
+## Reggae
+
+- Alborosie
+- Aswad
+- Barrington Levy
+- Beenie Man
+- Beres Hammond
+- Black Uhuru
+- Bob Marley & The Wailers
+- Bounty Killer
+- Buju Banton
+- Bunny Wailer
+- Burning Spear
+- Capleton
+- Chronixx
+- Culture
+- Damian Marley
+- Dennis Brown
+- Gregory Isaacs
+- Inner Circle
+- Jimmy Cliff
+- Matisyahu
+- Maxi Priest
+- Peter Tosh
+- Popcaan
+- Protoje
+- Rebelution
+- Sean Paul
+- Shaggy
+- Sizzla
+- SOJA
+- Steel Pulse
+- Third World
+- Toots & The Maytals
+- UB40
+- Vybz Kartel
+- Ziggy Marley
+
+## Rock
+
+- AC/DC
+- Aerosmith
+- Billy Idol
+- Bon Jovi
+- Boston
+- Bruce Springsteen
+- Bryan Adams
+- Creedence Clearwater Revival
+- David Bowie
+- Deep Purple
+- Def Leppard
+- Dire Straits
+- Eagles
+- Fleetwood Mac
+- Foo Fighters
+- Guns N' Roses
+- Imagine Dragons
+- Journey
+- KISS
+- Led Zeppelin
+- Lenny Kravitz
+- Linkin Park
+- Muse
+- Pink Floyd
+- Queen
+- Santana
+- Scorpions
+- The Beatles
+- The Doors
+- The Police
+- The Rolling Stones
+- The Who
+- U2
+- Van Halen
+- ZZ Top
