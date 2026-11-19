@@ -184,7 +184,7 @@ export function PaginaMultijugador({ modo }: { modo: 'duelo' | 'equipos' }): Rea
             </Boton>
           </Tarjeta>
           <Tarjeta>
-            <h2>EL RITMO SE COMPARTE</h2>
+            <h2>INSTRUCCIONES</h2>
             <p>
               {modo === 'duelo'
                 ? 'Dos jugadores escuchan el mismo fragmento. Ambos confirman y el anfitrión inicia la partida.'
