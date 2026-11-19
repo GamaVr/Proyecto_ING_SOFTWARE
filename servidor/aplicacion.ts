@@ -49,9 +49,12 @@ export function crearAplicacion(
   aplicacion.use(cookieParser());
   aplicacion.use(
     '/api',
+    // Límite por IP. Varias personas en la misma red (por ejemplo, el Wi-Fi de una escuela)
+    // comparten IP; cada pantalla de partida consulta el servidor cada 2 s (~30 por minuto).
+    // 3000 por minuto alcanza para unas 50 personas en una misma red.
     rateLimit({
       windowMs: 60000,
-      limit: 500,
+      limit: 3000,
       standardHeaders: 'draft-8',
       legacyHeaders: false,
       message: { error: 'Demasiadas solicitudes. Espera un momento.' },

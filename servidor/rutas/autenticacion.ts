@@ -19,9 +19,12 @@ import { type Usuario } from '../../compartido/tipos.js';
 /** Crea las rutas públicas de cuenta; no exigen sesión. */
 export function rutasAutenticacion(): Router {
   const enrutador = Router();
+  // Solo cuentan los intentos fallidos: muchas personas en la misma red pueden registrarse y
+  // entrar sin bloquearse entre sí, y adivinar contraseñas sigue limitado.
   const limitadorAcceso = rateLimit({
     windowMs: 15 * 60000,
-    limit: entorno.NODE_ENV === 'test' ? 200 : 30,
+    limit: entorno.NODE_ENV === 'test' ? 200 : 50,
+    skipSuccessfulRequests: true,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     message: { error: 'Demasiados intentos. Inténtalo más tarde.' },
@@ -55,9 +58,10 @@ export function rutasAutenticacion(): Router {
     await crearSesion(res, usuario.id, entrada.recordar);
     res.json({ usuario: { id: usuario.id, nombre: usuario.nombre, correo: usuario.correo } });
   });
+  // Por IP (compartida en una misma red); además cada cuenta admite solo 5 fallos por hora.
   const limitadorRecuperacion = rateLimit({
     windowMs: 60 * 60 * 1000,
-    limit: 5,
+    limit: 20,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     message: { error: 'Se alcanzó el límite de solicitudes. Inténtalo más tarde.' },
