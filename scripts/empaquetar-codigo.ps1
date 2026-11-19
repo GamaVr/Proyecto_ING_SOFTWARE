@@ -6,7 +6,7 @@ if ([System.IO.Path]::GetFileName($NombreArchivo) -ne $NombreArchivo -or $Nombre
 $archivePath = Join-Path $sourceRoot $NombreArchivo
 if (Test-Path -LiteralPath $archivePath) { throw 'El archivo de entrega ya existe; no se sobrescribe.' }
 $rootFiles = @('.env.example', '.gitignore', '.prettierignore', '.prettierrc.json', 'README.md', 'iniciar-juego.cmd', 'compose.yaml', 'index.html', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'vite.config.ts')
-$sourceDirectories = @('database', 'docs', 'public', 'scripts', 'server', 'shared', 'src', 'tests')
+$sourceDirectories = @('base-datos', 'compartido', 'documentacion', 'public', 'pruebas', 'scripts', 'servidor', 'src')
 $files = @($rootFiles | ForEach-Object { Get-Item -LiteralPath (Join-Path $sourceRoot $_) })
 foreach ($directory in $sourceDirectories) { $files += @(Get-ChildItem -LiteralPath (Join-Path $sourceRoot $directory) -File -Recurse) }
 Add-Type -AssemblyName System.IO.Compression
@@ -30,13 +30,13 @@ try {
     $sourceHash = (Get-FileHash -LiteralPath (Join-Path $sourceRoot $entry.FullName) -Algorithm SHA256).Hash
     if ($archiveHash -ne $sourceHash) { throw "Contenido diferente: $($entry.FullName)" }
   }
-  foreach ($required in @('server/musica.ts','shared/musica.ts','src/musica.ts','tests/integration/musica.test.ts','docs/INTEGRACION-MUSICAL.md','database/migrations/004_grabaciones_reales.sql','database/migrations/005_grabaciones_oficiales.sql','scripts/sincronizar-musica.ts','database/migrations/006_retirar_generos.sql','shared/reloj-partida.ts','tests/reloj-partida.test.ts','database/migrations/007_sincronizacion_catalogo.sql','server/catalogo-musical.ts','docs/CATALOGO-ARTISTAS.md','docs/catalogo-oficial.csv','docs/GUIA-ARCHIVOS.md','server/validacion.ts','server/servidor.ts','src/Aplicacion.tsx','src/principal.tsx')) {
+  foreach ($required in @('servidor/principal.ts','servidor/aplicacion.ts','servidor/tiempo-real.ts','servidor/validacion.ts','servidor/rutas/partidas.ts','servidor/servicios/partidas.ts','servidor/servicios/musica/deezer.ts','servidor/servicios/musica/catalogo.ts','servidor/servicios/musica/artistas.ts','compartido/musica.ts','compartido/reloj-partida.ts','src/servicios/musica.ts','src/Aplicacion.tsx','src/principal.tsx','pruebas/integracion/musica.test.ts','pruebas/unitarias/reloj-partida.test.ts','base-datos/esquema.sql','base-datos/migraciones/011_nombres_en_espanol.sql','scripts/aplicar-esquema.ts','scripts/sincronizar-musica.ts','documentacion/INTEGRACION-MUSICAL.md','documentacion/CATALOGO-ARTISTAS.md','documentacion/catalogo-oficial.csv','documentacion/GUIA-ARCHIVOS.md')) {
     if (-not $archive.GetEntry($required)) { throw "Falta $required" }
   }
-  foreach ($retired in @('server/matchmaking.ts','src/pages/Duel.tsx','src/pages/Music.tsx','src/music.css','server/catalog.ts','public/plantilla-musica.csv','scripts/music-admin.ts')) {
+  foreach ($retired in @('server/aplicacion.ts','server/matchmaking.ts','src/pages/Duel.tsx','src/pages/Music.tsx','src/music.css','scripts/migrar-codigo-recuperacion.ts','public/plantilla-musica.csv','scripts/music-admin.ts')) {
     if ($archive.GetEntry($retired)) { throw "Archivo retirado presente: $retired" }
   }
-  foreach ($required in @('iniciar-juego.cmd','docs/INSTALAR-EN-LAPTOP.md')) {
+  foreach ($required in @('iniciar-juego.cmd','documentacion/INSTALAR-EN-LAPTOP.md')) {
     if (-not $archive.GetEntry($required)) { throw "Falta $required" }
   }
   [PSCustomObject]@{ Archivo=$archivePath; Archivos=$archive.Entries.Count; Bytes=(Get-Item -LiteralPath $archivePath).Length; Validacion='Todas las entradas coinciden con el codigo fuente por SHA-256' } | ConvertTo-Json

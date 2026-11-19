@@ -6,9 +6,9 @@ Juego web de reconocimiento musical en español basado en el [diseño de Figma](
 
 Individual, duelo 1 vs 1 y equipos 2 vs 2 utilizan **muestras de grabaciones oficiales de Deezer**, reproducidas en fragmentos de 12 segundos. El servidor obtiene los géneros y las referencias de las canciones automáticamente. No se necesita cargar archivos ni configurar una clave privada para el acceso público comprobado durante el desarrollo.
 
-Los géneros consultados incluyen Rock, Pop, Hip hop/Rap, Electrónica, Latina, Reggae, R&B/Soul, Metal y Alternativa. Solo se muestran categorías con suficientes pistas reproducibles. Incluye Linkin Park, Deftones, Imagine Dragons, Katy Perry y muchos más. Cada género reúne **35 artistas con cinco canciones por artista: 315 artistas y 1.575 canciones** en la carga verificada. Las canciones se seleccionan por popularidad en Deezer; la lista de artistas es representativa. Blues, Jazz y Country están retirados. [Ver repertorio](docs/CATALOGO-ARTISTAS.md). Deezer ofrece muestras de hasta 30 segundos; el juego usa 12 segundos por ronda y requiere una partida nueva después de actualizar.
+Los géneros consultados incluyen Rock, Pop, Hip hop/Rap, Electrónica, Latina, Reggae, R&B/Soul, Metal y Alternativa. Solo se muestran categorías con suficientes pistas reproducibles. Incluye Linkin Park, Deftones, Imagine Dragons, Katy Perry y muchos más. Cada género reúne **35 artistas con cinco canciones por artista: 315 artistas y 1.575 canciones** en la carga verificada. Las canciones se seleccionan por popularidad en Deezer; la lista de artistas es representativa. Blues, Jazz y Country están retirados. [Ver repertorio](documentacion/CATALOGO-ARTISTAS.md). Deezer ofrece muestras de hasta 30 segundos; el juego usa 12 segundos por ronda y requiere una partida nueva después de actualizar.
 
-**No hay sección Música, biblioteca, reproductor independiente, cargas ni CSV.** Las melodías sintetizadas del catálogo anterior quedan excluidas de nuevas partidas y no se reproducen como respaldo. El audio requiere Internet. Consulta [la integración de audio](docs/INTEGRACION-MUSICAL.md).
+**No hay sección Música, biblioteca, reproductor independiente, cargas ni CSV.** Las melodías sintetizadas del catálogo anterior quedan excluidas de nuevas partidas y no se reproducen como respaldo. El audio requiere Internet. Consulta [la integración de audio](documentacion/INTEGRACION-MUSICAL.md).
 
 ## Funciones
 
@@ -30,8 +30,8 @@ La instalación preparada utiliza MySQL Community Server 8.4.6 portátil en `127
 
 ```powershell
 ./scripts/iniciar-mysql-local.ps1
-pnpm exec tsx scripts/migrar-local.ts
-pnpm music:sync
+pnpm bd:migrar
+pnpm musica:sincronizar
 pnpm build
 pnpm start
 ```
@@ -42,7 +42,7 @@ Si pnpm no está en PATH, la instalación de esta computadora tiene `C:\Users\xT
 
 ## Instalar en otra computadora
 
-Para Windows, sigue la [guía de instalación en una laptop](docs/INSTALAR-EN-LAPTOP.md). Incluye MySQL, comandos compatibles con PowerShell y el lanzador `iniciar-juego.cmd`.
+Para Windows, sigue la [guía de instalación en una laptop](documentacion/INSTALAR-EN-LAPTOP.md). Incluye MySQL, comandos compatibles con PowerShell y el lanzador `iniciar-juego.cmd`.
 
 Requisitos: Node.js 22.12+, pnpm o npm, MySQL 8.4 e Internet.
 
@@ -51,7 +51,7 @@ pnpm install
 Copy-Item .env.example .env
 ```
 
-Configura MySQL según [docs/MYSQL.md](docs/MYSQL.md). Una cuenta de instalación ejecuta `pnpm db:setup` para crear el esquema y sincronizar referencias del proveedor; después configura una cuenta de aplicación con permisos limitados. No se utiliza SQLite ni almacenamiento simulado como sustituto de MySQL.
+Configura MySQL según [documentacion/MYSQL.md](documentacion/MYSQL.md). Una cuenta de instalación ejecuta `pnpm bd:preparar` para crear el esquema y sincronizar referencias del proveedor; después configura una cuenta de aplicación con permisos limitados. No se utiliza SQLite ni almacenamiento simulado como sustituto de MySQL.
 
 También se incluye `compose.yaml` con la imagen oficial `mysql:8.4`. Define sus contraseñas en tu entorno antes de `docker compose up -d mysql`.
 
@@ -60,7 +60,7 @@ También se incluye `compose.yaml` con la imagen oficial `mysql:8.4`. Define sus
 ```powershell
 pnpm check
 pnpm test
-pnpm test:integration
+pnpm test:integracion
 pnpm format:check
 pnpm build
 ```
@@ -69,13 +69,19 @@ Las pruebas de integración usan una base separada terminada en `_test`, registr
 
 ## Código y documentación
 
-La [guía de archivos](docs/GUIA-ARCHIVOS.md) explica qué hace cada módulo, muestra los nombres anteriores y sus equivalentes en español, y señala los nombres que conservan las herramientas. El proyecto utiliza TypeScript: por ejemplo, `validation.ts` ahora es `validacion.ts`.
+La [guía de archivos](documentacion/GUIA-ARCHIVOS.md) explica qué hace cada módulo y señala los nombres que se conservan en inglés porque los exige una herramienta o un servicio externo.
 
-`src/` contiene las pantallas del juego y el reproductor de ronda; `server/` contiene autenticación, juego, salas, amigos e integración Deezer. `shared/` define los contratos, `database/` las tablas y migraciones, `scripts/` las herramientas de instalación y `tests/` las comprobaciones. Las funciones principales tienen comentarios en español.
+Funciones, variables, tipos, rutas de la API, tablas y columnas están en español.
 
-Consulta [arquitectura](docs/ARQUITECTURA.md), [API](docs/API.md), [amigos](docs/SOCIAL.md) y [audio](docs/INTEGRACION-MUSICAL.md).
+- `servidor/`: organizado por capas. `rutas/` recibe las peticiones HTTP, `servicios/` contiene las reglas del juego, salas, amigos y música, y `datos/` el acceso a MySQL. `tiempo-real.ts` maneja Socket.IO y el reloj de las partidas.
+- `src/`: cliente React. `paginas/` (pantallas), `componentes/`, `estado/` (contextos) y `servicios/` (API y audio).
+- `compartido/`: tipos y funciones que usan el cliente y el servidor.
+- `base-datos/`: esquema y migraciones. `scripts/`: instalación y mantenimiento. `pruebas/`: unitarias e integración.
+- `documentacion/`: guías del proyecto.
 
-La [revisión de limpieza](docs/LIMPIEZA.md) detalla los archivos retirados y los componentes que se conservan por estar en uso. Para generar una entrega del código sin credenciales ni archivos temporales, ejecuta `./scripts/empaquetar-codigo.ps1` desde la raíz del proyecto.
+Consulta [arquitectura](documentacion/ARQUITECTURA.md), [API](documentacion/API.md), [amigos](documentacion/SOCIAL.md) y [audio](documentacion/INTEGRACION-MUSICAL.md).
+
+La [revisión de limpieza](documentacion/LIMPIEZA.md) detalla los archivos retirados y los componentes que se conservan por estar en uso. Para generar una entrega del código sin credenciales ni archivos temporales, ejecuta `./scripts/empaquetar-codigo.ps1` desde la raíz del proyecto.
 
 ## Despliegue
 

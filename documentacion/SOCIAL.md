@@ -25,14 +25,14 @@ Socket.IO avisa por un canal personal autenticado. Ese canal permanece activo al
 
 ## Actualizar una instalación anterior
 
-Con una cuenta de instalación, aplica `database/esquema.sql` y después `database/migrations/002_amigos_y_salas.sql`. En la instancia portátil preparada en esta computadora basta con:
+Con una cuenta de instalación, ejecuta `pnpm bd:preparar` (aplica `base-datos/esquema.sql`). En la instancia portátil preparada en esta computadora basta con:
 
 ```powershell
-pnpm exec tsx scripts/migrar-local.ts
+pnpm bd:migrar
 pnpm build
 pnpm start
 ```
 
-La migración conserva perfiles, sesiones, preferencias, canciones, partidas y puntuaciones. Elimina exclusivamente las tablas de las funciones retiradas y crea las relaciones sociales mediante el esquema actualizado.
+La migración conserva perfiles, sesiones, preferencias, canciones, partidas y puntuaciones. Si la base usa el esquema anterior en inglés, la convierte a los nombres en español (consulta [MySQL](MYSQL.md)).
 
 Para jugar desde otros dispositivos, todos deben acceder a la misma instalación disponible en su red o en un servidor publicado. El arranque local por defecto escucha únicamente en esta computadora.

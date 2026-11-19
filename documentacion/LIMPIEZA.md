@@ -29,3 +29,12 @@ La lista de eliminación reúne 283 archivos y aproximadamente 283.3 MiB. El tam
 En la revisión del 21 de octubre de 2026 se retiraron además la copia temporal de pruebas para laptop (5.541 archivos, unos 102 MB), sus dos registros y el ZIP anterior sustituido. Los 46 archivos TypeScript actuales siguen conectados a la aplicación, las herramientas o las pruebas; los 56 SVG conservados tienen referencias. No se eliminaron dependencias ni herramientas vigentes por el hecho de no formar parte de una pantalla.
 
 `scripts/empaquetar-codigo.ps1` genera y verifica la entrega limpia desde la raíz del proyecto. No incluye credenciales, datos de MySQL, dependencias, capturas ni archivos temporales.
+
+## Reorganización y traducción (19 de noviembre de 2026)
+
+- El servidor pasó a `servidor/` y se organizó por capas: `rutas/` (un módulo por área), `servicios/` (reglas del dominio, incluida la música separada en `deezer.ts`, `catalogo.ts` y `artistas.ts`), `datos/` y `tiempo-real.ts`. `aplicacion.ts` ya no contiene rutas.
+- Carpetas en español: `compartido/`, `base-datos/` (con `migraciones/`), `pruebas/` (`unitarias/`, `integracion/`) y `documentacion/`; en el cliente, `paginas/`, `componentes/`, `estado/` y `servicios/`.
+- Identificadores, rutas de la API, campos JSON, eventos de Socket.IO, tablas y columnas traducidos al español. La conversión de bases existentes está en `base-datos/migraciones/011_nombres_en_espanol.sql`.
+- Se retiró el flujo de correo que ya no se usaba: las rutas de verificación de cuenta y de restablecimiento por enlace, su código en la pantalla de acceso, las tablas `pending_registrations` y `password_reset_tokens` y las variables `PUBLIC_APP_URL`, `RESEND_API_KEY` y `EMAIL_FROM`.
+- `scripts/migrar-codigo-recuperacion.ts` se sustituyó por `scripts/aplicar-esquema.ts`, que aplica todas las migraciones necesarias.
+- Las pruebas de integración se actualizaron al registro con código de recuperación y a la pausa de 2,2 s entre rondas; antes fallaban las 21.

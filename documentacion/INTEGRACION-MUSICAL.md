@@ -15,10 +15,10 @@ La búsqueda compara el nombre exacto entre hasta cien perfiles y elige el de m�
 Si un artista no ofrece cinco muestras, utiliza un suplente reconocido del mismo género. Solo publica cuando reúne exactamente 35 artistas distintos y 175 canciones en ese género. La publicación desactiva las selecciones anteriores del género y activa las cinco elegidas por artista dentro de una única transacción; conserva el historial. Si falta disponibilidad o falla la API, mantiene el repertorio anterior de ese género. Para refrescar los metadatos sin editar canciones en el código: Para refrescar los metadatos sin editar canciones en el código:
 
 ```powershell
-pnpm music:sync
+pnpm musica:sincronizar
 ```
 
-La configuración está en `server/catalogo-musical.ts`. MySQL conserva una huella de la selección en `music_catalog_sync`; una modificación del repertorio o el paso de doce horas provoca su actualización. Las actualizaciones automáticas se comparten y ocurren en segundo plano cuando ya hay canciones, para permitir seguir jugando. La primera instalación y `pnpm music:sync` esperan a completar la carga; esta operación puede tardar varios minutos. El comando informa de los géneros que no se completaron y termina con error en esos casos. Las canciones se obtienen de la API, no se escriben manualmente.
+La configuración está en `servidor/servicios/musica/artistas.ts`. MySQL conserva una huella de la selección en `sincronizacion_catalogo`; una modificación del repertorio o el paso de doce horas provoca su actualización. Las actualizaciones automáticas se comparten y ocurren en segundo plano cuando ya hay canciones, para permitir seguir jugando. La primera instalación y `pnpm musica:sincronizar` esperan a completar la carga; esta operación puede tardar varios minutos. El comando informa de los géneros que no se completaron y termina con error en esos casos. Las canciones se obtienen de la API, no se escriben manualmente.
 
 ## Cómo suena
 
@@ -30,7 +30,7 @@ Solo se guarda la referencia estable `https://api.deezer.com/track/ID`, nunca un
 
 ## Acceso y errores
 
-`GET /api/games/:id/audio` requiere sesión, pertenencia a la partida y estado activo. Respeta Range y valida HTTPS y los dominios del CDN de Deezer en cada redirección. La muestra sigue siendo un recurso del proveedor: este mecanismo no es DRM ni una autorización para descargar o distribuir un catálogo.
+`GET /api/partidas/:id/audio` requiere sesión, pertenencia a la partida y estado activo. Respeta Range y valida HTTPS y los dominios del CDN de Deezer en cada redirección. La muestra sigue siendo un recurso del proveedor: este mecanismo no es DRM ni una autorización para descargar o distribuir un catálogo.
 
 Se necesita Internet. Si Deezer bloquea una muestra o deja de ofrecerla, el juego informa del error y permite pasar la ronda. No recurre al catálogo anterior ni a una melodía sintetizada. Solo se muestran géneros con al menos cinco canciones; los filtros deben reunir tantas canciones como rondas elegidas.
 
@@ -41,8 +41,8 @@ El acceso público a metadatos y muestras fue comprobado sin clave privada. Esto
 La migración `005_grabaciones_oficiales.sql` habilita `deezer`, conserva el historial y desactiva todas las fuentes anteriores, incluido Audius. La migración 004 también es compatible con el nuevo origen al repetir la instalación. La migración 006 desactiva Blues, Jazz y Country; conserva las respuestas históricas y cambia a Todas las salas pendientes que tenían una de esas categorías. Las consultas excluyen esas canciones incluso si una fila antigua vuelve a estar activa. La migración 007 incorpora las versiones y conteos de publicaciones completas del catálogo.
 
 ```powershell
-pnpm exec tsx scripts/migrar-local.ts
-pnpm music:sync
+pnpm bd:migrar
+pnpm musica:sincronizar
 pnpm build
 pnpm start
 ```

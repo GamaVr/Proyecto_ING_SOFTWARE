@@ -8,13 +8,13 @@ Esta instancia no utiliza el directorio de datos de XAMPP. La distribución de X
 
 `scripts/preparar-entorno-local.ts` crea una contraseña administrativa aleatoria, prepara el esquema, genera el catálogo y configura `guess_app` con SELECT, INSERT, UPDATE y DELETE. `.env` y `.runtime/mysql-admin.env` están ignorados por Git. No publiques ni copies esos archivos a documentación o incidencias.
 
-Para arrancar desde PowerShell: `./scripts/iniciar-mysql-local.ps1`. Para detenerla limpiamente: `pnpm mysql:stop`. Para aplicar cambios de esquema idempotentes en esta instalación: `pnpm exec tsx scripts/migrar-local.ts`.
+Para arrancar desde PowerShell: `./scripts/iniciar-mysql-local.ps1`. Para detenerla limpiamente: `pnpm mysql:detener`. Para aplicar el esquema en esta instalación (y convertir una base antigua): `pnpm bd:migrar`.
 
 ## Otra instalación MySQL
 
 1. Crea una cuenta de instalación o usa una cuenta administrativa durante la preparación.
 2. Configura `.env` temporalmente con esa cuenta y la base `guess_the_beat`.
-3. Ejecuta `pnpm db:setup`. El script crea la base si falta, las tablas y el catálogo, y aplica la migración de funciones. Conserva usuarios y partidas; retira las tablas de las funciones eliminadas.
+3. Ejecuta `pnpm bd:preparar`. El script crea la base si falta, las tablas y el catálogo. Si encuentra una base del esquema anterior, la convierte conservando usuarios y partidas.
 4. Crea una cuenta de aplicación y otórgale únicamente los permisos necesarios:
 
    ```sql
@@ -36,40 +36,47 @@ Define en `.env` una contraseña administrativa `MYSQL_ROOT_PASSWORD` y `DB_PASS
 docker compose up -d mysql
 ```
 
-Espera a que el contenedor esté healthy. Ejecuta `pnpm db:setup` con una cuenta que pueda crear el esquema; luego vuelve a las credenciales de aplicación. El usuario inicial creado por la imagen tiene permisos sobre su base; puedes reducirlos a CRUD después de la instalación.
+Espera a que el contenedor esté healthy. Ejecuta `pnpm bd:preparar` con una cuenta que pueda crear el esquema; luego vuelve a las credenciales de aplicación. El usuario inicial creado por la imagen tiene permisos sobre su base; puedes reducirlos a CRUD después de la instalación.
 
 ## Tablas
 
-| Tabla            | Contenido                                                                     |
-| ---------------- | ----------------------------------------------------------------------------- |
-| users            | Perfiles y hash bcrypt.                                                       |
-| sessions         | Hash SHA-256 del token y vencimiento.                                         |
-| user_settings    | Preferencias JSON por usuario.                                                |
-| songs            | Título, compositor, alias, género, año y audio privado.                       |
-| games            | Configuración, canciones privadas, estado, ronda y reloj.                     |
-| game_players     | Miembros y equipos de cada partida.                                           |
-| answers          | Una respuesta por usuario/ronda, corrección, puntos y tiempo.                 |
-| rooms            | Código, nombre, anfitrión, reglas y partida asociada.                         |
-| room_players     | Integrantes, equipo y confirmación.                                           |
-| room_messages    | Historial de chat.                                                            |
-| friendships      | Solicitudes y amistades aceptadas, una relación por par.                      |
-| room_invitations | Invitaciones de sala con remitente, destinatario, estado y vencimiento.       |
-| song_media       | Origen del audio, licencia, fragmento, disponibilidad y huella de duplicados. |
+| Tabla                   | Contenido                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| usuarios                | Perfiles, hash bcrypt de la contraseña y del código de recuperación.          |
+| sesiones                | Hash SHA-256 del token y vencimiento.                                         |
+| preferencias_usuario    | Preferencias JSON por usuario.                                                |
+| canciones               | Título, artista, alias, género y año.                                         |
+| medios_cancion          | Fuente del audio, referencia de Deezer, licencia, fragmento y disponibilidad. |
+| sincronizacion_catalogo | Huella y conteos de la última publicación de cada género.                     |
+| partidas                | Modo, estado, configuración, canciones elegidas, ronda y reloj.               |
+| jugadores_partida       | Integrantes y equipos de cada partida.                                        |
+| respuestas              | Una respuesta por persona y ronda, corrección, puntos y tiempo.               |
+| salas                   | Código, nombre, anfitrión, reglas y partida asociada.                         |
+| jugadores_sala          | Integrantes, equipo y confirmación.                                           |
+| mensajes_sala           | Historial del chat.                                                           |
+| amistades               | Solicitudes y amistades aceptadas, una relación por par.                      |
+| invitaciones_sala       | Invitaciones con remitente, destinatario, estado y vencimiento.               |
 
-Todas las relaciones utilizan claves foráneas. Las tablas con identificadores relacionados comparten `utf8mb4_unicode_ci` para evitar incompatibilidades entre intercalaciones. La clave primaria compuesta de `answers` evita duplicados incluso con solicitudes simultáneas.
+Todas las relaciones usan claves foráneas y la intercalación `utf8mb4_unicode_ci`. La clave primaria compuesta de `respuestas` evita duplicados incluso con solicitudes simultáneas. El índice `partidas_estado` acelera la consulta que hace el reloj cada segundo.
 
-## Actualización de funciones
+## Conversión desde el esquema anterior
 
-El esquema nuevo se aplica junto con `database/migrations/002_amigos_y_salas.sql`; esa migración retira exclusivamente las tablas de funciones eliminadas. `db:setup` y la migración local aplican ambos archivos. Conservan usuarios y partidas. Consulta [Amigos e invitaciones](SOCIAL.md).
+Las bases creadas antes de la traducción tienen tablas y columnas en inglés (`users`, `games`…). `pnpm bd:migrar` o `pnpm bd:preparar` las detectan y ejecutan `scripts/aplicar-esquema.ts`, que:
+
+1. Aplica las migraciones históricas pendientes (002–010).
+2. Ejecuta `base-datos/migraciones/011_nombres_en_espanol.sql`: renombra tablas, columnas e índices, traduce los valores de modos y estados y elimina las tablas del flujo de correo retirado.
+3. Traduce las claves de los JSON guardados (configuración de partidas y salas, preferencias).
+
+MySQL no revierte cambios de estructura dentro de una transacción. **Haz una copia de seguridad antes** (`mysqldump --single-transaction guess_the_beat > respaldo.sql`).
 
 ## Diagnóstico
 
-- `/api/health` devuelve la versión del motor y 200 cuando hay conexión. Un fallo devuelve 503; no activa un almacenamiento alternativo.
+- `/api/estado` devuelve la versión del motor y 200 cuando hay conexión. Un fallo devuelve 503; no activa un almacenamiento alternativo.
 - `ECONNREFUSED`: comprueba que MySQL esté arrancado y que el puerto coincida con `.env`.
 - `ER_ACCESS_DENIED_ERROR`: revisa usuario, contraseña y host de la cuenta MySQL.
 - `ER_BAD_DB_ERROR`: ejecuta la preparación con una cuenta de instalación.
-- No ejecutes `db:setup` con una cuenta CRUD esperando que pueda crear tablas. En la instancia portátil usa la migración administrativa indicada arriba.
+- No ejecutes `bd:preparar` con una cuenta CRUD esperando que pueda crear tablas. En la instancia portátil usa la migración administrativa indicada arriba.
 
 Para compartir el proyecto conserva el código y su configuración de ejemplo. Las grabaciones se transmiten desde Deezer; no se distribuye un catálogo de audio. No distribuyas el directorio de datos ni secretos administrativos. Un respaldo de producción debe hacerse con las herramientas de MySQL y una política de recuperación propia.
 
-La migración 007 incorpora `music_catalog_sync`, con género, huella de configuración, número de artistas, canciones y fecha. Una publicación completa y sus referencias de audio se confirman en la misma transacción. Consulta [el catálogo de artistas](CATALOGO-ARTISTAS.md).
+`sincronizacion_catalogo` guarda género, huella de configuración, número de artistas y canciones y fecha. Una publicación completa y sus referencias de audio se confirman en la misma transacción. Consulta [el catálogo de artistas](CATALOGO-ARTISTAS.md).

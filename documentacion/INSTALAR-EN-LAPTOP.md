@@ -50,7 +50,7 @@ NODE_ENV=development
 Reemplaza la contraseña por la que elegiste al instalar MySQL. Ajusta `DB_PORT` si usaste otro puerto. Después ejecuta:
 
 ```powershell
-npm.cmd run db:setup
+npm.cmd run bd:preparar
 ```
 
 El comando prepara el esquema y obtiene las referencias del catálogo oficial. La primera sincronización puede tardar varios minutos. Espera a que termine; si falla Deezer, revisa Internet y vuelve a ejecutarlo. No hace falta descargar archivos de canciones.
@@ -98,7 +98,7 @@ Para editar y ver cambios automáticamente, detén el servidor anterior y ejecut
 
 ## 5. Comprobar la instalación
 
-Abre [http://127.0.0.1:3001/api/health](http://127.0.0.1:3001/api/health): debe mostrar `status: "ok"` y `database: "mysql"`. Después comprueba el registro, la creación de salas y el audio en una partida.
+Abre [http://127.0.0.1:3001/api/estado](http://127.0.0.1:3001/api/estado): debe mostrar `estado: "ok"` y `baseDatos: "mysql"`. Después comprueba el registro, la creación de salas y el audio en una partida.
 
 ```powershell
 npm.cmd run check
@@ -115,7 +115,7 @@ Las pruebas de integración requieren una base separada terminada en `_test` y u
 - **Access denied:** comprueba la contraseña y el usuario MySQL para `127.0.0.1`.
 - **No existe la base o una tabla:** prepara el esquema con el administrador como se indica arriba.
 - **EADDRINUSE en 3001:** ya hay otro servidor en ese puerto; detén el anterior antes de iniciar otro.
-- **No aparecen canciones:** revisa Internet y los mensajes de Deezer. Para forzar la sincronización usa `npm.cmd run music:sync` con la cuenta de aplicación.
+- **No aparecen canciones:** revisa Internet y los mensajes de Deezer. Para forzar la sincronización usa `npm.cmd run musica:sincronizar` con la cuenta de aplicación.
 
 ## Jugar entre dispositivos
 
