@@ -684,6 +684,22 @@ export function PaginaResultados({ id }: { id: string }): ReactNode {
     empate = total0 === total1;
   const victoria = yo.equipo === 0 ? total0 >= total1 : total1 >= total0,
     individual = partida.modo === 'individual';
+  // Nivel según la proporción de aciertos: en 10 rondas, 0–5 Mejora, 6–8 Buen oído y 9–10 GOAT.
+  const proporcionAciertos = partida.total ? correcta.length / partida.total : 0,
+    nivel =
+      proporcionAciertos >= 0.9
+        ? { insignia: 'Nivel leyenda', titulo: '¡ERES EL GOAT!', texto: 'Casi nada se te escapa.' }
+        : proporcionAciertos > 0.5
+          ? {
+              insignia: 'Gran sesión',
+              titulo: '¡BUEN OÍDO!',
+              texto: 'Tu siguiente récord está a unas notas.',
+            }
+          : {
+              insignia: 'Sigue practicando',
+              titulo: '¡MEJORA!',
+              texto: 'Escucha con atención y vuelve a intentarlo.',
+            };
   let racha = 0,
     mejor = 0;
   for (const resultado of propios) {
@@ -712,25 +728,17 @@ export function PaginaResultados({ id }: { id: string }): ReactNode {
             </div>
             <div>
               <Insignia tono="green">
-                {individual
-                  ? 'Nuevo ritmo personal'
-                  : victoria
-                    ? 'Gran partida'
-                    : 'Sigue practicando'}
+                {individual ? nivel.insignia : victoria ? 'Gran partida' : 'Sigue practicando'}
               </Insignia>
               <h2>
                 {individual
-                  ? '¡BUEN OÍDO!'
+                  ? nivel.titulo
                   : partida.modo === 'equipos'
                     ? `EQUIPO ${total0 >= total1 ? '1' : '2'}`
                     : partida.jugadores.slice().sort((a, b) => b.puntuacion - a.puntuacion)[0]
                         .nombre}
               </h2>
-              <p>
-                {individual
-                  ? 'Tu siguiente récord está a unas notas.'
-                  : 'Cada segundo y cada respuesta cuentan.'}
-              </p>
+              <p>{individual ? nivel.texto : 'Cada segundo y cada respuesta cuentan.'}</p>
             </div>
             <div className="result-score">
               <small>PUNTUACIÓN {individual ? 'FINAL' : 'PERSONAL'}</small>
