@@ -39,7 +39,7 @@ const modos = [
     icono: 'teams',
     titulo: 'EQUIPOS 2 VS 2',
     lema: 'Con amigos',
-    descripcion: 'Crea una sala, invita a tu crew y combinad vuestro conocimiento.',
+    descripcion: 'Crea una sala, invita a tus amigos y combinen sus conocimientos musicales.',
     brillo: 'ed158',
     iconoFlecha: 'arrowPink',
   },
