@@ -54,11 +54,6 @@ export function PaginaMultijugador({ modo }: { modo: 'duelo' | 'equipos' }): Rea
           {error}
         </p>
       )}
-      <p className="subtle-note catalog-status">
-        {cargando
-          ? 'Conectando con las canciones oficiales…'
-          : `${opciones.total} canciones oficiales · ${opciones.artistas} artistas · ${opciones.generos.length} géneros`}
-      </p>
       <div className="multiplayer-grid">
         <Tarjeta className="create-room">
           <div className="row between">

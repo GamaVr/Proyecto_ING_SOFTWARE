@@ -2466,10 +2466,6 @@ aside.stack > .card > .button {
   }
 }
 
-.catalog-status {
-  margin-bottom: 18px;
-}
-
 /* Los cinco accesos del juego permanecen visibles en móvil. */
 @media (max-width: 760px) {
   .main-nav {

@@ -144,10 +144,7 @@ export function PaginaPrepararPartida(): ReactNode {
               </label>
             </div>
           </Tarjeta>
-          <p className="subtle-note">
-            {error ||
-              `${opciones.total} canciones oficiales de ${opciones.artistas} artistas. Requiere Internet.`}
-          </p>
+          {error && <p className="subtle-note">{error}</p>}
         </div>
         <aside className="stack">
           <Tarjeta className="preview-card">
