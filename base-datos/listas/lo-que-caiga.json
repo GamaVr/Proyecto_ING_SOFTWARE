@@ -1,8 +1,13 @@
 {
   "nombre": "lo que caiga",
   "fuente": "https://open.spotify.com/playlist/3afMimuQ77Iptm751D5i6J",
-  "generoPredeterminado": "Pop, Rap y Electrónica",
-  "generosPermitidos": ["Rock, Metal y Alternativa", "Pop, Rap y Electrónica", "Latina y Reggae"],
+  "generoPredeterminado": "Pop y Rap",
+  "generosPermitidos": [
+    "Rock, Metal y Alternativa",
+    "Pop y Rap",
+    "Electrónica y Dubstep",
+    "Latina y Reggae"
+  ],
   "pistas": [
     {
       "titulo": "THINGS BEHIND THINGS BEHIND THINGS",

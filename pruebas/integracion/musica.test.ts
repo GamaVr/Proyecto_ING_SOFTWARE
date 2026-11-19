@@ -143,7 +143,7 @@ test('las grabaciones reales se usan solo en los modos de juego', async (t) => {
           JSON.stringify({
             nombre: 'QA',
             generoPredeterminado: 'Rock, Metal y Alternativa',
-            generosPermitidos: ['Rock, Metal y Alternativa', 'Pop, Rap y Electrónica'],
+            generosPermitidos: ['Rock, Metal y Alternativa', 'Pop y Rap'],
             pistas: [
               { titulo: 'Tema Rock QA - Remastered', artista: 'Banda QA' },
               { titulo: 'Tema Metal QA', artista: 'Banda QA' },
@@ -176,7 +176,7 @@ test('las grabaciones reales se usan solo en los modos de juego', async (t) => {
         }, carpeta);
         assert.deepEqual(resumen.porGenero, {
           'Rock, Metal y Alternativa': 1,
-          'Pop, Rap y Electrónica': 1,
+          'Pop y Rap': 1,
         });
         assert.equal(resumen.repetidas, 1);
         assert.deepEqual(resumen.noEncontradas, ['Nadie QA – No Existe']);
@@ -187,7 +187,7 @@ test('las grabaciones reales se usan solo en los modos de juego', async (t) => {
         assert.deepEqual(
           guardadas.map((fila) => [fila.genero, !!fila.habilitada]),
           [
-            ['Pop, Rap y Electrónica', true],
+            ['Pop y Rap', true],
             ['Rock, Metal y Alternativa', true],
           ],
         );

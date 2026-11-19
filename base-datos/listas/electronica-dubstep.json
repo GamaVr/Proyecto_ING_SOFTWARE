@@ -1,0 +1,508 @@
+{
+  "nombre": "Electronic/Dupstep",
+  "fuente": "https://open.spotify.com/playlist/2HXFn2loZkVQD2SBxxe03Q",
+  "generoPredeterminado": "Electrónica y Dubstep",
+  "generosPermitidos": ["Electrónica y Dubstep"],
+  "pistas": [
+    {
+      "titulo": "Fly",
+      "artista": "Marshmello",
+      "spotify": "2HO0uCyq8jOveEzvmo4JEu"
+    },
+    {
+      "titulo": "Freed From Desire",
+      "artista": "Gala",
+      "spotify": "3u5N55tHf7hXATSQrjBh2q"
+    },
+    {
+      "titulo": "I Gotta Feeling",
+      "artista": "Black Eyed Peas",
+      "spotify": "2H1047e0oMSj10dgp7p2VG"
+    },
+    {
+      "titulo": "The Time (Dirty Bit)",
+      "artista": "Black Eyed Peas",
+      "spotify": "0iQHjEwLtwyGA9kL1H6SeN"
+    },
+    {
+      "titulo": "One More Time",
+      "artista": "Daft Punk",
+      "spotify": "0DiWol3AO6WpXZgp0goxAV"
+    },
+    {
+      "titulo": "Scream & Shout",
+      "artista": "will.i.am",
+      "spotify": "2iJuuzV8P9Yz0VSurttIV5"
+    },
+    {
+      "titulo": "Outside (feat. Ellie Goulding)",
+      "artista": "Calvin Harris",
+      "spotify": "7MmG8p0F9N3C4AXdK6o6Eb"
+    },
+    {
+      "titulo": "The Nights",
+      "artista": "Avicii",
+      "spotify": "0ct6r3EGTcMLPtrXHDvVjc"
+    },
+    {
+      "titulo": "Alive",
+      "artista": "Empire Of The Sun",
+      "spotify": "5WBnKCEsPwsvWHUZmLjS3s"
+    },
+    {
+      "titulo": "Ignite",
+      "artista": "Alan Walker",
+      "spotify": "1jLsirPDkUS2g4gnkYua58"
+    },
+    {
+      "titulo": "Sing Me to Sleep",
+      "artista": "Alan Walker",
+      "spotify": "2Fjz5ZC5BvFdCqcnTZ3ilH"
+    },
+    {
+      "titulo": "Darkside",
+      "artista": "Alan Walker",
+      "spotify": "6SRWhUJcD2YKahCwHavz3X"
+    },
+    {
+      "titulo": "Faded",
+      "artista": "Alan Walker",
+      "spotify": "7gHs73wELdeycvS48JfIos"
+    },
+    {
+      "titulo": "Alone",
+      "artista": "Alan Walker",
+      "spotify": "3LlmKSHR3Rs0Y3KHQLAYDk"
+    },
+    {
+      "titulo": "Cinema (feat. Gary Go) - Skrillex Remix",
+      "artista": "Benny Benassi",
+      "spotify": "6jNM6fKx3WnyHbWBI9hs2r"
+    },
+    {
+      "titulo": "Try It Out (with Alvin Risk) - Neon Mix",
+      "artista": "Skrillex",
+      "spotify": "6phWVUn5CCTCRBepIKnf6D"
+    },
+    {
+      "titulo": "Kyoto (feat. Sirah)",
+      "artista": "Skrillex",
+      "spotify": "3FUZpoj9VV0sgc8RqbS3xQ"
+    },
+    {
+      "titulo": "Make It Bun Dem",
+      "artista": "Skrillex",
+      "spotify": "6AbVJjzv7thIvmMCuhZrmK"
+    },
+    {
+      "titulo": "Bangarang (feat. Sirah)",
+      "artista": "Skrillex",
+      "spotify": "6VRhkROS2SZHGlp0pxndbJ"
+    },
+    {
+      "titulo": "Good Feeling",
+      "artista": "Flo Rida",
+      "spotify": "2LEF1A8DOZ9wRYikWgVlZ8"
+    },
+    {
+      "titulo": "Whistle",
+      "artista": "Flo Rida",
+      "spotify": "3bC1ahPIYt1btJzSSEyyrF"
+    },
+    {
+      "titulo": "Sweet Dreams (Are Made of This) - 2005 Remaster",
+      "artista": "Eurythmics",
+      "spotify": "1TfqLAPs4K3s2rJMoCokcS"
+    },
+    {
+      "titulo": "I'm an Albatraoz",
+      "artista": "AronChupa",
+      "spotify": "5MhsZlmKJG6X5kTHkdwC4B"
+    },
+    {
+      "titulo": "Blue (Da Ba Dee) - Gabry Ponte Ice Pop Radio",
+      "artista": "Eiffel 65",
+      "spotify": "4GewRLEiI4BDTQsoH8BRVV"
+    },
+    {
+      "titulo": "Infinity",
+      "artista": "Jaymes Young",
+      "spotify": "1SOClUWhOi8vHZYMz3GluK"
+    },
+    {
+      "titulo": "Alone",
+      "artista": "Marshmello",
+      "spotify": "3MEYFivt6bilQ9q9mFWZ4g"
+    },
+    {
+      "titulo": "Under Control (feat. Hurts)",
+      "artista": "Calvin Harris",
+      "spotify": "4J7CKHCF3mdL4diUsmW8lq"
+    },
+    {
+      "titulo": "Hear Me Now",
+      "artista": "Alok",
+      "spotify": "39cmB3ZoTOLwOTq7tMNqKa"
+    },
+    {
+      "titulo": "Rasputin",
+      "artista": "Majestic",
+      "spotify": "0b18g3G5spr4ZCkz7Y6Q0Q"
+    },
+    {
+      "titulo": "Stole the Show",
+      "artista": "Kygo",
+      "spotify": "5masKPHeAOVNgxdLebIcK7"
+    },
+    {
+      "titulo": "Memories (feat. Kid Cudi)",
+      "artista": "David Guetta",
+      "spotify": "7fLzbEOBOae9lUnOwr7Tse"
+    },
+    {
+      "titulo": "Blah Blah Blah",
+      "artista": "Armin van Buuren",
+      "spotify": "1moFkZDqcjQNeXtyoanLHv"
+    },
+    {
+      "titulo": "Middle",
+      "artista": "DJ Snake",
+      "spotify": "0g5EKLgdKvNlln7TNqBByK"
+    },
+    {
+      "titulo": "Tsunami",
+      "artista": "DVBBS",
+      "spotify": "0vZCG0H9KhtU7K8MEUVAoV"
+    },
+    {
+      "titulo": "Sun Is Shining",
+      "artista": "Axwell /\\ Ingrosso",
+      "spotify": "4b2tcjrG1qUkSdsqEFP2dB"
+    },
+    {
+      "titulo": "Blame (feat. John Newman)",
+      "artista": "Calvin Harris",
+      "spotify": "07nH4ifBxUB4lZcsf44Brn"
+    },
+    {
+      "titulo": "Melody",
+      "artista": "Oliver Heldens",
+      "spotify": "5Qxw0150DBPE5HErLTrxgs"
+    },
+    {
+      "titulo": "Bunnydance",
+      "artista": "Oliver Heldens",
+      "spotify": "46FG2rfPkw7FhFs89z3MOZ"
+    },
+    {
+      "titulo": "Infinity 2008 - Greek Edition",
+      "artista": "Guru Josh Project",
+      "spotify": "4xrfOsKCPjQqfFVSiP36bZ"
+    },
+    {
+      "titulo": "Desire - Gryffin Remix",
+      "artista": "Olly Alexander (Years & Years)",
+      "spotify": "1wyeyEGNOTOqOdxLmzVZdB"
+    },
+    {
+      "titulo": "Break Free",
+      "artista": "Ariana Grande",
+      "spotify": "12KUFSHFgT0XCoiSlvdQi4"
+    },
+    {
+      "titulo": "Don't You Worry Child - Radio Edit",
+      "artista": "Swedish House Mafia",
+      "spotify": "2V65y3PX4DkRhy1djlxd9p"
+    },
+    {
+      "titulo": "Levels - Radio Edit",
+      "artista": "Avicii",
+      "spotify": "5QjJgPU8AJeickx34f7on6"
+    },
+    {
+      "titulo": "I Think I Like It",
+      "artista": "Fake Blood",
+      "spotify": "5cPcd6pLrpDVmKnonjd3EQ"
+    },
+    {
+      "titulo": "Sexy And I Know It",
+      "artista": "LMFAO",
+      "spotify": "70Vdd1gx5tn84jkAU31ASv"
+    },
+    {
+      "titulo": "Heads Will Roll - A-Trak Remix Radio Edit",
+      "artista": "Yeah Yeah Yeahs",
+      "spotify": "5qGIfWDRdyO67LCTqA2sEn"
+    },
+    {
+      "titulo": "Party Rock Anthem",
+      "artista": "LMFAO",
+      "spotify": "7mitXLIMCflkhZiD34uEQI"
+    },
+    {
+      "titulo": "Five More Hours",
+      "artista": "Deorro",
+      "spotify": "3MOECVkNshqHYTPt5DZcdN"
+    },
+    {
+      "titulo": "Firestone",
+      "artista": "Kygo",
+      "spotify": "1I8tHoNBFTuoJAlh4hfVVE"
+    },
+    {
+      "titulo": "Lean On",
+      "artista": "Major Lazer",
+      "spotify": "1Lim1Py7xBgbAkAys3AGAG"
+    },
+    {
+      "titulo": "Pursuit Of Happiness - Extended Steve Aoki Remix",
+      "artista": "Kid Cudi",
+      "spotify": "5PX4uS1LqlWEPL69phPVQQ"
+    },
+    {
+      "titulo": "How Deep Is Your Love",
+      "artista": "Calvin Harris",
+      "spotify": "22mek4IiqubGD9ctzxc69s"
+    },
+    {
+      "titulo": "Passionfruit",
+      "artista": "Drake",
+      "spotify": "5mCPDVBb16L4XQwDdbRUpz"
+    },
+    {
+      "titulo": "Runaway (U & I)",
+      "artista": "Galantis",
+      "spotify": "46lFttIf5hnUZMGvjK0Wxo"
+    },
+    {
+      "titulo": "In the Name of Love",
+      "artista": "Martin Garrix",
+      "spotify": "23L5CiUhw2jV1OIMwthR3S"
+    },
+    {
+      "titulo": "No Money",
+      "artista": "Galantis",
+      "spotify": "6M6Tk58pQvABy6ru66dY3d"
+    },
+    {
+      "titulo": "More Than You Know",
+      "artista": "Axwell /\\ Ingrosso",
+      "spotify": "6h5PAsRni4IRlxWr6uDPTP"
+    },
+    {
+      "titulo": "Let Me Love You",
+      "artista": "DJ Snake",
+      "spotify": "0lYBSQXN6rCTvUZvg9S0lU"
+    },
+    {
+      "titulo": "Scared to Be Lonely",
+      "artista": "Martin Garrix",
+      "spotify": "3ebXMykcMXOcLeJ9xZ17XH"
+    },
+    {
+      "titulo": "Tuesday",
+      "artista": "Burak Yeter",
+      "spotify": "7EVk9tRb6beJLTHrg6AkY9"
+    },
+    {
+      "titulo": "Righteous",
+      "artista": "Mo Beats",
+      "spotify": "1xZCK1MXhE4EkHGYENzP9U"
+    },
+    {
+      "titulo": "Belly Dancer",
+      "artista": "Imanbek",
+      "spotify": "7fZBQnc0zXwVybgCIrQQil"
+    },
+    {
+      "titulo": "Safe and Sound",
+      "artista": "Capital Cities",
+      "spotify": "5JVbvCHX10U2pLa5DEqGav"
+    },
+    {
+      "titulo": "Midnight City",
+      "artista": "M83",
+      "spotify": "6GyFP1nfCDB8lbD2bG0Hq9"
+    },
+    {
+      "titulo": "Summer",
+      "artista": "Calvin Harris",
+      "spotify": "6YUTL4dYpB9xZO5qExPf05"
+    },
+    {
+      "titulo": "Animals",
+      "artista": "Martin Garrix",
+      "spotify": "0A9mHc7oYUoCECqByV8cQR"
+    },
+    {
+      "titulo": "Happier",
+      "artista": "Marshmello",
+      "spotify": "7BqHUALzNBTanL6OvsqmC1"
+    },
+    {
+      "titulo": "Walking On A Dream",
+      "artista": "Empire Of The Sun",
+      "spotify": "5r5cp9IpziiIsR6b93vcnQ"
+    },
+    {
+      "titulo": "We Are The People",
+      "artista": "Empire Of The Sun",
+      "spotify": "3zEN0ii6s4DHHBpnTp3RP7"
+    },
+    {
+      "titulo": "Happy Nation",
+      "artista": "Ace of Base",
+      "spotify": "7yCF65vpc7sUwPjftI0iFb"
+    },
+    {
+      "titulo": "Levels - Original Version",
+      "artista": "Avicii",
+      "spotify": "6Xe9wT5xeZETPwtaP2ynUz"
+    },
+    {
+      "titulo": "Waiting For Love",
+      "artista": "Avicii",
+      "spotify": "2P4OICZRVAQcYAV2JReRfj"
+    },
+    {
+      "titulo": "Love Me Again",
+      "artista": "John Newman",
+      "spotify": "5TbzAWWc5eJaANpA9kfGCd"
+    },
+    {
+      "titulo": "Feel So Close - Radio Edit",
+      "artista": "Calvin Harris",
+      "spotify": "1gihuPhrLraKYrJMAEONyc"
+    },
+    {
+      "titulo": "Call on Me - Radio Mix",
+      "artista": "Eric Prydz",
+      "spotify": "1xNcBAoUw8Hz6LqK2jt4Ff"
+    },
+    {
+      "titulo": "Can't Hold Us (feat. Ray Dalton)",
+      "artista": "Macklemore",
+      "spotify": "22skzmqfdWrjJylampe0kt"
+    },
+    {
+      "titulo": "Nuclear (Hands Up)",
+      "artista": "Zomboy",
+      "spotify": "32AV76N8GhpnJ74VoYfDGk"
+    },
+    {
+      "titulo": "LEGACY",
+      "artista": "PIXY",
+      "spotify": "2jwpT2tPlP8HYVpFXfZMqM"
+    },
+    {
+      "titulo": "Clarity",
+      "artista": "Zedd",
+      "spotify": "60wwxj6Dd9NJlirf84wr2c"
+    },
+    {
+      "titulo": "Stay The Night - Featuring Hayley Williams Of Paramore",
+      "artista": "Zedd",
+      "spotify": "2QtJA4gbwe1AcanB2p21aP"
+    },
+    {
+      "titulo": "Heroes (we could be)",
+      "artista": "Alesso",
+      "spotify": "3zU9rdflI65tK4dkkNSp77"
+    },
+    {
+      "titulo": "Runaway (U & I)",
+      "artista": "Galantis",
+      "spotify": "7jTTclESZDl303D4p7tN6M"
+    },
+    {
+      "titulo": "Titanium (feat. Sia)",
+      "artista": "David Guetta",
+      "spotify": "0TDLuuLlV54CkRRUOahJb4"
+    },
+    {
+      "titulo": "Play Hard (feat. Ne-Yo & Akon) - New Edit",
+      "artista": "David Guetta",
+      "spotify": "16Cs9KsHzgunxaEfGrXysG"
+    },
+    {
+      "titulo": "Where Them Girls At (feat. Nicki Minaj & Flo Rida)",
+      "artista": "David Guetta",
+      "spotify": "7ks6AZmFcm3Y6PGGxGSmlB"
+    },
+    {
+      "titulo": "Heads Will Roll - A-Trak Remix",
+      "artista": "Yeah Yeah Yeahs",
+      "spotify": "5bs8OXiOt4BPF2FAnRFP1u"
+    },
+    {
+      "titulo": "Party Rock Anthem",
+      "artista": "LMFAO",
+      "spotify": "4650WGL6InVqP7YN5POqIz"
+    },
+    {
+      "titulo": "Bangarang (feat. Sirah)",
+      "artista": "Skrillex",
+      "spotify": "3V2cgvvI483DKomiZBYsAA"
+    },
+    {
+      "titulo": "Beautiful Now",
+      "artista": "Zedd",
+      "spotify": "2ISSQPb9LHHiV6ng2NXosL"
+    },
+    {
+      "titulo": "Toulouse - Bobby Anthony Vocal Mix",
+      "artista": "Nicky Romero",
+      "spotify": "2bsyecmZCgdlsCZ3sWVZ99"
+    },
+    {
+      "titulo": "Summit (feat. Ellie Goulding)",
+      "artista": "Skrillex",
+      "spotify": "1SbqxemPdwGlvmirtQVkCU"
+    },
+    {
+      "titulo": "Fade",
+      "artista": "Alan Walker",
+      "spotify": "30ykgxNKHLr95PkHHqmrjl"
+    },
+    {
+      "titulo": "Blank",
+      "artista": "Disfigure",
+      "spotify": "2EjSewEKEZShOUBwFXUrK5"
+    },
+    {
+      "titulo": "Hope",
+      "artista": "Tobu",
+      "spotify": "2ej5aQGytuAsd5eNqB7zmG"
+    },
+    {
+      "titulo": "Shine",
+      "artista": "Spektrem",
+      "spotify": "0bEieeFbVqwFLWa2XpJseK"
+    },
+    {
+      "titulo": "Force",
+      "artista": "Alan Walker",
+      "spotify": "1ohtxpDVdbxxmSDW5HdoG0"
+    },
+    {
+      "titulo": "Dusk",
+      "artista": "Tobu",
+      "spotify": "5y03hzWKUV6HBSA1Cskd6I"
+    },
+    {
+      "titulo": "Sunburst",
+      "artista": "Tobu",
+      "spotify": "5NcYCtoBkAGyxL5SCF64av"
+    },
+    {
+      "titulo": "Shootin Stars",
+      "artista": "Aero Chord",
+      "spotify": "2304Tj4uic640MFsZc0jwO"
+    },
+    {
+      "titulo": "Ark",
+      "artista": "Star Party",
+      "spotify": "2hjqFVoMk6ssbfgtHEyhsY"
+    }
+  ]
+}

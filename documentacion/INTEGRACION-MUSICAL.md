@@ -18,7 +18,7 @@ Formato de una lista:
 }
 ```
 
-Los géneros válidos están en `compartido/musica.ts` y son generales, para que ninguno quede casi vacío: Rock, Metal y Alternativa; Pop, Rap y Electrónica; y Latina y Reggae. Blues, Jazz y Country están retirados. Un género aparece en el juego cuando tiene al menos cinco canciones.
+Los géneros válidos están en `compartido/musica.ts` y son generales, para que ninguno quede casi vacío: Rock, Metal y Alternativa; Pop y Rap; Electrónica y Dubstep; y Latina y Reggae. Blues, Jazz y Country están retirados. Un género aparece en el juego cuando tiene al menos cinco canciones.
 
 ## Importar o actualizar las listas
 
@@ -30,7 +30,7 @@ pnpm musica:importar
 
 1. Busca en Deezer el mismo artista principal y el mismo título. El título se compara sin sufijos de edición (" - Remastered 2023", " - From ... Soundtrack"), sin paréntesis, signos ni tildes.
 2. Descarta versiones en vivo, remixes, acústicas, extendidas, instrumentales, karaoke, tributos y pistas sin muestra, salvo que el título de la lista pida esa versión; entre las coincidencias elige la más popular.
-3. Consulta el álbum para obtener el año y su género en Deezer, y asigna el primer género del álbum que la lista permita (por ejemplo, Rock, Metal y Alternativo de Deezer van a "Rock, Metal y Alternativa", y Pop, R&B, Rap y Electrónica de Deezer a "Pop, Rap y Electrónica"). Si el álbum es una banda sonora o recopilación sin género útil, usa el género más frecuente entre los álbumes del artista; si tampoco hay, `generoPredeterminado`.
+3. Consulta el álbum para obtener el año y su género en Deezer, y asigna el primer género del álbum que la lista permita (por ejemplo, Rock, Metal y Alternativo de Deezer van a "Rock, Metal y Alternativa", Pop, R&B y Rap a "Pop y Rap", y Electro y Dance a "Electrónica y Dubstep"). Si el álbum es una banda sonora o recopilación sin género útil, usa el género más frecuente entre los álbumes del artista; si tampoco hay, `generoPredeterminado`.
 4. Guarda una sola vez las canciones repetidas y muestra al final las que no tienen equivalente en Deezer.
 
 La importación **reemplaza el catálogo**: deja activas solo las canciones de las listas actuales y desactiva las demás sin borrar el historial de partidas. Para quitar canciones, bórralas de la lista y vuelve a importar. El servidor ya no descarga canciones por su cuenta.

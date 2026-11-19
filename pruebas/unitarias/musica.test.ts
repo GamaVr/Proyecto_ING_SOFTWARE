@@ -33,7 +33,7 @@ test('las categorías retiradas no se pueden guardar ni asignar al importar', as
   const lista: ListaCanciones = {
     nombre: 'Prueba',
     generoPredeterminado: 'Rock, Metal y Alternativa',
-    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop, Rap y Electrónica'],
+    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop y Rap'],
     pistas: [{ titulo: 'x', artista: 'y' }],
   };
   // 153 = Blues en Deezer: no corresponde a ningún género del juego.
@@ -41,11 +41,10 @@ test('las categorías retiradas no se pueden guardar ni asignar al importar', as
   // Rock (152), Metal (464) y Alternativo (85) de Deezer van al mismo género del juego.
   for (const id of [152, 464, 85])
     assert.equal(generoDeAlbum([id], lista), 'Rock, Metal y Alternativa');
-  assert.equal(generoDeAlbum([132, 152], lista), 'Pop, Rap y Electrónica');
+  assert.equal(generoDeAlbum([132, 152], lista), 'Pop y Rap');
   assert.equal(generoDeAlbum([144], lista), 'Rock, Metal y Alternativa'); // Reggae no está permitido en esta lista.
-  // Pop, Rap y Electrónica de Deezer van al mismo género del juego.
-  for (const id of [132, 116, 106, 113, 165])
-    assert.equal(generoDeAlbum([id], lista), 'Pop, Rap y Electrónica');
+  // Pop y Rap de Deezer van al mismo género del juego.
+  for (const id of [132, 116, 165]) assert.equal(generoDeAlbum([id], lista), 'Pop y Rap');
   for (const separado of ['Rock', 'Metal', 'Alternativa'])
     assert.equal((GENEROS as readonly string[]).includes(separado), false);
   for (const genero of GENEROS_RETIRADOS) {
@@ -140,7 +139,7 @@ test('una lista se reparte por el género del álbum, sin repetidas, e informa l
   const lista: ListaCanciones = {
     nombre: 'Prueba',
     generoPredeterminado: 'Rock, Metal y Alternativa',
-    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop, Rap y Electrónica'],
+    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop y Rap'],
     pistas: [
       { titulo: 'In the End', artista: 'Linkin Park' },
       { titulo: 'Psychosocial', artista: 'Slipknot' },
@@ -169,7 +168,7 @@ test('una lista se reparte por el género del álbum, sin repetidas, e informa l
   });
   assert.deepEqual(resumen.porGenero, {
     'Rock, Metal y Alternativa': 1,
-    'Pop, Rap y Electrónica': 1,
+    'Pop y Rap': 1,
   });
   assert.equal(resumen.repetidas, 1);
   assert.deepEqual(resumen.noEncontradas, ['Nadie – Inexistente']);
@@ -229,7 +228,7 @@ test('si el álbum es una banda sonora, el género sale de los álbumes del arti
   const lista: ListaCanciones = {
     nombre: 'Prueba',
     generoPredeterminado: 'Latina y Reggae',
-    generosPermitidos: ['Pop, Rap y Electrónica', 'Latina y Reggae'],
+    generosPermitidos: ['Pop y Rap', 'Latina y Reggae'],
     pistas: [{ titulo: 'In the End', artista: 'Linkin Park' }],
   };
   const { resumen } = await resolverListas([lista], async (entrada) => {
@@ -243,5 +242,5 @@ test('si el álbum es una banda sonora, el género sale de los álbumes del arti
       });
     return Response.json({ genres: { data: [{ id: 116 }] } });
   });
-  assert.deepEqual(resumen.porGenero, { 'Pop, Rap y Electrónica': 1 });
+  assert.deepEqual(resumen.porGenero, { 'Pop y Rap': 1 });
 });

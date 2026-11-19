@@ -31,7 +31,7 @@ const esquemaPagina = z.object({
 
 /** Descarga los datos públicos de la lista y escribe el archivo JSON. */
 async function leer(): Promise<void> {
-  const [enlace, archivo, predeterminado = 'Pop, Rap y Electrónica'] = process.argv.slice(2);
+  const [enlace, archivo, predeterminado = 'Pop y Rap'] = process.argv.slice(2);
   const id = /playlist\/([A-Za-z0-9]+)/.exec(enlace ?? '')?.[1];
   if (!id || !archivo)
     throw new Error(

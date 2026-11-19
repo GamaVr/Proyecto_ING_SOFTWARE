@@ -45,12 +45,12 @@ const GENEROS_DEEZER: Record<number, Genero> = {
   155: 'Rock, Metal y Alternativa', // Hard Rock
   464: 'Rock, Metal y Alternativa', // Metal
   85: 'Rock, Metal y Alternativa', // Alternativo
-  132: 'Pop, Rap y Electrónica', // Pop
-  165: 'Pop, Rap y Electrónica', // R&B
-  169: 'Pop, Rap y Electrónica', // Soul & Funk
-  116: 'Pop, Rap y Electrónica', // Rap/Hip Hop
-  106: 'Pop, Rap y Electrónica', // Electro
-  113: 'Pop, Rap y Electrónica', // Dance
+  132: 'Pop y Rap', // Pop
+  165: 'Pop y Rap', // R&B
+  169: 'Pop y Rap', // Soul & Funk
+  116: 'Pop y Rap', // Rap/Hip Hop
+  106: 'Electrónica y Dubstep', // Electro
+  113: 'Electrónica y Dubstep', // Dance
   197: 'Latina y Reggae', // Latino
   122: 'Latina y Reggae', // Reggaetón
   67: 'Latina y Reggae', // Salsa
