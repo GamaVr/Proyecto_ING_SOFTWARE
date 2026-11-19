@@ -23,8 +23,10 @@ test('normaliza tildes y signos sin aceptar respuestas parciales', () => {
 });
 test('la puntuación depende del tiempo de respuesta, sin modificadores', () => {
   assert.equal(calculatePoints(true, 0, DEFAULT_CONFIG), 1000);
-  assert.equal(calculatePoints(true, 15000, DEFAULT_CONFIG), 500);
-  assert.equal(calculatePoints(true, 15001, DEFAULT_CONFIG), 0);
+  // DEFAULT_CONFIG usa rondas de 20 s: a la mitad del tiempo se obtienen 750 puntos.
+  assert.equal(calculatePoints(true, 10000, DEFAULT_CONFIG), 750);
+  assert.equal(calculatePoints(true, 20000, DEFAULT_CONFIG), 500);
+  assert.equal(calculatePoints(true, 20001, DEFAULT_CONFIG), 0);
   assert.equal(calculatePoints(false, 1, DEFAULT_CONFIG), 0);
 });
 test('barajar conserva elementos únicos y no modifica el catálogo', () => {

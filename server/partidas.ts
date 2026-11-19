@@ -39,11 +39,7 @@ async function loadGame(id: string, db: Database, lock = false): Promise<GameRow
 }
 
 /** Comprueba que el usuario participa antes de entregar datos o modificar una partida. */
-async function membership(
-  id: string,
-  userId: string,
-  db: Database,
-): Promise<void> {
+async function membership(id: string, userId: string, db: Database): Promise<void> {
   const [member] = await query<{ id: string }>(
     'SELECT user_id AS id FROM game_players WHERE game_id=? AND user_id=?',
     [id, userId],
@@ -73,11 +69,7 @@ export async function createGame(
 ): Promise<string> {
   const songs = await query<{ id: string }>(
     `SELECT s.id FROM songs s JOIN song_media m ON m.song_id=s.id WHERE m.enabled=1 AND m.source='deezer' AND s.genre NOT IN (?,?,?) AND (?='Todas' OR s.genre=?)`,
-    [
-      ...REMOVED_MUSIC_GENRES,
-      config.genre,
-      config.genre,
-    ],
+    [...REMOVED_MUSIC_GENRES, config.genre, config.genre],
     db,
   );
   if (songs.length < config.rounds)

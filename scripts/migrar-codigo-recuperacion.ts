@@ -30,6 +30,9 @@ async function migrate(): Promise<void> {
 }
 
 migrate().catch((error) => {
-  console.error('Migración de recuperación:', error instanceof Error ? error.message : 'Error desconocido.');
+  console.error(
+    'Migración de recuperación:',
+    error instanceof Error ? error.message : 'Error desconocido.',
+  );
   process.exitCode = 1;
 });

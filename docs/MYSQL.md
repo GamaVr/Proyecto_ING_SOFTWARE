@@ -47,7 +47,7 @@ Espera a que el contenedor esté healthy. Ejecuta `pnpm db:setup` con una cuenta
 | user_settings    | Preferencias JSON por usuario.                                                |
 | songs            | Título, compositor, alias, género, año y audio privado.                       |
 | games            | Configuración, canciones privadas, estado, ronda y reloj.                     |
-| game_players     | Miembros y equipos de cada partida.                                          |
+| game_players     | Miembros y equipos de cada partida.                                           |
 | answers          | Una respuesta por usuario/ronda, corrección, puntos y tiempo.                 |
 | rooms            | Código, nombre, anfitrión, reglas y partida asociada.                         |
 | room_players     | Integrantes, equipo y confirmación.                                           |

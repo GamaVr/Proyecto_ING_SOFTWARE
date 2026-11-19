@@ -212,20 +212,41 @@ export function SettingsPage({ tab = 'audio' }: { tab?: string }): ReactNode {
               </Card>
               <Card>
                 <h2 className="card-heading">CÓDIGO DE RECUPERACIÓN</h2>
-                <p>Guárdalo en un lugar seguro. Lo necesitarás junto con tu correo si olvidas la contraseña.</p>
+                <p>
+                  Guárdalo en un lugar seguro. Lo necesitarás junto con tu correo si olvidas la
+                  contraseña.
+                </p>
                 <form onSubmit={(event) => void saveRecoveryCode(event)}>
                   <label className="field">
                     CONTRASEÑA ACTUAL
                     <div className="input-shell">
                       <Icon name="lock" />
-                      <input type="password" autoComplete="current-password" value={recoveryCurrentPassword} onChange={(event) => setRecoveryCurrentPassword(event.target.value)} minLength={8} maxLength={72} required />
+                      <input
+                        type="password"
+                        autoComplete="current-password"
+                        value={recoveryCurrentPassword}
+                        onChange={(event) => setRecoveryCurrentPassword(event.target.value)}
+                        minLength={8}
+                        maxLength={72}
+                        required
+                      />
                     </div>
                   </label>
                   <label className="field">
                     NUEVO CÓDIGO
                     <div className="input-shell">
                       <Icon name="lock" />
-                      <input type="password" inputMode="numeric" autoComplete="new-password" value={recoveryCode} onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, ''))} minLength={4} maxLength={72} pattern="[0-9]{4,72}" required />
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        autoComplete="new-password"
+                        value={recoveryCode}
+                        onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, ''))}
+                        minLength={4}
+                        maxLength={72}
+                        pattern="[0-9]{4,72}"
+                        required
+                      />
                     </div>
                     <small>Usa mínimo 4 números y no repitas tu contraseña.</small>
                   </label>
@@ -233,10 +254,24 @@ export function SettingsPage({ tab = 'audio' }: { tab?: string }): ReactNode {
                     CONFIRMAR CÓDIGO
                     <div className="input-shell">
                       <Icon name="lock" />
-                      <input type="password" inputMode="numeric" autoComplete="new-password" value={recoveryCodeConfirmation} onChange={(event) => setRecoveryCodeConfirmation(event.target.value.replace(/\D/g, ''))} minLength={4} maxLength={72} pattern="[0-9]{4,72}" required />
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        autoComplete="new-password"
+                        value={recoveryCodeConfirmation}
+                        onChange={(event) =>
+                          setRecoveryCodeConfirmation(event.target.value.replace(/\D/g, ''))
+                        }
+                        minLength={4}
+                        maxLength={72}
+                        pattern="[0-9]{4,72}"
+                        required
+                      />
                     </div>
                   </label>
-                  <Button type="submit" icon="save" disabled={busy}>{busy ? 'Guardando…' : 'Guardar código'}</Button>
+                  <Button type="submit" icon="save" disabled={busy}>
+                    {busy ? 'Guardando…' : 'Guardar código'}
+                  </Button>
                 </form>
               </Card>
               <Button tone="danger" icon="logout" onClick={() => void run(logout)} disabled={busy}>

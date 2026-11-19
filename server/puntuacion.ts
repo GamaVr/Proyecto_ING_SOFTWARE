@@ -29,11 +29,7 @@ export function isCorrectAnswer(
 }
 
 /** Calcula puntos desde el tiempo del servidor. */
-export function calculatePoints(
-  correct: boolean,
-  elapsedMs: number,
-  config: GameConfig,
-): number {
+export function calculatePoints(correct: boolean, elapsedMs: number, config: GameConfig): number {
   if (!correct || elapsedMs > config.seconds * 1000) return 0;
   const speed = Math.max(0, 1 - elapsedMs / (config.seconds * 1000));
   return Math.round(500 + 500 * speed);

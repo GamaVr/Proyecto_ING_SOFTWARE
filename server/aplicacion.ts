@@ -126,7 +126,10 @@ export function createApp(
     const recoveryCodeHash = await bcrypt.hash(input.recoveryCode, 12);
     const id = randomUUID();
     try {
-      await write('INSERT INTO users(id,name,email,password_hash,recovery_code_hash) VALUES (?,?,?,?,?)', [id, input.name, input.email, hash, recoveryCodeHash]);
+      await write(
+        'INSERT INTO users(id,name,email,password_hash,recovery_code_hash) VALUES (?,?,?,?,?)',
+        [id, input.name, input.email, hash, recoveryCodeHash],
+      );
     } catch (error) {
       if ((error as { code: string }).code === 'ER_DUP_ENTRY')
         throw new HttpError(409, 'Este correo ya tiene una cuenta.');
@@ -139,16 +142,23 @@ export function createApp(
     const { token } = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) }).parse(req.body);
     const tokenHash = hashToken(token);
     const [pending] = await query<{ email: string; name: string; password_hash: string }>(
-      'SELECT email,name,password_hash FROM pending_registrations WHERE token_hash=? AND expires_at>?', [tokenHash, Date.now()],
+      'SELECT email,name,password_hash FROM pending_registrations WHERE token_hash=? AND expires_at>?',
+      [tokenHash, Date.now()],
     );
     if (!pending) throw new HttpError(400, 'El enlace venció o ya fue usado. Regístrate de nuevo.');
     const id = randomUUID();
     await transaction(async (db) => {
       const [valid] = await query<typeof pending>(
-        'SELECT email,name,password_hash FROM pending_registrations WHERE token_hash=? AND expires_at>? FOR UPDATE', [tokenHash, Date.now()], db,
+        'SELECT email,name,password_hash FROM pending_registrations WHERE token_hash=? AND expires_at>? FOR UPDATE',
+        [tokenHash, Date.now()],
+        db,
       );
       if (!valid) throw new HttpError(400, 'El enlace venció o ya fue usado. Regístrate de nuevo.');
-      await write('INSERT INTO users(id,name,email,password_hash) VALUES (?,?,?,?)', [id, valid.name, valid.email, valid.password_hash], db);
+      await write(
+        'INSERT INTO users(id,name,email,password_hash) VALUES (?,?,?,?)',
+        [id, valid.name, valid.email, valid.password_hash],
+        db,
+      );
       await write('DELETE FROM pending_registrations WHERE token_hash=?', [tokenHash], db);
     });
     await createSession(res, id);
@@ -172,19 +182,50 @@ export function createApp(
     legacyHeaders: false,
     message: { error: 'Se alcanzó el límite de solicitudes. Inténtalo más tarde.' },
   });
+  const RECOVERY_MAX_FAILURES = 5,
+    RECOVERY_WINDOW_MS = 60 * 60 * 1000;
+  /** Intentos fallidos de recuperación por correo (una sola instancia de Node.js). */
+  const recoveryFailures = new Map<string, { count: number; resetAt: number }>();
   app.post('/api/auth/recovery', recoveryLimiter, async (req, res) => {
-    const input = z.object({
-      email: z.email().max(254).transform((value) => value.trim().toLowerCase()),
-      recoveryCode: recoveryCodeSchema,
-      password: passwordSchema,
-    }).parse(req.body);
+    const input = z
+      .object({
+        email: z
+          .email()
+          .max(254)
+          .transform((value) => value.trim().toLowerCase()),
+        recoveryCode: recoveryCodeSchema,
+        password: passwordSchema,
+      })
+      .parse(req.body);
+    // Límite por cuenta: aunque se cambie de IP, un código corto no se puede adivinar probando.
+    const now = Date.now();
+    if (recoveryFailures.size > 1000)
+      for (const [email, entry] of recoveryFailures)
+        if (entry.resetAt <= now) recoveryFailures.delete(email);
+    const attempts = recoveryFailures.get(input.email);
+    if (attempts && attempts.resetAt <= now) recoveryFailures.delete(input.email);
+    else if (attempts && attempts.count >= RECOVERY_MAX_FAILURES)
+      throw new HttpError(429, 'Demasiados intentos para esta cuenta. Inténtalo en una hora.');
     const passwordHash = await bcrypt.hash(input.password, 12);
     await transaction(async (db) => {
       const [user] = await query<{ id: string; recovery_code_hash: string | null }>(
-        'SELECT id,recovery_code_hash FROM users WHERE email=? FOR UPDATE', [input.email], db,
+        'SELECT id,recovery_code_hash FROM users WHERE email=? FOR UPDATE',
+        [input.email],
+        db,
       );
-      if (!user || !user.recovery_code_hash || !(await bcrypt.compare(input.recoveryCode, user.recovery_code_hash)))
+      if (
+        !user ||
+        !user.recovery_code_hash ||
+        !(await bcrypt.compare(input.recoveryCode, user.recovery_code_hash))
+      ) {
+        const current = recoveryFailures.get(input.email);
+        recoveryFailures.set(input.email, {
+          count: (current?.count ?? 0) + 1,
+          resetAt: current?.resetAt ?? Date.now() + RECOVERY_WINDOW_MS,
+        });
         throw new HttpError(400, 'El correo o el código de recuperación son incorrectos.');
+      }
+      recoveryFailures.delete(input.email);
       await write('UPDATE users SET password_hash=? WHERE id=?', [passwordHash, user.id], db);
       await write('DELETE FROM sessions WHERE user_id=?', [user.id], db);
       await write('DELETE FROM password_reset_tokens WHERE user_id=?', [user.id], db);
@@ -192,16 +233,21 @@ export function createApp(
     res.json({ message: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
   });
   app.post('/api/auth/reset-password', recoveryLimiter, async (req, res) => {
-    const input = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/), password: passwordSchema }).parse(req.body);
+    const input = z
+      .object({ token: z.string().regex(/^[a-f0-9]{64}$/), password: passwordSchema })
+      .parse(req.body);
     const tokenHash = hashToken(input.token);
     const [reset] = await query<{ user_id: string }>(
-      'SELECT user_id FROM password_reset_tokens WHERE token_hash=? AND expires_at>?', [tokenHash, Date.now()],
+      'SELECT user_id FROM password_reset_tokens WHERE token_hash=? AND expires_at>?',
+      [tokenHash, Date.now()],
     );
     if (!reset) throw new HttpError(400, 'El enlace venció o ya fue usado. Solicita uno nuevo.');
     const passwordHash = await bcrypt.hash(input.password, 12);
     await transaction(async (db) => {
       const [valid] = await query<{ user_id: string }>(
-        'SELECT user_id FROM password_reset_tokens WHERE token_hash=? AND expires_at>? FOR UPDATE', [tokenHash, Date.now()], db,
+        'SELECT user_id FROM password_reset_tokens WHERE token_hash=? AND expires_at>? FOR UPDATE',
+        [tokenHash, Date.now()],
+        db,
       );
       if (!valid) throw new HttpError(400, 'El enlace venció o ya fue usado. Solicita uno nuevo.');
       await write('UPDATE users SET password_hash=? WHERE id=?', [passwordHash, valid.user_id], db);
@@ -224,14 +270,20 @@ export function createApp(
   app.use('/api', requireUser);
   app.use('/api/music', musicRouter(musicFetch));
   app.put('/api/me/recovery-code', async (req, res) => {
-    const input = z.object({ currentPassword: passwordSchema, recoveryCode: recoveryCodeSchema }).parse(req.body);
+    const input = z
+      .object({ currentPassword: passwordSchema, recoveryCode: recoveryCodeSchema })
+      .parse(req.body);
     const [user] = await query<{ password_hash: string }>(
-      'SELECT password_hash FROM users WHERE id=?', [req.user!.id],
+      'SELECT password_hash FROM users WHERE id=?',
+      [req.user!.id],
     );
     if (!user || !(await bcrypt.compare(input.currentPassword, user.password_hash)))
       throw new HttpError(401, 'La contraseña actual es incorrecta.');
     const recoveryCodeHash = await bcrypt.hash(input.recoveryCode, 12);
-    await write('UPDATE users SET recovery_code_hash=? WHERE id=?', [recoveryCodeHash, req.user!.id]);
+    await write('UPDATE users SET recovery_code_hash=? WHERE id=?', [
+      recoveryCodeHash,
+      req.user!.id,
+    ]);
     res.json({ message: 'Código de recuperación actualizado.' });
   });
   app.get('/api/me', async (req, res) => {

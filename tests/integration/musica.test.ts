@@ -274,61 +274,58 @@ test('las grabaciones reales se usan solo en los modos de juego', async (t) => {
       assert.equal(Number(chosen.count), 0);
     },
   );
-  await t.test(
-    'individual, duelo y equipos seleccionan grabaciones según el género',
-    async () => {
-      for (const mode of ['solo', 'duel', 'teams'] as const) {
-        let game: GameSnapshot;
-        if (mode === 'solo') {
-          const result = await call('/games', 'POST', {
-            ...DEFAULT_CONFIG,
-            genre,
-            rounds: 5,
-          });
-          assert.equal(result.status, 201);
-          game = result.data;
-        } else {
-          const created = await call('/rooms', 'POST', {
-            name: 'Audio real QA',
-            mode,
-            config: { ...DEFAULT_CONFIG, genre, rounds: 5 },
-          });
-          assert.equal(created.status, 201);
-          const code = created.data.code;
-          rooms.push(code);
-          const capacity = mode === 'duel' ? 2 : 4;
-          for (let i = 0; i < capacity; i++) {
-            if (i) assert.equal((await call('/rooms/join', 'POST', { code }, i)).status, 200);
-            assert.equal(
-              (await call(`/rooms/${code}/player`, 'PATCH', { action: 'ready', ready: true }, i))
-                .status,
-              200,
-            );
-          }
-          const started = await call(`/rooms/${code}/start`, 'POST');
-          assert.equal(started.status, 200);
-          game = (await call(`/games/${started.data.gameId}`)).data;
-        }
-        games.push(game.id);
-        assert.equal(game.audioSource, 'deezer');
-        assert.equal(game.audioStart, 0);
-        assert.equal(game.audioDuration, 12);
-        assert.equal(game.config.genre, genre);
-        assert.deepEqual(game.results, []);
-        const [stored] = await query<{ song_ids: string[] }>(
-          'SELECT song_ids FROM games WHERE id=?',
-          [game.id],
-        );
-        assert.ok(stored.song_ids.every((id) => id.startsWith(`deezer-${prefix}`)));
-        const audio = await fetch(`${base}/api/games/${game.id}/audio`, {
-          headers: { cookie: users[0].cookie, Range: 'bytes=0-63' },
+  await t.test('individual, duelo y equipos seleccionan grabaciones según el género', async () => {
+    for (const mode of ['solo', 'duel', 'teams'] as const) {
+      let game: GameSnapshot;
+      if (mode === 'solo') {
+        const result = await call('/games', 'POST', {
+          ...DEFAULT_CONFIG,
+          genre,
+          rounds: 5,
         });
-        assert.equal(audio.status, 206);
-        assert.equal(audio.headers.get('Content-Type'), 'audio/mpeg');
-        assert.equal((await audio.arrayBuffer()).byteLength, 64);
+        assert.equal(result.status, 201);
+        game = result.data;
+      } else {
+        const created = await call('/rooms', 'POST', {
+          name: 'Audio real QA',
+          mode,
+          config: { ...DEFAULT_CONFIG, genre, rounds: 5 },
+        });
+        assert.equal(created.status, 201);
+        const code = created.data.code;
+        rooms.push(code);
+        const capacity = mode === 'duel' ? 2 : 4;
+        for (let i = 0; i < capacity; i++) {
+          if (i) assert.equal((await call('/rooms/join', 'POST', { code }, i)).status, 200);
+          assert.equal(
+            (await call(`/rooms/${code}/player`, 'PATCH', { action: 'ready', ready: true }, i))
+              .status,
+            200,
+          );
+        }
+        const started = await call(`/rooms/${code}/start`, 'POST');
+        assert.equal(started.status, 200);
+        game = (await call(`/games/${started.data.gameId}`)).data;
       }
-    },
-  );
+      games.push(game.id);
+      assert.equal(game.audioSource, 'deezer');
+      assert.equal(game.audioStart, 0);
+      assert.equal(game.audioDuration, 12);
+      assert.equal(game.config.genre, genre);
+      assert.deepEqual(game.results, []);
+      const [stored] = await query<{ song_ids: string[] }>(
+        'SELECT song_ids FROM games WHERE id=?',
+        [game.id],
+      );
+      assert.ok(stored.song_ids.every((id) => id.startsWith(`deezer-${prefix}`)));
+      const audio = await fetch(`${base}/api/games/${game.id}/audio`, {
+        headers: { cookie: users[0].cookie, Range: 'bytes=0-63' },
+      });
+      assert.equal(audio.status, 206);
+      assert.equal(audio.headers.get('Content-Type'), 'audio/mpeg');
+      assert.equal((await audio.arrayBuffer()).byteLength, 64);
+    }
+  });
   await t.test('el audio mantiene permisos y rechaza redirecciones inseguras', async () => {
     const denied = await fetch(`${base}/api/games/${games[0]}/audio`, {
       headers: { cookie: users[1].cookie },

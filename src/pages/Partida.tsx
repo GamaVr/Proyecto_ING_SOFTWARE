@@ -122,9 +122,15 @@ export function GamePage({ id }: { id: string }): ReactNode {
     const timer = window.setTimeout(() => {
       setSearchLoading(true);
       void api<{ tracks: MusicSearchTrack[] }>(`/music/search?q=${encodeURIComponent(term)}`)
-        .then((result) => { if (active) setSuggestions(result.tracks); })
-        .catch(() => { if (active) setSuggestions([]); })
-        .finally(() => { if (active) setSearchLoading(false); });
+        .then((result) => {
+          if (active) setSuggestions(result.tracks);
+        })
+        .catch(() => {
+          if (active) setSuggestions([]);
+        })
+        .finally(() => {
+          if (active) setSearchLoading(false);
+        });
     }, 250);
     return () => {
       active = false;
@@ -260,9 +266,7 @@ export function GamePage({ id }: { id: string }): ReactNode {
           <div className="team-score">
             <span>
               <strong>
-                {game.mode === 'teams'
-                  ? 'EQUIPO 1'
-                  : game.players.find((p) => p.team === 0)?.name}
+                {game.mode === 'teams' ? 'EQUIPO 1' : game.players.find((p) => p.team === 0)?.name}
               </strong>
               <small>
                 {game.players
@@ -281,9 +285,7 @@ export function GamePage({ id }: { id: string }): ReactNode {
             <strong>{points(score1)}</strong>
             <span>
               <strong>
-                {game.mode === 'teams'
-                  ? 'EQUIPO 2'
-                  : game.players.find((p) => p.team === 1)?.name}
+                {game.mode === 'teams' ? 'EQUIPO 2' : game.players.find((p) => p.team === 1)?.name}
               </strong>
               <small>
                 {game.players
@@ -431,7 +433,11 @@ export function GamePage({ id }: { id: string }): ReactNode {
                   </Button>
                 </div>
                 {searchOpen && answer.trim().length >= 2 && !waiting && !game.answered && (
-                  <div className="answer-suggestions" id="music-search-results" aria-label="Coincidencias musicales">
+                  <div
+                    className="answer-suggestions"
+                    id="music-search-results"
+                    aria-label="Coincidencias musicales"
+                  >
                     {searchLoading ? (
                       <p className="answer-search-message">Buscando canciones…</p>
                     ) : suggestions.length > 0 ? (
@@ -453,15 +459,25 @@ export function GamePage({ id }: { id: string }): ReactNode {
                             type="button"
                             className="answer-suggestion-preview"
                             aria-label={`${previewTrackId === track.id && previewPlaying ? 'Pausar' : 'Previsualizar'} ${track.title} de ${track.artist}`}
-                            title={previewTrackId === track.id && previewPlaying ? 'Pausar muestra' : 'Previsualizar muestra'}
+                            title={
+                              previewTrackId === track.id && previewPlaying
+                                ? 'Pausar muestra'
+                                : 'Previsualizar muestra'
+                            }
                             onClick={() => void toggleSearchPreview(track)}
                           >
-                            <Icon name={previewTrackId === track.id && previewPlaying ? 'pause' : 'play'} />
+                            <Icon
+                              name={
+                                previewTrackId === track.id && previewPlaying ? 'pause' : 'play'
+                              }
+                            />
                           </button>
                         </div>
                       ))
                     ) : (
-                      <p className="answer-search-message">No encontramos canciones con ese nombre.</p>
+                      <p className="answer-search-message">
+                        No encontramos canciones con ese nombre.
+                      </p>
                     )}
                   </div>
                 )}

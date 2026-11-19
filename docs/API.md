@@ -33,7 +33,7 @@ Prefijo `/api`. JSON para entradas y salidas. Autenticación con cookie `beat_se
   "genre": "Todas",
   "rounds": 10,
   "seconds": 20,
-  "answerMode": "both",
+  "answerMode": "both"
 }
 ```
 
