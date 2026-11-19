@@ -1,0 +1,508 @@
+{
+  "nombre": "Canciones que todo mexicano se sabe 🇲🇽",
+  "fuente": "https://open.spotify.com/playlist/2kr7CJIL5iOpJqwIqstKkM",
+  "generoPredeterminado": "Música mexicana",
+  "generosPermitidos": ["Música mexicana"],
+  "pistas": [
+    {
+      "titulo": "Ahora Te Puedes Marchar",
+      "artista": "Luis Miguel",
+      "spotify": "1uKjQoh8JZj9ryuYRhpd7E"
+    },
+    {
+      "titulo": "Cómo Te Voy A Olvidar",
+      "artista": "Los Ángeles Azules",
+      "spotify": "51dNexiESqcJLsGLrmg1Nv"
+    },
+    {
+      "titulo": "Llorar",
+      "artista": "Los Socios Del Ritmo",
+      "spotify": "6phWt5bRbTh96gjxZcnH4c"
+    },
+    {
+      "titulo": "Entrega de Amor",
+      "artista": "Los Ángeles Azules",
+      "spotify": "0kBbAhsZ6N6gZjopges1Ht"
+    },
+    {
+      "titulo": "Nunca me Faltes",
+      "artista": "Antonio Rios",
+      "spotify": "3YCcsuRdJArE4rsAG5V3sW"
+    },
+    {
+      "titulo": "El Listón De Tu Pelo",
+      "artista": "Los Ángeles Azules",
+      "spotify": "5hrxAFrYbNTLjAYSrmbpgr"
+    },
+    {
+      "titulo": "Escándalo",
+      "artista": "La Sonora Dinamita",
+      "spotify": "4Vehb6usMDULCgEgBgRePa"
+    },
+    {
+      "titulo": "Mil Horas",
+      "artista": "La Sonora Dinamita",
+      "spotify": "0wzg9y3e8tuk0vjpqgDVM8"
+    },
+    {
+      "titulo": "Mis Sentimientos",
+      "artista": "Los Ángeles Azules",
+      "spotify": "2tyEPvpKX4m20YOGo5W6O4"
+    },
+    {
+      "titulo": "17 Años",
+      "artista": "Los Ángeles Azules",
+      "spotify": "1Y372uxsCkKqNclj2ercap"
+    },
+    {
+      "titulo": "Mis Ojos Lloran Por Ti",
+      "artista": "Big Boy",
+      "spotify": "4fFgpzgSkmn3wajioLBPOr"
+    },
+    {
+      "titulo": "Tiene Espinas El Rosal",
+      "artista": "Grupo Cañaveral De Humberto Pabón",
+      "spotify": "1PZ3QsCFec05Ls3PwOqKXZ"
+    },
+    {
+      "titulo": "Que Nadie Sepa Mi Sufrir",
+      "artista": "La Sonora Dinamita",
+      "spotify": "5UgfYKsfRexKoIMVbVvlBo"
+    },
+    {
+      "titulo": "Muchachita Consentida",
+      "artista": "Rayito Colombiano",
+      "spotify": "1zVDbrBG7zCd6AXGLmbGj4"
+    },
+    {
+      "titulo": "Se Me Perdió la Cadenita",
+      "artista": "La Sonora Dinamita",
+      "spotify": "3zhQ74Oan1RIO78RmMr1F4"
+    },
+    {
+      "titulo": "Qué Bello",
+      "artista": "La Sonora Dinamita",
+      "spotify": "18buHOK6zcFhpMDOUO5MCw"
+    },
+    {
+      "titulo": "Procura",
+      "artista": "ChiChi Peralta",
+      "spotify": "2q9udNV9NK0BL3q9p6TLxf"
+    },
+    {
+      "titulo": "El Viejo del Sombrerón",
+      "artista": "La Sonora Dinamita",
+      "spotify": "25iCMmoIUHmuD3tQJ8Pplw"
+    },
+    {
+      "titulo": "La Mujer del Pelotero",
+      "artista": "Merenglass Grupo",
+      "spotify": "3dljpxvacIs8jux3Dd1nRw"
+    },
+    {
+      "titulo": "Suavecito Suavecito",
+      "artista": "Laura Leon",
+      "spotify": "6Ysnd9T4uIhQesbWK672GF"
+    },
+    {
+      "titulo": "No Te Pertenece",
+      "artista": "Grupo Klaz Y Keroz",
+      "spotify": "7vSB2vu3AXmZqcXMo1TrTD"
+    },
+    {
+      "titulo": "Un Sueño",
+      "artista": "Los Angeles De Charly",
+      "spotify": "6iPDBwtiOZGlfQt9HD0jAG"
+    },
+    {
+      "titulo": "Sopa de Caracol",
+      "artista": "Banda Blanca",
+      "spotify": "4V8uHuLaBRxQ02H4YNCOO7"
+    },
+    {
+      "titulo": "El Gran Barón",
+      "artista": "Los Verdaderos Negros",
+      "spotify": "5epVyR6FoAzHGwfoWRcQRz"
+    },
+    {
+      "titulo": "La Chona",
+      "artista": "Los Tucanes De Tijuana",
+      "spotify": "6pq7EtEDWgD5Sh02RJaXK7"
+    },
+    {
+      "titulo": "Me Gusta Tu Vieja",
+      "artista": "Banda MS de Sergio Lizárraga",
+      "spotify": "7LSPHfVcaebR9Oo20ZyRDd"
+    },
+    {
+      "titulo": "Disfruté Engañarte",
+      "artista": "La Adictiva",
+      "spotify": "5DygtV6iXoGIoXJS0mxTtL"
+    },
+    {
+      "titulo": "La Diferencia",
+      "artista": "Vicente Fernández",
+      "spotify": "6wwMqdntt3An3mmVSb613i"
+    },
+    {
+      "titulo": "Simplemente Gracias",
+      "artista": "Calibre 50",
+      "spotify": "5TVpVYcU47B23onx6llnvv"
+    },
+    {
+      "titulo": "Si Te Pudiera Mentir",
+      "artista": "Calibre 50",
+      "spotify": "3p6eieHX6oEOzJStPtEsLu"
+    },
+    {
+      "titulo": "Adiós Amor",
+      "artista": "Conjunto Primavera",
+      "spotify": "6KfMaLSdCCHy8DwjlMjxqu"
+    },
+    {
+      "titulo": "Tatuajes",
+      "artista": "Joan Sebastian",
+      "spotify": "57dG9il4j7Hi7G8Cqgi0Ts"
+    },
+    {
+      "titulo": "Piénsalo - Inédita",
+      "artista": "Banda MS de Sergio Lizárraga",
+      "spotify": "33i30iRaIfo7ABAaT5oqDy"
+    },
+    {
+      "titulo": "Más Que Tu Amigo",
+      "artista": "Marco Antonio Solís",
+      "spotify": "1Vy7WUJubV9JEoebuJ9dfe"
+    },
+    {
+      "titulo": "Bésame",
+      "artista": "Juan Gabriel",
+      "spotify": "2j5bHQAndEClzp0kvICy3w"
+    },
+    {
+      "titulo": "Todo Me Gusta De Ti",
+      "artista": "Aaron Y Su Grupo Ilusion",
+      "spotify": "5gUoppDphfYsIiguGr5drh"
+    },
+    {
+      "titulo": "Que Te Vaya Bien",
+      "artista": "Grupo Jalado",
+      "spotify": "5IdaVuUzEDF3T56U5vS5ck"
+    },
+    {
+      "titulo": "Ramito De Violetas",
+      "artista": "Mi Banda El Mexicano",
+      "spotify": "6sRaqq9SYsSTPvrWkL1sRy"
+    },
+    {
+      "titulo": "Tus Jefes No Me Quieren",
+      "artista": "Grupo Ensamble",
+      "spotify": "5ZkVnHs6BZViyXnl4LmRXh"
+    },
+    {
+      "titulo": "El Noa Noa",
+      "artista": "Juan Gabriel",
+      "spotify": "2vfJS6gcbDia3SeM6VH0Id"
+    },
+    {
+      "titulo": "Llorar",
+      "artista": "Los Socios Del Ritmo",
+      "spotify": "7JIVOkgktlJWxzzq5ANpN6"
+    },
+    {
+      "titulo": "Tonta",
+      "artista": "Diego Verdaguer",
+      "spotify": "4HjIiXDTRKEVXL6Jov3kCY"
+    },
+    {
+      "titulo": "Mil Horas",
+      "artista": "La Sonora Dinamita",
+      "spotify": "1iAmpeppHNgwXpN0lgLkx5"
+    },
+    {
+      "titulo": "La Colegiala",
+      "artista": "Calo",
+      "spotify": "6Ds2mSfCcXskyuUcKnh5kK"
+    },
+    {
+      "titulo": "Los Luchadores",
+      "artista": "La Sonora Santanera",
+      "spotify": "0HBiHi1FZBpI8QOqiS0oBm"
+    },
+    {
+      "titulo": "Que nadie sepa mi sufrir (Amor de mis amores)",
+      "artista": "Margarita la diosa de la cumbia",
+      "spotify": "6azC9WCgqehMj2tHoaa10b"
+    },
+    {
+      "titulo": "Que Locura Enamorarme De Ti",
+      "artista": "Eddie Santiago",
+      "spotify": "1TMxv8sfUhU55AC6Ul1PU5"
+    },
+    {
+      "titulo": "¿Por Qué Me Haces Llorar?",
+      "artista": "Juan Gabriel",
+      "spotify": "68pE8830rWrd5LSSfKcRqn"
+    },
+    {
+      "titulo": "La Noche Que Murio Chicago",
+      "artista": "Banda Toro",
+      "spotify": "4nrNEbfKx82rBT4c3tBTJd"
+    },
+    {
+      "titulo": "Feliz Feliz",
+      "artista": "Mi Banda El Mexicano",
+      "spotify": "0JZV1UuBsbSwHhGirgWaXI"
+    },
+    {
+      "titulo": "Las Brujas",
+      "artista": "La Sonora Dinamita",
+      "spotify": "4aZkFdtkmD0Keeh8Svosjf"
+    },
+    {
+      "titulo": "Los Caminos De La Vida",
+      "artista": "La Tropa Vallenata",
+      "spotify": "1layZXCAmJ84fi21OmnTt5"
+    },
+    {
+      "titulo": "El Palomito",
+      "artista": "Los Cadetes De Linares",
+      "spotify": "2a1XHa182p1xnineorh0jB"
+    },
+    {
+      "titulo": "Mi Casa Nueva",
+      "artista": "Los Invasores De Nuevo León",
+      "spotify": "0YqxST7jMa8B4Ecr1675u6"
+    },
+    {
+      "titulo": "El Gato De Chihuahua",
+      "artista": "Los Huracanes del Norte",
+      "spotify": "1PKoT3dROitNnZQch89TgT"
+    },
+    {
+      "titulo": "Belleza De Cantina",
+      "artista": "Cardenales De Nuevo León",
+      "spotify": "4ZplewvZRLFcfBa5uyBbhd"
+    },
+    {
+      "titulo": "Te Quiero Así",
+      "artista": "Valentín Elizalde",
+      "spotify": "7cfpUwXVmVNwi0e0lKkII3"
+    },
+    {
+      "titulo": "La Más Deseada",
+      "artista": "Valentín Elizalde",
+      "spotify": "3KvOyxyr3g0OoxuMc0iXUi"
+    },
+    {
+      "titulo": "Abeja Reína",
+      "artista": "Los Traileros Del Norte",
+      "spotify": "406qqOwEMlBUUugyHXBy8B"
+    },
+    {
+      "titulo": "Las Monjitas",
+      "artista": "Grupo Exterminador",
+      "spotify": "2KJkMXZKvvV4jDdu8UM44e"
+    },
+    {
+      "titulo": "Un Puño De Tierra",
+      "artista": "Antonio Aguilar",
+      "spotify": "6a5GOVslUy8aYnXrk2yiMb"
+    },
+    {
+      "titulo": "Contrabando Y Traición",
+      "artista": "Los Tigres Del Norte",
+      "spotify": "4gRi0itWso2UodoRMP5asJ"
+    },
+    {
+      "titulo": "Mis Tres Viejas",
+      "artista": "Los Tucanes De Tijuana",
+      "spotify": "1yxJIFPhP2EqnQ6oWJKbmP"
+    },
+    {
+      "titulo": "La Jaula De Oro",
+      "artista": "Los Tigres Del Norte",
+      "spotify": "0Ui4HOFj8qhdh2nm1lJ074"
+    },
+    {
+      "titulo": "La Puerta Negra",
+      "artista": "Los Tigres Del Norte",
+      "spotify": "5TueyPDnDMPSRdQd7VYooI"
+    },
+    {
+      "titulo": "La Mesa Del Rincón",
+      "artista": "Los Tigres Del Norte",
+      "spotify": "1FrXO0TFnw6g0ygHxhiZ3p"
+    },
+    {
+      "titulo": "Tumba Falsa",
+      "artista": "Los Tigres Del Norte",
+      "spotify": "4sGWDW0VBuCcQnh8pC3ABK"
+    },
+    {
+      "titulo": "El Niño Y La Boda",
+      "artista": "Los Tigres Del Norte",
+      "spotify": "6n4urlKnhlJ9kD3NaagMAx"
+    },
+    {
+      "titulo": "Ebrio De Amor",
+      "artista": "Valentín Elizalde",
+      "spotify": "4yDTg9PkshhDpmUIVFoYI5"
+    },
+    {
+      "titulo": "Vete Ya",
+      "artista": "Valentín Elizalde",
+      "spotify": "3gqgSM82j6NMAj4Jllr06T"
+    },
+    {
+      "titulo": "Qué Tal Si Eres Tu",
+      "artista": "Los Tigres Del Norte",
+      "spotify": "228ExGBaOYwzsAGotWXaqy"
+    },
+    {
+      "titulo": "Diséñame",
+      "artista": "Joan Sebastian",
+      "spotify": "7tmq8wPHKYL2sKUpLpkXwP"
+    },
+    {
+      "titulo": "Me Gustas",
+      "artista": "Joan Sebastian",
+      "spotify": "7jtbRKtXtGtsJOBMaBo72W"
+    },
+    {
+      "titulo": "Eso Y Más",
+      "artista": "Joan Sebastian",
+      "spotify": "7HW5tUjaKxBUamSi7nnzPt"
+    },
+    {
+      "titulo": "Prometiste",
+      "artista": "Pepe Aguilar",
+      "spotify": "1Rl25VpYAmwet3uJrBBVbF"
+    },
+    {
+      "titulo": "Me Harto el Pendejo",
+      "artista": "Los Inquietos Del Norte",
+      "spotify": "4LIOzl1vFWnnv5ha5VSpaW"
+    },
+    {
+      "titulo": "El Tamalalero",
+      "artista": "Oscar Padilla",
+      "spotify": "7bPCAwurlJSxCBFf9JXQB4"
+    },
+    {
+      "titulo": "Me Gusta Vivir De Noche",
+      "artista": "Los Tucanes De Tijuana",
+      "spotify": "4GoBPGSNDWr9Sgi2Sc8xsj"
+    },
+    {
+      "titulo": "Me Volví A Acordar De Ti",
+      "artista": "Los Angeles De Charly",
+      "spotify": "7256yGEwDkqs39TKHTeXik"
+    },
+    {
+      "titulo": "Golpes En El Corazón",
+      "artista": "Los Tigres Del Norte",
+      "spotify": "0Ft9dBN6vm9bhvGaUPHyYO"
+    },
+    {
+      "titulo": "Desvelado",
+      "artista": "Bobby Pulido",
+      "spotify": "2JJSGhPpATm8lXeYjD95fw"
+    },
+    {
+      "titulo": "Que No Quede Huella",
+      "artista": "Bronco",
+      "spotify": "0aPRt8ARHfeQx1nbFnpTzy"
+    },
+    {
+      "titulo": "El Botecito",
+      "artista": "Los Hijos Del Pueblo",
+      "spotify": "2DzLlUtscN7QECJ6E3yvHE"
+    },
+    {
+      "titulo": "Piensa En Mí",
+      "artista": "Grupo Mojado",
+      "spotify": "1xKP7GVLY33i5jmx1bB1Kk"
+    },
+    {
+      "titulo": "La culebra",
+      "artista": "Banda Machos",
+      "spotify": "3RqQrOBQkraszNm11qGTEP"
+    },
+    {
+      "titulo": "Como Una Novela",
+      "artista": "Los Acosta",
+      "spotify": "43Z6YxVTYyr5ewyo2uepdy"
+    },
+    {
+      "titulo": "Maracas",
+      "artista": "Joan Sebastian",
+      "spotify": "5Cf8MCD6NcYvy8RQL2khAS"
+    },
+    {
+      "titulo": "Tu Cárcel",
+      "artista": "Los Bukis",
+      "spotify": "0LNn2O06dvsZqvWaS870xJ"
+    },
+    {
+      "titulo": "Que Tontos, Que Locos Somos Tu y Yo",
+      "artista": "Combo Latin",
+      "spotify": "4vmuliFYATMupJZ0mJInuS"
+    },
+    {
+      "titulo": "Se Murió De Amor",
+      "artista": "Bobby Pulido",
+      "spotify": "5iuGn3RXvfvHIyIe8fyxBE"
+    },
+    {
+      "titulo": "Ni Parientes Somos",
+      "artista": "Los Tigres Del Norte",
+      "spotify": "2ANeBRTHe6N0dq7dz7CaVJ"
+    },
+    {
+      "titulo": "El Paso Del Gigante",
+      "artista": "Grupo Soñador",
+      "spotify": "5SW0bSJXKMukbh8FCcplA6"
+    },
+    {
+      "titulo": "El Viejo Del Sombrerón",
+      "artista": "La Sonora Dinamita",
+      "spotify": "69t2uPKHCIGszITR3JpOyj"
+    },
+    {
+      "titulo": "Procura Coquetearme Más",
+      "artista": "Solera Orquesta",
+      "spotify": "1OhfBSn03Hye1441Ru4rFI"
+    },
+    {
+      "titulo": "El Ansioso",
+      "artista": "Grupo Marrano",
+      "spotify": "0okj9reJmkksveumUt0Ndr"
+    },
+    {
+      "titulo": "Agradecido Con El De Arriba",
+      "artista": "Fran y Su Impacto Norteno",
+      "spotify": "1voPmV4VsdvaaJ944Xf4hb"
+    },
+    {
+      "titulo": "Pídeme la Luna (feat. La Original Banda el Limón de Salvador Lizárraga) - En Vivo",
+      "artista": "Leo Dan",
+      "spotify": "4zDzGZIdKG1PdvguOGET8D"
+    },
+    {
+      "titulo": "Yo...El Aventurero",
+      "artista": "Pedro Fernández",
+      "spotify": "5k4oS18NesIeSpnZEDnh6p"
+    },
+    {
+      "titulo": "Voy a pintar un corazón",
+      "artista": "Los Acosta",
+      "spotify": "5viiB7rsZZ6WZaWMHjTWSG"
+    },
+    {
+      "titulo": "La Botella",
+      "artista": "Mach & Daddy",
+      "spotify": "3dtGHZyEGmKSmQoAPcbvyb"
+    }
+  ]
+}

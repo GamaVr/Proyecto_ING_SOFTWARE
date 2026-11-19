@@ -55,7 +55,7 @@ const GENEROS_DEEZER: Record<number, Genero> = {
   122: 'Latina y Reggae', // Reggaetón
   67: 'Latina y Reggae', // Salsa
   71: 'Latina y Reggae', // Cumbia
-  65: 'Latina y Reggae', // Música Mexicana
+  65: 'Música mexicana', // Música Mexicana
   144: 'Latina y Reggae', // Reggae
 };
 

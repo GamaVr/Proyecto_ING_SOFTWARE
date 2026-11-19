@@ -18,7 +18,7 @@ Formato de una lista:
 }
 ```
 
-Los géneros válidos están en `compartido/musica.ts` y son generales, para que ninguno quede casi vacío: Rock, Metal y Alternativa; Pop y Rap; Electrónica y Dubstep; y Latina y Reggae. Blues, Jazz y Country están retirados. Un género aparece en el juego cuando tiene al menos cinco canciones.
+Los géneros válidos están en `compartido/musica.ts` y son generales, para que ninguno quede casi vacío: Rock, Metal y Alternativa; Pop y Rap; Electrónica y Dubstep; Latina y Reggae; y Música mexicana. Blues, Jazz y Country están retirados. Un género aparece en el juego cuando tiene al menos cinco canciones.
 
 ## Importar o actualizar las listas
 

@@ -5,6 +5,7 @@ export const GENEROS = [
   'Pop y Rap',
   'Electrónica y Dubstep',
   'Latina y Reggae',
+  'Música mexicana',
 ] as const;
 export type Genero = (typeof GENEROS)[number];
 
