@@ -400,11 +400,6 @@ export function PaginaPartida({ id }: { id: string }): ReactNode {
               }}
               onError={() => fijarErrorAudio(true)}
             />
-            {partida.fuenteAudio === 'deezer' && (
-              <small className="subtle-note">
-                Grabación oficial · Muestra de Deezer · Créditos al revelar la canción.
-              </small>
-            )}
             {bloqueado && !partida.respondida && (
               <button className="text-button audio-notice" onClick={() => void alternarAudio()}>
                 Pulsa reproducir para activar el audio
