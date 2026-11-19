@@ -177,7 +177,6 @@ export function PaginaMultijugador({ modo }: { modo: 'duelo' | 'equipos' }): Rea
         </Tarjeta>
         <div className="stack">
           <Tarjeta>
-            <Insignia tono="purple">Invitado</Insignia>
             <h2 className="section-title">INVITACIONES DE AMIGOS</h2>
             <p>Acepta las invitaciones de tus amigos para entrar a sus salas.</p>
             <Boton tono="secondary" icono="users" onClick={() => navegar('amigos')}>
