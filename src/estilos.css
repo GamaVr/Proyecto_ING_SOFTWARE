@@ -248,6 +248,25 @@ select:focus-visible {
 .text-button:hover {
   text-decoration: underline;
 }
+/* "Pasar ronda": visible, pero secundario frente a "Enviar respuesta". */
+.boton-pasar {
+  padding: 8px 16px;
+  border: 1px solid var(--cyan);
+  border-radius: 999px;
+  background: transparent;
+  color: #f4f8f4;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.boton-pasar:hover:not(:disabled) {
+  background: var(--cyan);
+  color: #07100a;
+}
+.boton-pasar:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .card {
   padding: 20px;
   background: var(--surface);

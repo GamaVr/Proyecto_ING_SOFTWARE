@@ -523,7 +523,7 @@ export function PaginaPartida({ id }: { id: string }): ReactNode {
                 {!partida.respondida && (
                   <button
                     type="button"
-                    className="text-button muted"
+                    className="boton-pasar"
                     disabled={ocupado || esperando}
                     onClick={() => void enviarFormulario(undefined, true)}
                   >
