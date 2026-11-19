@@ -21,7 +21,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "mysql:detener": "tsx scripts/detener-mysql-local.ts",
-    "bd:migrar": "tsx scripts/migrar-local.ts"
+    "bd:migrar": "tsx scripts/migrar-local.ts",
+    "musica:leer-spotify": "tsx scripts/leer-lista-spotify.ts"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",

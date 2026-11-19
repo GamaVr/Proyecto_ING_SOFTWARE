@@ -33,7 +33,7 @@ test('las categorías retiradas no se pueden guardar ni asignar al importar', as
   const lista: ListaCanciones = {
     nombre: 'Prueba',
     generoPredeterminado: 'Rock, Metal y Alternativa',
-    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop'],
+    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop y R&B'],
     pistas: [{ titulo: 'x', artista: 'y' }],
   };
   // 153 = Blues en Deezer: no corresponde a ningún género del juego.
@@ -41,7 +41,7 @@ test('las categorías retiradas no se pueden guardar ni asignar al importar', as
   // Rock (152), Metal (464) y Alternativo (85) de Deezer van al mismo género del juego.
   for (const id of [152, 464, 85])
     assert.equal(generoDeAlbum([id], lista), 'Rock, Metal y Alternativa');
-  assert.equal(generoDeAlbum([132, 152], lista), 'Pop');
+  assert.equal(generoDeAlbum([132, 152], lista), 'Pop y R&B');
   assert.equal(generoDeAlbum([116], lista), 'Rock, Metal y Alternativa'); // Rap no está permitido en esta lista.
   for (const separado of ['Rock', 'Metal', 'Alternativa'])
     assert.equal((GENEROS as readonly string[]).includes(separado), false);
@@ -137,7 +137,7 @@ test('una lista se reparte por el género del álbum, sin repetidas, e informa l
   const lista: ListaCanciones = {
     nombre: 'Prueba',
     generoPredeterminado: 'Rock, Metal y Alternativa',
-    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop'],
+    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop y R&B'],
     pistas: [
       { titulo: 'In the End', artista: 'Linkin Park' },
       { titulo: 'Psychosocial', artista: 'Slipknot' },
@@ -164,7 +164,7 @@ test('una lista se reparte por el género del álbum, sin repetidas, e informa l
     if (consulta.includes('Linkin')) return Response.json({ data: [grabacion] });
     return Response.json({ data: [] });
   });
-  assert.deepEqual(resumen.porGenero, { 'Rock, Metal y Alternativa': 1, Pop: 1 });
+  assert.deepEqual(resumen.porGenero, { 'Rock, Metal y Alternativa': 1, 'Pop y R&B': 1 });
   assert.equal(resumen.repetidas, 1);
   assert.deepEqual(resumen.noEncontradas, ['Nadie – Inexistente']);
   assert.equal(porGenero.get('Rock, Metal y Alternativa')?.[0].release_date, '2000-10-24');
@@ -198,4 +198,44 @@ test('se resuelve una muestra vigente en cada reproducción y no se aceptan pist
     () => resolverMuestraGrabacion(referencia, async () => new Response('', { status: 503 })),
     /Deezer/,
   );
+});
+
+test('no acepta remixes ni versiones acústicas o extendidas salvo que la lista las pida', async () => {
+  const datos = {
+    data: [
+      { ...grabacion, id: 1, rank: 900, title: 'In the End (Royksopp Mix)' },
+      { ...grabacion, id: 2, rank: 800, title: 'In the End (Acoustic Version)' },
+      { ...grabacion, id: 3, rank: 100 },
+    ],
+  };
+  const proveedor: typeof fetch = async () => Response.json(datos);
+  assert.equal((await buscarGrabacion('In the End', 'Linkin Park', proveedor))?.id, 3);
+  assert.equal((await buscarGrabacion('In the End - Mix', 'Linkin Park', proveedor))?.id, 1);
+  assert.equal(
+    await buscarGrabacion('In the End', 'Linkin Park', async () =>
+      Response.json({ data: [datos.data[1]] }),
+    ),
+    undefined,
+  );
+});
+
+test('si el álbum es una banda sonora, el género sale de los álbumes del artista', async () => {
+  const lista: ListaCanciones = {
+    nombre: 'Prueba',
+    generoPredeterminado: 'Pop y R&B',
+    generosPermitidos: ['Pop y R&B', 'Hip hop / Rap'],
+    pistas: [{ titulo: 'In the End', artista: 'Linkin Park' }],
+  };
+  const { resumen } = await resolverListas([lista], async (entrada) => {
+    const url = new URL(String(entrada));
+    if (url.pathname === '/search') return Response.json({ data: [grabacion] });
+    // 173 = Películas/Juegos: no corresponde a ningún género del juego.
+    if (url.pathname === '/album/81763') return Response.json({ genres: { data: [{ id: 173 }] } });
+    if (url.pathname === '/artist/92/top')
+      return Response.json({
+        data: [{ album: { id: 1 } }, { album: { id: 2 } }, { album: { id: 1 } }],
+      });
+    return Response.json({ genres: { data: [{ id: 116 }] } });
+  });
+  assert.deepEqual(resumen.porGenero, { 'Hip hop / Rap': 1 });
 });

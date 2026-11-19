@@ -60,28 +60,30 @@ export function validarAudioGrabacion(valor: string): URL {
 export function interpretarGrabaciones(datos: unknown, artistaId?: number): Grabacion[] {
   const resultado = z.object({ data: z.array(z.unknown()).max(100) }).safeParse(datos);
   if (!resultado.success) throw new ErrorHttp(502, 'Deezer devolvió un catálogo inválido.');
-  const vistos = new Set<string>();
-  return resultado.data.data
-    .flatMap((valor) => {
-      const analizado = esquemaGrabacion.safeParse(valor);
-      if (!analizado.success) return [];
-      const pista = analizado.data;
-      if (artistaId !== undefined && pista.artist.id !== artistaId) return [];
-      if (/\b(live|remix|karaoke|tribute)\b/i.test(pista.title_version || '')) return [];
-      try {
-        validarAudioGrabacion(pista.preview);
-      } catch {
-        return [];
-      }
-      return [pista];
-    })
-    .sort((a, b) => b.rank - a.rank)
-    .filter((pista) => {
-      const clave = `${pista.artist.id}:${claveArtista(pista.title_short || pista.title)}`;
-      if (vistos.has(clave)) return false;
-      vistos.add(clave);
-      return true;
-    });
+  const vistos = new Set<number>();
+  return (
+    resultado.data.data
+      .flatMap((valor) => {
+        const analizado = esquemaGrabacion.safeParse(valor);
+        if (!analizado.success) return [];
+        const pista = analizado.data;
+        if (artistaId !== undefined && pista.artist.id !== artistaId) return [];
+        if (/\b(live|remix|karaoke|tribute)\b/i.test(pista.title_version || '')) return [];
+        try {
+          validarAudioGrabacion(pista.preview);
+        } catch {
+          return [];
+        }
+        return [pista];
+      })
+      .sort((a, b) => b.rank - a.rank)
+      // Solo se quitan pistas repetidas; las versiones con el mismo título se filtran al buscar.
+      .filter((pista) => {
+        if (vistos.has(pista.id)) return false;
+        vistos.add(pista.id);
+        return true;
+      })
+  );
 }
 /** Consulta JSON oficial con tiempo límite y separa llamadas reales para evitar ráfagas. */
 async function consultarJsonProveedor(
@@ -148,6 +150,25 @@ export async function datosAlbum(
   return operacion;
 }
 
+/** Álbumes de las canciones más populares de un artista (sin repetir). */
+export async function albumesPrincipales(
+  artistaId: number,
+  consultarProveedor: ConsultaMusica = fetch,
+): Promise<number[]> {
+  const datos = await consultarJsonProveedor(
+    `/artist/${artistaId}/top?limit=10`,
+    consultarProveedor,
+  );
+  const analizado = z
+    .object({ data: z.array(z.object({ album: z.object({ id: z.number().int() }) })) })
+    .safeParse(datos);
+  return analizado.success ? [...new Set(analizado.data.data.map((pista) => pista.album.id))] : [];
+}
+
+/** Palabras que identifican una versión distinta de la grabación original. */
+const VERSIONES_ALTERNATIVAS =
+  /\b(remix|mix|acoustic|acústica|acustica|extended|live|en vivo|instrumental|karaoke|slowed|reverb|sped up|piano|orchestral|unplugged|cover)\b/g;
+
 /**
  * Título comparable: sin sufijos de edición (" - Remastered 2023", " - From ... Soundtrack")
  * ni partes entre paréntesis o corchetes, en minúsculas y sin signos ni tildes.
@@ -175,10 +196,18 @@ export async function buscarGrabacion(
     `/search?q=${encodeURIComponent(`${artista} ${tituloBase}`)}&limit=50`,
     consultarProveedor,
   );
+  // Una versión alternativa (remix, acústica, extendida...) solo vale si la lista la pide.
+  const versionesPedidas = new Set(titulo.toLowerCase().match(VERSIONES_ALTERNATIVAS) ?? []);
+  const esOtraVersion = (pista: Grabacion): boolean =>
+    (
+      `${pista.title} ${pista.title_version ?? ''}`.toLowerCase().match(VERSIONES_ALTERNATIVAS) ??
+      []
+    ).some((palabra) => !versionesPedidas.has(palabra));
   return interpretarGrabaciones(datos).find(
     (pista) =>
       claveArtista(pista.artist.name) === claveArtista(artista) &&
-      claveTitulo(pista.title_short || pista.title) === claveTitulo(titulo),
+      claveTitulo(pista.title_short || pista.title) === claveTitulo(titulo) &&
+      !esOtraVersion(pista),
   );
 }
 /** Resuelve una muestra vigente desde el identificador oficial, evitando enlaces firmados caducados. */

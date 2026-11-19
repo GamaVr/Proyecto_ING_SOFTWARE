@@ -6,7 +6,7 @@ Juego web de reconocimiento musical en español basado en el [diseño de Figma](
 
 Individual, duelo 1 vs 1 y equipos 2 vs 2 utilizan **muestras de grabaciones oficiales de Deezer**, reproducidas en fragmentos de 12 segundos. Las canciones se eligen con listas guardadas en `base-datos/listas/` (la actual viene de una lista de Spotify) y el audio se busca en Deezer con `pnpm musica:importar`. No se necesita una clave privada de Deezer.
 
-Los géneros posibles son Rock, Metal y Alternativa (un solo género), Pop, Hip hop / Rap, Electrónica, Latina, Reggae y R&B / Soul; solo se muestran los que tienen al menos cinco canciones. Hoy el catálogo tiene **88 canciones de 44 artistas en Rock, Metal y Alternativa**. Blues, Jazz y Country están retirados. Deezer ofrece muestras de hasta 30 segundos; el juego usa 12 segundos por ronda.
+Los géneros son generales y agrupan varios de Deezer: Rock, Metal y Alternativa; Pop y R&B; Hip hop / Rap; Electrónica; y Latina y Reggae. Solo se muestran los que tienen al menos cinco canciones. Hoy el catálogo tiene **177 canciones** de dos listas. Blues, Jazz y Country están retirados. Deezer ofrece muestras de hasta 30 segundos; el juego usa 12 segundos por ronda.
 
 **No hay sección Música, biblioteca, reproductor independiente, cargas ni CSV.** Las melodías sintetizadas del catálogo anterior quedan excluidas de nuevas partidas y no se reproducen como respaldo. El audio requiere Internet. Consulta [la integración de audio](documentacion/INTEGRACION-MUSICAL.md).
 

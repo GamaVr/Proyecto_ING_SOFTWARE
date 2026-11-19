@@ -8,7 +8,13 @@ import { z } from 'zod';
 import { escribir, transaccion } from '../../datos/base-datos.js';
 import { GENEROS, type Genero } from '../../../compartido/musica.js';
 import { almacenarGrabaciones } from './catalogo.js';
-import { buscarGrabacion, datosAlbum, type ConsultaMusica, type Grabacion } from './deezer.js';
+import {
+  albumesPrincipales,
+  buscarGrabacion,
+  datosAlbum,
+  type ConsultaMusica,
+  type Grabacion,
+} from './deezer.js';
 
 /** Carpeta con un archivo JSON por lista. */
 export const CARPETA_LISTAS = 'base-datos/listas';
@@ -33,21 +39,24 @@ const esquemaLista = z.object({
 export type ListaCanciones = z.infer<typeof esquemaLista>;
 
 /** Géneros de Deezer (identificador) y el género del juego al que corresponden. */
+// Los géneros del juego son generales: agrupan varios de Deezer para que ninguno quede casi vacío.
 const GENEROS_DEEZER: Record<number, Genero> = {
-  // Rock, Metal y Alternativo forman un solo género en el juego.
-  152: 'Rock, Metal y Alternativa',
-  155: 'Rock, Metal y Alternativa',
-  464: 'Rock, Metal y Alternativa',
-  85: 'Rock, Metal y Alternativa',
-  132: 'Pop',
+  152: 'Rock, Metal y Alternativa', // Rock
+  155: 'Rock, Metal y Alternativa', // Hard Rock
+  464: 'Rock, Metal y Alternativa', // Metal
+  85: 'Rock, Metal y Alternativa', // Alternativo
+  132: 'Pop y R&B', // Pop
+  165: 'Pop y R&B', // R&B
+  169: 'Pop y R&B', // Soul & Funk
   116: 'Hip hop / Rap',
-  106: 'Electrónica',
-  113: 'Electrónica',
-  197: 'Latina',
-  122: 'Latina',
-  144: 'Reggae',
-  165: 'R&B / Soul',
-  169: 'R&B / Soul',
+  106: 'Electrónica', // Electro
+  113: 'Electrónica', // Dance
+  197: 'Latina y Reggae', // Latino
+  122: 'Latina y Reggae', // Reggaetón
+  67: 'Latina y Reggae', // Salsa
+  71: 'Latina y Reggae', // Cumbia
+  65: 'Latina y Reggae', // Música Mexicana
+  144: 'Latina y Reggae', // Reggae
 };
 
 /** Resultado de importar una o varias listas. */
@@ -60,13 +69,35 @@ export interface ResumenImportacion {
   repetidas: number;
 }
 
-/** Elige el primer género del álbum (el principal va primero) que la lista permite. */
-export function generoDeAlbum(generosDeezer: number[], lista: ListaCanciones): Genero {
+/** Primer género de Deezer (el principal va primero) que corresponde a un género permitido. */
+function generoPermitido(generosDeezer: number[], lista: ListaCanciones): Genero | undefined {
   for (const id of generosDeezer) {
     const genero = GENEROS_DEEZER[id];
     if (genero && lista.generosPermitidos.includes(genero)) return genero;
   }
-  return lista.generoPredeterminado;
+  return undefined;
+}
+
+/** Elige el género del álbum que la lista permite o, si no hay, el predeterminado de la lista. */
+export function generoDeAlbum(generosDeezer: number[], lista: ListaCanciones): Genero {
+  return generoPermitido(generosDeezer, lista) ?? lista.generoPredeterminado;
+}
+
+/**
+ * Para álbumes sin un género útil (bandas sonoras, recopilaciones), usa el género más frecuente
+ * entre los álbumes de las canciones más populares del artista.
+ */
+async function generoDeArtista(
+  artistaId: number,
+  lista: ListaCanciones,
+  consultarProveedor: ConsultaMusica,
+): Promise<Genero | undefined> {
+  const votos = new Map<Genero, number>();
+  for (const albumId of await albumesPrincipales(artistaId, consultarProveedor)) {
+    const genero = generoPermitido((await datosAlbum(albumId, consultarProveedor)).generos, lista);
+    if (genero) votos.set(genero, (votos.get(genero) ?? 0) + 1);
+  }
+  return [...votos].sort((a, b) => b[1] - a[1])[0]?.[0];
 }
 
 /** Lee y valida un archivo de lista. */
@@ -95,7 +126,10 @@ export async function resolverListas(
       }
       vistas.add(pista.id);
       const album = await datosAlbum(pista.album.id, consultarProveedor);
-      const genero = generoDeAlbum(album.generos, lista);
+      const genero =
+        generoPermitido(album.generos, lista) ??
+        (await generoDeArtista(pista.artist.id, lista, consultarProveedor)) ??
+        lista.generoPredeterminado;
       const grupo = porGenero.get(genero) ?? [];
       grupo.push({ ...pista, release_date: album.fecha });
       porGenero.set(genero, grupo);
