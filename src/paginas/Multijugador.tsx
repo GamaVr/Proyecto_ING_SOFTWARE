@@ -102,7 +102,7 @@ export function PaginaMultijugador({ modo }: { modo: 'duelo' | 'equipos' }): Rea
                     <option value="Todas">Todos los géneros</option>
                     {opciones.generos.map((elemento) => (
                       <option key={elemento.nombre} value={elemento.nombre}>
-                        {elemento.nombre} ({elemento.cantidad})
+                        {elemento.nombre}
                       </option>
                     ))}
                   </select>

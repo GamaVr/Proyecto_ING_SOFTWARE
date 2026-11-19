@@ -88,7 +88,7 @@ export function PaginaPrepararPartida(): ReactNode {
                     <option>Todas</option>
                     {opciones.generos.map((genero) => (
                       <option key={genero.nombre} value={genero.nombre}>
-                        {genero.nombre} ({genero.cantidad})
+                        {genero.nombre}
                       </option>
                     ))}
                   </select>
