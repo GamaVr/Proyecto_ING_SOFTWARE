@@ -1,74 +1,59 @@
 /** Prepara el esquema MySQL y el catálogo inicial o los datos de prueba. */
-import { readFile } from 'node:fs/promises';
-import mysql, { type RowDataPacket } from 'mysql2/promise';
-import { env } from '../servidor/configuracion.js';
-import { prepareRecordings } from '../servidor/servicios/musica/catalogo.js';
-import { pool } from '../servidor/datos/base-datos.js';
+import mysql from 'mysql2/promise';
+import { aplicarEsquema } from './aplicar-esquema.js';
+import { entorno } from '../servidor/configuracion.js';
+import { prepararGrabaciones } from '../servidor/servicios/musica/catalogo.js';
+import { conexiones } from '../servidor/datos/base-datos.js';
 
 /** Crea el esquema y obtiene referencias de canciones reales; no sintetiza ni genera grabaciones. */
-async function setup(): Promise<void> {
-  const db = await mysql.createConnection({
-    host: env.DB_HOST,
-    port: env.DB_PORT,
-    user: env.DB_USER,
-    password: env.DB_PASSWORD,
+async function preparar(): Promise<void> {
+  const bd = await mysql.createConnection({
+    host: entorno.DB_HOST,
+    port: entorno.DB_PORT,
+    user: entorno.DB_USER,
+    password: entorno.DB_PASSWORD,
     multipleStatements: true,
   });
   try {
-    await db.query(
-      `CREATE DATABASE IF NOT EXISTS \`${env.DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
+    await bd.query(
+      `CREATE DATABASE IF NOT EXISTS \`${entorno.DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
     );
-    await db.changeUser({ database: env.DB_NAME });
-    await db.query(await readFile('base-datos/esquema.sql', 'utf8'));
-    await db.query(await readFile('base-datos/migraciones/002_amigos_y_salas.sql', 'utf8'));
-    await db.query(await readFile('base-datos/migraciones/004_grabaciones_reales.sql', 'utf8'));
-    await db.query(await readFile('base-datos/migraciones/005_grabaciones_oficiales.sql', 'utf8'));
-    await db.query(await readFile('base-datos/migraciones/006_retirar_generos.sql', 'utf8'));
-    await db.query(
-      await readFile('base-datos/migraciones/007_sincronizacion_catalogo.sql', 'utf8'),
-    );
-    await db.query(
-      await readFile('base-datos/migraciones/008_recuperacion_contrasena.sql', 'utf8'),
-    );
-    await db.query(await readFile('base-datos/migraciones/009_verificacion_correo.sql', 'utf8'));
-    const [recoveryColumns] = await db.query<Array<{ COLUMN_NAME: string } & RowDataPacket>>(
-      "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='recovery_code_hash'",
-    );
-    if (recoveryColumns.length === 0)
-      await db.query(await readFile('base-datos/migraciones/010_codigo_recuperacion.sql', 'utf8'));
-    if (env.NODE_ENV === 'test') {
+    await bd.changeUser({ database: entorno.DB_NAME });
+    if (await aplicarEsquema(bd))
+      console.log('Base del esquema anterior convertida a nombres en español.');
+    if (entorno.NODE_ENV === 'test') {
       // Datos ficticios exclusivos de la base aislada: no se usan en la aplicación entregada.
-      if (!env.DB_NAME.endsWith('_test'))
+      if (!entorno.DB_NAME.endsWith('_test'))
         throw new Error('Los datos de prueba solo se admiten en bases terminadas en _test.');
       for (let i = 0; i < 20; i++) {
-        const externalId = String(9000000000000 + i);
-        const id = `deezer-${externalId}`;
-        await db.execute(
-          'INSERT IGNORE INTO songs(id,title,artist,aliases,genre,release_year,audio_file) VALUES (?,?,?,?,?,?,?)',
+        const idExterno = String(9000000000000 + i);
+        const id = `deezer-${idExterno}`;
+        await bd.execute(
+          'INSERT IGNORE INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento,archivo_audio) VALUES (?,?,?,?,?,?,?)',
           [id, `Grabación de prueba ${i}`, 'Artista QA', '[]', 'Rock', 2024, `${id}.wav`],
         );
-        await db.execute(
-          "INSERT INTO song_media(song_id,source,external_id,audio_url,license_url,source_url,duration,clip_start) VALUES (?,'deezer',?,?,?,?,30,0) ON DUPLICATE KEY UPDATE enabled=TRUE",
+        await bd.execute(
+          "INSERT INTO medios_cancion(cancion_id,fuente,id_externo,url_audio,url_licencia,url_fuente,duracion,inicio_fragmento) VALUES (?,'deezer',?,?,?,?,30,0) ON DUPLICATE KEY UPDATE habilitada=TRUE",
           [
             id,
-            externalId,
-            `https://api.deezer.com/track/${externalId}`,
+            idExterno,
+            `https://api.deezer.com/track/${idExterno}`,
             'https://developers.deezer.com/termsofuse',
-            `https://www.deezer.com/track/${externalId}`,
+            `https://www.deezer.com/track/${idExterno}`,
           ],
         );
       }
       console.log('MySQL de pruebas preparado con datos exclusivos de prueba.');
     } else {
-      await prepareRecordings(fetch, true);
+      await prepararGrabaciones(fetch, true);
       console.log('MySQL preparado con referencias de grabaciones oficiales de Deezer.');
     }
   } finally {
-    await db.end();
-    await pool.end();
+    await bd.end();
+    await conexiones.end();
   }
 }
-setup().catch((error) => {
+preparar().catch((error) => {
   console.error('Preparación MySQL:', error.message);
   process.exitCode = 1;
 });

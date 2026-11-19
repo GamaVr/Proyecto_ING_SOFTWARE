@@ -3,27 +3,27 @@ import { readFile } from 'node:fs/promises';
 import mysql from 'mysql2/promise';
 
 /** Apaga de forma ordenada solo la instancia portátil del proyecto en el puerto 3307. */
-async function stop(): Promise<void> {
-  const admin = await readFile('.runtime/mysql-admin.env', 'utf8');
-  const password = admin
+async function detener(): Promise<void> {
+  const administrador = await readFile('.runtime/mysql-admin.env', 'utf8');
+  const contrasena = administrador
     .split('\n')
-    .find((line) => line.startsWith('DB_PASSWORD='))
+    .find((linea) => linea.startsWith('DB_PASSWORD='))
     ?.slice(12);
-  if (!password) throw new Error('No se encontró la configuración de administrador local.');
-  const db = await mysql.createConnection({
+  if (!contrasena) throw new Error('No se encontró la configuración de administrador local.');
+  const bd = await mysql.createConnection({
     host: '127.0.0.1',
     port: 3307,
     user: 'root',
-    password,
+    password: contrasena,
   });
   try {
-    await db.query('SHUTDOWN');
+    await bd.query('SHUTDOWN');
     console.log('MySQL portátil detenido correctamente.');
   } finally {
-    await db.end().catch(() => {});
+    await bd.end().catch(() => {});
   }
 }
-stop().catch((error) => {
+detener().catch((error) => {
   console.error(error.message);
   process.exitCode = 1;
 });

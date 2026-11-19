@@ -1,57 +1,69 @@
 /** Comprueba el contador, su detención y el reinicio de las rondas. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { remainingRoundSeconds } from '../../compartido/reloj-partida.js';
-import { DEFAULT_CONFIG, type RoundResult } from '../../compartido/tipos.js';
+import { segundosRestantesRonda } from '../../compartido/reloj-partida.js';
+import { CONFIGURACION_PREDETERMINADA, type ResultadoRonda } from '../../compartido/tipos.js';
 
-const answer: RoundResult = {
-  round: 0,
-  userId: 'me',
-  title: 'Numb',
-  artist: 'Linkin Park',
-  answer: 'Numb',
-  correct: true,
-  points: 1000,
-  elapsed: 2400,
+const respuesta: ResultadoRonda = {
+  ronda: 0,
+  usuarioId: 'me',
+  titulo: 'Numb',
+  artista: 'Linkin Park',
+  respuesta: 'Numb',
+  correcta: true,
+  puntos: 1000,
+  transcurrido: 2400,
 };
-const game = {
-  config: { ...DEFAULT_CONFIG, seconds: 15 },
-  round: 0,
-  startedAt: 1000,
-  results: [] as RoundResult[],
+const partida = {
+  configuracion: { ...CONFIGURACION_PREDETERMINADA, segundos: 15 },
+  ronda: 0,
+  iniciadaEn: 1000,
+  resultados: [] as ResultadoRonda[],
 };
 
 test('el contador baja mientras la ronda está pendiente y respeta sus límites', () => {
-  assert.equal(remainingRoundSeconds(game, 'me', 3400), 12.6);
-  assert.equal(remainingRoundSeconds(game, 'me', 500), 15);
-  assert.equal(remainingRoundSeconds(game, 'me', 20000), 0);
+  assert.equal(segundosRestantesRonda(partida, 'me', 3400), 12.6);
+  assert.equal(segundosRestantesRonda(partida, 'me', 500), 15);
+  assert.equal(segundosRestantesRonda(partida, 'me', 20000), 0);
 });
 test('el contador se congela con el tiempo del servidor al responder, también después de recargar', () => {
-  const answered = { ...game, results: [answer] };
-  assert.equal(remainingRoundSeconds(answered, 'me', 3500), 12.6);
-  assert.equal(remainingRoundSeconds(JSON.parse(JSON.stringify(answered)), 'me', 60000), 12.6);
+  const respondida = { ...partida, resultados: [respuesta] };
+  assert.equal(segundosRestantesRonda(respondida, 'me', 3500), 12.6);
+  assert.equal(segundosRestantesRonda(JSON.parse(JSON.stringify(respondida)), 'me', 60000), 12.6);
 });
 test('la respuesta de otro jugador no detiene el reloj propio y una nueva ronda reinicia la cuenta', () => {
   assert.equal(
-    remainingRoundSeconds({ ...game, results: [{ ...answer, userId: 'other' }] }, 'me', 5000),
+    segundosRestantesRonda(
+      { ...partida, resultados: [{ ...respuesta, usuarioId: 'other' }] },
+      'me',
+      5000,
+    ),
     11,
   );
   assert.equal(
-    remainingRoundSeconds({ ...game, round: 1, startedAt: 10000, results: [answer] }, 'me', 11000),
+    segundosRestantesRonda(
+      { ...partida, ronda: 1, iniciadaEn: 10000, resultados: [respuesta] },
+      'me',
+      11000,
+    ),
     14,
   );
 });
 test('responder mal, pasar o agotar el plazo también deja fijo el reloj de esa ronda', () => {
   assert.equal(
-    remainingRoundSeconds(
-      { ...game, results: [{ ...answer, correct: false, answer: '' }] },
+    segundosRestantesRonda(
+      { ...partida, resultados: [{ ...respuesta, correcta: false, respuesta: '' }] },
       'me',
       60000,
     ),
     12.6,
   );
   assert.equal(
-    remainingRoundSeconds({ ...game, results: [{ ...answer, elapsed: 20000 }] }, 'me', 60000),
+    segundosRestantesRonda(
+      { ...partida, resultados: [{ ...respuesta, transcurrido: 20000 }] },
+      'me',
+      60000,
+    ),
     0,
   );
 });

@@ -1,42 +1,34 @@
-/** Aplica el esquema y las migraciones al MySQL portátil existente. */
+/** Aplica el esquema (y, si hace falta, la conversión al español) al MySQL portátil existente. */
 import { readFile } from 'node:fs/promises';
 import mysql from 'mysql2/promise';
-import { env } from '../servidor/configuracion.js';
+import { entorno } from '../servidor/configuracion.js';
+import { aplicarEsquema } from './aplicar-esquema.js';
 
 /** Aplica el esquema idempotente con el administrador local sin ampliar permisos del usuario de aplicación. */
-async function migrate(): Promise<void> {
-  const lines = (await readFile('.runtime/mysql-admin.env', 'utf8')).split('\n');
-  const password = lines.find((line) => line.startsWith('DB_PASSWORD='))?.slice(12);
-  if (!password) throw new Error('No se encontró la configuración de administrador local.');
-  const db = await mysql.createConnection({
-    host: env.DB_HOST,
-    port: env.DB_PORT,
+async function migrar(): Promise<void> {
+  const lineas = (await readFile('.runtime/mysql-admin.env', 'utf8')).split('\n');
+  const contrasena = lineas.find((linea) => linea.startsWith('DB_PASSWORD='))?.slice(12);
+  if (!contrasena) throw new Error('No se encontró la configuración de administrador local.');
+  const bd = await mysql.createConnection({
+    host: entorno.DB_HOST,
+    port: entorno.DB_PORT,
     user: 'root',
-    password,
-    database: env.DB_NAME,
+    password: contrasena,
+    database: entorno.DB_NAME,
     multipleStatements: true,
   });
   try {
-    await db.query(await readFile('base-datos/esquema.sql', 'utf8'));
-    await db.query(await readFile('base-datos/migraciones/002_amigos_y_salas.sql', 'utf8'));
-    await db.query(await readFile('base-datos/migraciones/004_grabaciones_reales.sql', 'utf8'));
-    await db.query(await readFile('base-datos/migraciones/005_grabaciones_oficiales.sql', 'utf8'));
-    await db.query(await readFile('base-datos/migraciones/006_retirar_generos.sql', 'utf8'));
-    await db.query(
-      await readFile('base-datos/migraciones/007_sincronizacion_catalogo.sql', 'utf8'),
-    );
-    await db.query(
-      await readFile('base-datos/migraciones/008_recuperacion_contrasena.sql', 'utf8'),
-    );
-    await db.query(await readFile('base-datos/migraciones/009_verificacion_correo.sql', 'utf8'));
+    const convertida = await aplicarEsquema(bd);
     console.log(
-      'Esquema actualizado para grabaciones reales. Usuarios y partidas conservados; melodías sintetizadas excluidas.',
+      convertida
+        ? 'Base convertida al esquema en español. Usuarios, partidas y preferencias conservados.'
+        : 'El esquema ya estaba al día.',
     );
   } finally {
-    await db.end();
+    await bd.end();
   }
 }
-migrate().catch((error) => {
+migrar().catch((error) => {
   console.error(error.message);
   process.exitCode = 1;
 });

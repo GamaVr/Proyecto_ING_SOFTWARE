@@ -4,125 +4,129 @@ import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { env } from '../configuracion.js';
-import { query, write, transaction } from '../datos/base-datos.js';
-import { HttpError } from '../errores.js';
-import { createSession, hashToken, SESSION_COOKIE } from '../servicios/sesiones.js';
+import { entorno } from '../configuracion.js';
+import { consultar, escribir, transaccion } from '../datos/base-datos.js';
+import { ErrorHttp } from '../errores.js';
+import { crearSesion, hashearToken, COOKIE_SESION } from '../servicios/sesiones.js';
 import {
-  credentialsSchema,
-  registerSchema,
-  passwordSchema,
-  recoveryCodeSchema,
+  esquemaCredenciales,
+  esquemaRegistro,
+  esquemaContrasena,
+  esquemaCodigoRecuperacion,
 } from '../validacion.js';
-import { type User } from '../../compartido/tipos.js';
+import { type Usuario } from '../../compartido/tipos.js';
 
 /** Crea las rutas públicas de cuenta; no exigen sesión. */
-export function authRoutes(): Router {
-  const router = Router();
-  const authLimiter = rateLimit({
+export function rutasAutenticacion(): Router {
+  const enrutador = Router();
+  const limitadorAcceso = rateLimit({
     windowMs: 15 * 60000,
-    limit: env.NODE_ENV === 'test' ? 200 : 30,
+    limit: entorno.NODE_ENV === 'test' ? 200 : 30,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     message: { error: 'Demasiados intentos. Inténtalo más tarde.' },
   });
-  router.post('/auth/register', authLimiter, async (req, res) => {
-    const input = registerSchema.parse(req.body);
-    const hash = await bcrypt.hash(input.password, 12);
-    const recoveryCodeHash = await bcrypt.hash(input.recoveryCode, 12);
+  enrutador.post('/autenticacion/registro', limitadorAcceso, async (req, res) => {
+    const entrada = esquemaRegistro.parse(req.body);
+    const hash = await bcrypt.hash(entrada.contrasena, 12);
+    const hashCodigoRecuperacion = await bcrypt.hash(entrada.codigoRecuperacion, 12);
     const id = randomUUID();
     try {
-      await write(
-        'INSERT INTO users(id,name,email,password_hash,recovery_code_hash) VALUES (?,?,?,?,?)',
-        [id, input.name, input.email, hash, recoveryCodeHash],
+      await escribir(
+        'INSERT INTO usuarios(id,nombre,correo,hash_contrasena,hash_codigo_recuperacion) VALUES (?,?,?,?,?)',
+        [id, entrada.nombre, entrada.correo, hash, hashCodigoRecuperacion],
       );
     } catch (error) {
       if ((error as { code: string }).code === 'ER_DUP_ENTRY')
-        throw new HttpError(409, 'Este correo ya tiene una cuenta.');
+        throw new ErrorHttp(409, 'Este correo ya tiene una cuenta.');
       throw error;
     }
-    await createSession(res, id);
-    res.status(201).json({ user: { id, name: input.name, email: input.email } });
+    await crearSesion(res, id);
+    res.status(201).json({ usuario: { id, nombre: entrada.nombre, correo: entrada.correo } });
   });
-  router.post('/auth/login', authLimiter, async (req, res) => {
-    const input = credentialsSchema.parse(req.body);
-    const [user] = await query<User & { password_hash: string }>(
-      'SELECT id,name,email,password_hash FROM users WHERE email=?',
-      [input.email],
+  enrutador.post('/autenticacion/iniciar-sesion', limitadorAcceso, async (req, res) => {
+    const entrada = esquemaCredenciales.parse(req.body);
+    const [usuario] = await consultar<Usuario & { hash_contrasena: string }>(
+      'SELECT id,nombre,correo,hash_contrasena FROM usuarios WHERE correo=?',
+      [entrada.correo],
     );
-    if (!user || !(await bcrypt.compare(input.password, user.password_hash)))
-      throw new HttpError(401, 'Correo o contraseña incorrectos.');
-    await createSession(res, user.id, input.remember);
-    res.json({ user: { id: user.id, name: user.name, email: user.email } });
+    if (!usuario || !(await bcrypt.compare(entrada.contrasena, usuario.hash_contrasena)))
+      throw new ErrorHttp(401, 'Correo o contraseña incorrectos.');
+    await crearSesion(res, usuario.id, entrada.recordar);
+    res.json({ usuario: { id: usuario.id, nombre: usuario.nombre, correo: usuario.correo } });
   });
-  const recoveryLimiter = rateLimit({
+  const limitadorRecuperacion = rateLimit({
     windowMs: 60 * 60 * 1000,
     limit: 5,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     message: { error: 'Se alcanzó el límite de solicitudes. Inténtalo más tarde.' },
   });
-  const RECOVERY_MAX_FAILURES = 5,
-    RECOVERY_WINDOW_MS = 60 * 60 * 1000;
+  const MAXIMO_FALLOS_RECUPERACION = 5,
+    VENTANA_RECUPERACION_MS = 60 * 60 * 1000;
   /** Intentos fallidos de recuperación por correo (una sola instancia de Node.js). */
-  const recoveryFailures = new Map<string, { count: number; resetAt: number }>();
-  router.post('/auth/recovery', recoveryLimiter, async (req, res) => {
-    const input = z
+  const fallosRecuperacion = new Map<string, { cantidad: number; reiniciaEn: number }>();
+  enrutador.post('/autenticacion/recuperar', limitadorRecuperacion, async (req, res) => {
+    const entrada = z
       .object({
-        email: z
+        correo: z
           .email()
           .max(254)
-          .transform((value) => value.trim().toLowerCase()),
-        recoveryCode: recoveryCodeSchema,
-        password: passwordSchema,
+          .transform((valor) => valor.trim().toLowerCase()),
+        codigoRecuperacion: esquemaCodigoRecuperacion,
+        contrasena: esquemaContrasena,
       })
       .parse(req.body);
     // Límite por cuenta: aunque se cambie de IP, un código corto no se puede adivinar probando.
-    const now = Date.now();
-    if (recoveryFailures.size > 1000)
-      for (const [email, entry] of recoveryFailures)
-        if (entry.resetAt <= now) recoveryFailures.delete(email);
-    const attempts = recoveryFailures.get(input.email);
-    if (attempts && attempts.resetAt <= now) recoveryFailures.delete(input.email);
-    else if (attempts && attempts.count >= RECOVERY_MAX_FAILURES)
-      throw new HttpError(429, 'Demasiados intentos para esta cuenta. Inténtalo en una hora.');
-    const passwordHash = await bcrypt.hash(input.password, 12);
-    await transaction(async (db) => {
-      const [user] = await query<{ id: string; recovery_code_hash: string | null }>(
-        'SELECT id,recovery_code_hash FROM users WHERE email=? FOR UPDATE',
-        [input.email],
-        db,
+    const ahora = Date.now();
+    if (fallosRecuperacion.size > 1000)
+      for (const [correo, registro] of fallosRecuperacion)
+        if (registro.reiniciaEn <= ahora) fallosRecuperacion.delete(correo);
+    const intentos = fallosRecuperacion.get(entrada.correo);
+    if (intentos && intentos.reiniciaEn <= ahora) fallosRecuperacion.delete(entrada.correo);
+    else if (intentos && intentos.cantidad >= MAXIMO_FALLOS_RECUPERACION)
+      throw new ErrorHttp(429, 'Demasiados intentos para esta cuenta. Inténtalo en una hora.');
+    const hashContrasena = await bcrypt.hash(entrada.contrasena, 12);
+    await transaccion(async (bd) => {
+      const [usuario] = await consultar<{ id: string; hash_codigo_recuperacion: string | null }>(
+        'SELECT id,hash_codigo_recuperacion FROM usuarios WHERE correo=? FOR UPDATE',
+        [entrada.correo],
+        bd,
       );
       if (
-        !user ||
-        !user.recovery_code_hash ||
-        !(await bcrypt.compare(input.recoveryCode, user.recovery_code_hash))
+        !usuario ||
+        !usuario.hash_codigo_recuperacion ||
+        !(await bcrypt.compare(entrada.codigoRecuperacion, usuario.hash_codigo_recuperacion))
       ) {
-        const current = recoveryFailures.get(input.email);
-        recoveryFailures.set(input.email, {
-          count: (current?.count ?? 0) + 1,
-          resetAt: current?.resetAt ?? Date.now() + RECOVERY_WINDOW_MS,
+        const actual = fallosRecuperacion.get(entrada.correo);
+        fallosRecuperacion.set(entrada.correo, {
+          cantidad: (actual?.cantidad ?? 0) + 1,
+          reiniciaEn: actual?.reiniciaEn ?? Date.now() + VENTANA_RECUPERACION_MS,
         });
-        throw new HttpError(400, 'El correo o el código de recuperación son incorrectos.');
+        throw new ErrorHttp(400, 'El correo o el código de recuperación son incorrectos.');
       }
-      recoveryFailures.delete(input.email);
-      await write('UPDATE users SET password_hash=? WHERE id=?', [passwordHash, user.id], db);
-      await write('DELETE FROM sessions WHERE user_id=?', [user.id], db);
+      fallosRecuperacion.delete(entrada.correo);
+      await escribir(
+        'UPDATE usuarios SET hash_contrasena=? WHERE id=?',
+        [hashContrasena, usuario.id],
+        bd,
+      );
+      await escribir('DELETE FROM sesiones WHERE usuario_id=?', [usuario.id], bd);
     });
-    res.json({ message: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
+    res.json({ mensaje: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
   });
-  router.post('/auth/logout', async (req, res) => {
-    if (req.cookies?.[SESSION_COOKIE])
-      await write('DELETE FROM sessions WHERE token_hash=?', [
-        hashToken(req.cookies[SESSION_COOKIE]),
+  enrutador.post('/autenticacion/cerrar-sesion', async (req, res) => {
+    if (req.cookies?.[COOKIE_SESION])
+      await escribir('DELETE FROM sesiones WHERE hash_token=?', [
+        hashearToken(req.cookies[COOKIE_SESION]),
       ]);
-    res.clearCookie(SESSION_COOKIE, {
+    res.clearCookie(COOKIE_SESION, {
       path: '/',
       sameSite: 'lax',
-      secure: env.NODE_ENV === 'production',
+      secure: entorno.NODE_ENV === 'production',
       httpOnly: true,
     });
     res.status(204).end();
   });
-  return router;
+  return enrutador;
 }

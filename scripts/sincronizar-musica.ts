@@ -1,26 +1,26 @@
 /** Actualiza los artistas y canciones oficiales del catálogo. */
-import { prepareRecordings } from '../servidor/servicios/musica/catalogo.js';
-import { query, pool } from '../servidor/datos/base-datos.js';
+import { prepararGrabaciones } from '../servidor/servicios/musica/catalogo.js';
+import { consultar, conexiones } from '../servidor/datos/base-datos.js';
 
 /** Actualiza referencias oficiales en MySQL sin descargar ni distribuir archivos musicales. */
-async function sync(): Promise<void> {
+async function sincronizar(): Promise<void> {
   try {
-    await prepareRecordings(fetch, true);
+    await prepararGrabaciones(fetch, true);
     console.table(
-      await query(
-        "SELECT s.genre,COUNT(*) AS canciones,COUNT(DISTINCT s.artist) AS artistas FROM songs s JOIN song_media m ON m.song_id=s.id WHERE m.source='deezer' AND m.enabled=1 GROUP BY s.genre ORDER BY s.genre",
+      await consultar(
+        "SELECT s.genero,COUNT(*) AS canciones,COUNT(DISTINCT s.artista) AS artistas FROM canciones s JOIN medios_cancion m ON m.cancion_id=s.id WHERE m.fuente='deezer' AND m.habilitada=1 GROUP BY s.genero ORDER BY s.genero",
       ),
     );
-    const incorrect = await query<{ genre: string; artist: string; count: number }>(
-      "SELECT s.genre,s.artist,COUNT(*) AS count FROM songs s JOIN song_media m ON m.song_id=s.id WHERE m.source='deezer' AND m.enabled=1 GROUP BY s.genre,s.artist HAVING COUNT(*)<>5",
+    const incorrecta = await consultar<{ genero: string; artista: string; cantidad: number }>(
+      "SELECT s.genero,s.artista,COUNT(*) AS cantidad FROM canciones s JOIN medios_cancion m ON m.cancion_id=s.id WHERE m.fuente='deezer' AND m.habilitada=1 GROUP BY s.genero,s.artista HAVING COUNT(*)<>5",
     );
-    if (incorrect.length)
+    if (incorrecta.length)
       throw new Error('Se detectaron artistas sin exactamente cinco canciones activas.');
   } finally {
-    await pool.end();
+    await conexiones.end();
   }
 }
-sync().catch((error) => {
+sincronizar().catch((error) => {
   console.error(error.message);
   process.exitCode = 1;
 });

@@ -2,51 +2,52 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import mysql from 'mysql2/promise';
-import { env } from '../servidor/configuracion.js';
+import { entorno } from '../servidor/configuracion.js';
 
 /** Prepara una base separada para pruebas y ejecuta el conjunto contra MySQL real. */
-async function run(): Promise<void> {
-  const database = process.env.TEST_DB_NAME || `${env.DB_NAME}_test`;
-  if (!/^[a-zA-Z0-9_]+_test$/.test(database))
+async function ejecutar(): Promise<void> {
+  const baseDatos = process.env.TEST_DB_NAME || `${entorno.DB_NAME}_test`;
+  if (!/^[a-zA-Z0-9_]+_test$/.test(baseDatos))
     throw new Error('TEST_DB_NAME debe ser un identificador que termine en _test.');
-  if (env.DB_PORT === 3307 && ['127.0.0.1', 'localhost'].includes(env.DB_HOST)) {
-    const admin = await readFile('.runtime/mysql-admin.env', 'utf8');
-    const password = admin
+  if (entorno.DB_PORT === 3307 && ['127.0.0.1', 'localhost'].includes(entorno.DB_HOST)) {
+    const administrador = await readFile('.runtime/mysql-admin.env', 'utf8');
+    const contrasena = administrador
       .split('\n')
-      .find((line) => line.startsWith('DB_PASSWORD='))
+      .find((linea) => linea.startsWith('DB_PASSWORD='))
       ?.slice(12);
-    if (!password) throw new Error('No se encontró la cuenta de administrador del MySQL portátil.');
-    const setup = spawnSync(
+    if (!contrasena)
+      throw new Error('No se encontró la cuenta de administrador del MySQL portátil.');
+    const preparar = spawnSync(
       process.execPath,
       ['--import', 'tsx', 'scripts/preparar-base-datos.ts'],
       {
         stdio: 'inherit',
         env: {
           ...process.env,
-          DB_NAME: database,
+          DB_NAME: baseDatos,
           DB_USER: 'root',
-          DB_PASSWORD: password,
+          DB_PASSWORD: contrasena,
           NODE_ENV: 'test',
         },
       },
     );
-    if (setup.status !== 0) throw new Error('No se pudo preparar la base de pruebas.');
-    const adminDb = await mysql.createConnection({
-      host: env.DB_HOST,
-      port: env.DB_PORT,
+    if (preparar.status !== 0) throw new Error('No se pudo preparar la base de pruebas.');
+    const bdAdministrador = await mysql.createConnection({
+      host: entorno.DB_HOST,
+      port: entorno.DB_PORT,
       user: 'root',
-      password,
+      password: contrasena,
     });
     try {
-      await adminDb.query(
-        `GRANT SELECT,INSERT,UPDATE,DELETE ON \`${database}\`.* TO ?@'127.0.0.1'`,
-        [env.DB_USER],
+      await bdAdministrador.query(
+        `GRANT SELECT,INSERT,UPDATE,DELETE ON \`${baseDatos}\`.* TO ?@'127.0.0.1'`,
+        [entorno.DB_USER],
       );
     } finally {
-      await adminDb.end();
+      await bdAdministrador.end();
     }
   }
-  const result = spawnSync(
+  const resultado = spawnSync(
     process.execPath,
     [
       '--import',
@@ -54,14 +55,14 @@ async function run(): Promise<void> {
       '--test',
       '--test-concurrency=1',
       ...(await readdir('pruebas/integracion'))
-        .filter((file) => file.endsWith('.test.ts'))
-        .map((file) => `pruebas/integracion/${file}`),
+        .filter((archivo) => archivo.endsWith('.test.ts'))
+        .map((archivo) => `pruebas/integracion/${archivo}`),
     ],
-    { stdio: 'inherit', env: { ...process.env, DB_NAME: database, NODE_ENV: 'test' } },
+    { stdio: 'inherit', env: { ...process.env, DB_NAME: baseDatos, NODE_ENV: 'test' } },
   );
-  process.exitCode = result.status || 0;
+  process.exitCode = resultado.status || 0;
 }
-run().catch((error) => {
+ejecutar().catch((error) => {
   console.error(error.message);
   process.exitCode = 1;
 });

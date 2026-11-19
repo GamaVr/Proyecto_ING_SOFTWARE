@@ -1,183 +1,211 @@
 /** Gestiona salas privadas, participantes, equipos y chat. */
 import { randomBytes } from 'node:crypto';
-import { query, write, transaction, pool, type Database } from '../datos/base-datos.js';
-import { HttpError } from '../errores.js';
-import { parseJson } from './puntuacion.js';
-import { createGame } from './partidas.js';
-import type { GameConfig, RoomSnapshot, Player } from '../../compartido/tipos.js';
+import {
+  consultar,
+  escribir,
+  transaccion,
+  conexiones,
+  type BaseDatos,
+} from '../datos/base-datos.js';
+import { ErrorHttp } from '../errores.js';
+import { interpretarJson } from './puntuacion.js';
+import { crearPartida } from './partidas.js';
+import type { ConfiguracionPartida, EstadoSala, Jugador } from '../../compartido/tipos.js';
 
-interface RoomRow {
-  code: string;
-  name: string;
-  mode: 'duel' | 'teams';
-  host_id: string;
-  config: GameConfig | string;
-  game_id: string | null;
+interface FilaSala {
+  codigo: string;
+  nombre: string;
+  modo: 'duelo' | 'equipos';
+  anfitrion_id: string;
+  configuracion: ConfiguracionPartida | string;
+  partida_id: string | null;
 }
 
 /** Recupera una sala por su código y opcionalmente bloquea cambios simultáneos. */
-async function loadRoom(code: string, db: Database = pool, lock = false): Promise<RoomRow> {
-  const [room] = await query<RoomRow>(
-    `SELECT * FROM rooms WHERE code=?${lock ? ' FOR UPDATE' : ''}`,
-    [code],
-    db,
+async function cargarSala(
+  codigo: string,
+  bd: BaseDatos = conexiones,
+  bloquear = false,
+): Promise<FilaSala> {
+  const [sala] = await consultar<FilaSala>(
+    `SELECT * FROM salas WHERE codigo=?${bloquear ? ' FOR UPDATE' : ''}`,
+    [codigo],
+    bd,
   );
-  if (!room) throw new HttpError(404, 'Ese código no corresponde a una sala.');
-  return room;
+  if (!sala) throw new ErrorHttp(404, 'Ese código no corresponde a una sala.');
+  return sala;
 }
 
 /** Devuelve los miembros reales y sus equipos sin inventar rivales ni estados de conexión. */
-async function loadPlayers(code: string, db: Database = pool): Promise<Player[]> {
-  const players = await query<Player>(
-    'SELECT u.id,u.name,rp.team,rp.ready,0 AS score FROM room_players rp JOIN users u ON u.id=rp.user_id WHERE rp.room_code=? ORDER BY rp.team,u.name',
-    [code],
-    db,
+async function cargarJugadores(codigo: string, bd: BaseDatos = conexiones): Promise<Jugador[]> {
+  const jugadores = await consultar<Jugador>(
+    'SELECT u.id,u.nombre,rp.equipo,rp.listo,0 AS puntuacion FROM jugadores_sala rp JOIN usuarios u ON u.id=rp.usuario_id WHERE rp.sala_codigo=? ORDER BY rp.equipo,u.nombre',
+    [codigo],
+    bd,
   );
-  return players.map((player) => ({ ...player, ready: !!player.ready }));
+  return jugadores.map((jugador) => ({ ...jugador, listo: !!jugador.listo }));
 }
 
 /** Devuelve la sala y los últimos 50 mensajes únicamente a sus miembros. */
-export async function getRoom(code: string, userId: string): Promise<RoomSnapshot> {
-  const room = await loadRoom(code),
-    players = await loadPlayers(code);
-  if (!players.some((player) => player.id === userId))
-    throw new HttpError(403, 'Primero entra a esta sala.');
-  const messages = await query<{ id: number; name: string; text: string }>(
-    'SELECT m.id,u.name,m.message AS text FROM room_messages m JOIN users u ON u.id=m.user_id WHERE room_code=? ORDER BY m.id DESC LIMIT 50',
-    [code],
+export async function obtenerSala(codigo: string, usuarioId: string): Promise<EstadoSala> {
+  const sala = await cargarSala(codigo),
+    jugadores = await cargarJugadores(codigo);
+  if (!jugadores.some((jugador) => jugador.id === usuarioId))
+    throw new ErrorHttp(403, 'Primero entra a esta sala.');
+  const mensajes = await consultar<{ id: number; nombre: string; texto: string }>(
+    'SELECT m.id,u.nombre,m.mensaje AS texto FROM mensajes_sala m JOIN usuarios u ON u.id=m.usuario_id WHERE sala_codigo=? ORDER BY m.id DESC LIMIT 50',
+    [codigo],
   );
   return {
-    code,
-    name: room.name,
-    mode: room.mode,
-    hostId: room.host_id,
-    players,
-    config: parseJson(room.config),
-    gameId: room.game_id,
-    messages: messages.reverse(),
+    codigo,
+    nombre: sala.nombre,
+    modo: sala.modo,
+    anfitrionId: sala.anfitrion_id,
+    jugadores,
+    configuracion: interpretarJson(sala.configuracion),
+    partidaId: sala.partida_id,
+    mensajes: mensajes.reverse(),
   };
 }
 
 /** Crea una sala con un código aleatorio no predecible y registra al anfitrión. */
-export async function createRoom(
-  userId: string,
-  name: string,
-  mode: 'duel' | 'teams',
-  config: GameConfig,
+export async function crearSala(
+  usuarioId: string,
+  nombre: string,
+  modo: 'duelo' | 'equipos',
+  configuracion: ConfiguracionPartida,
 ): Promise<string> {
-  return transaction(async (db) => {
-    const code = randomBytes(3).toString('hex').toUpperCase();
-    await write(
-      'INSERT INTO rooms(code,name,mode,host_id,config) VALUES (?,?,?,?,?)',
-      [code, name, mode, userId, JSON.stringify(config)],
-      db,
+  return transaccion(async (bd) => {
+    const codigo = randomBytes(3).toString('hex').toUpperCase();
+    await escribir(
+      'INSERT INTO salas(codigo,nombre,modo,anfitrion_id,configuracion) VALUES (?,?,?,?,?)',
+      [codigo, nombre, modo, usuarioId, JSON.stringify(configuracion)],
+      bd,
     );
-    await write(
-      'INSERT INTO room_players(room_code,user_id,team,ready) VALUES (?,?,0,FALSE)',
-      [code, userId],
-      db,
+    await escribir(
+      'INSERT INTO jugadores_sala(sala_codigo,usuario_id,equipo,listo) VALUES (?,?,0,FALSE)',
+      [codigo, usuarioId],
+      bd,
     );
-    return code;
+    return codigo;
   });
 }
 
 /** Añade un jugador bajo bloqueo para evitar exceder los dos o cuatro lugares disponibles. */
-export async function joinRoom(code: string, userId: string): Promise<void> {
-  await transaction((db) => joinRoomWithinTransaction(code, userId, db));
+export async function unirseASala(codigo: string, usuarioId: string): Promise<void> {
+  await transaccion((bd) => unirseASalaEnTransaccion(codigo, usuarioId, bd));
 }
 
 /** Reutiliza el bloqueo de sala para entrar por código o aceptar una invitación de forma atómica. */
-export async function joinRoomWithinTransaction(
-  code: string,
-  userId: string,
-  db: Database,
+export async function unirseASalaEnTransaccion(
+  codigo: string,
+  usuarioId: string,
+  bd: BaseDatos,
 ): Promise<void> {
-  const room = await loadRoom(code, db, true),
-    players = await loadPlayers(code, db);
-  if (players.some((player) => player.id === userId)) return;
-  if (room.game_id || players.length >= (room.mode === 'duel' ? 2 : 4))
-    throw new HttpError(409, 'La sala está completa o ya comenzó.');
-  const counts = [
-    players.filter((p) => p.team === 0).length,
-    players.filter((p) => p.team === 1).length,
+  const sala = await cargarSala(codigo, bd, true),
+    jugadores = await cargarJugadores(codigo, bd);
+  if (jugadores.some((jugador) => jugador.id === usuarioId)) return;
+  if (sala.partida_id || jugadores.length >= (sala.modo === 'duelo' ? 2 : 4))
+    throw new ErrorHttp(409, 'La sala está completa o ya comenzó.');
+  const conteos = [
+    jugadores.filter((p) => p.equipo === 0).length,
+    jugadores.filter((p) => p.equipo === 1).length,
   ];
-  const team = counts[0] <= counts[1] ? 0 : 1;
-  await write(
-    'INSERT INTO room_players(room_code,user_id,team,ready) VALUES (?,?,?,FALSE)',
-    [code, userId, team],
-    db,
+  const equipo = conteos[0] <= conteos[1] ? 0 : 1;
+  await escribir(
+    'INSERT INTO jugadores_sala(sala_codigo,usuario_id,equipo,listo) VALUES (?,?,?,FALSE)',
+    [codigo, usuarioId, equipo],
+    bd,
   );
 }
 
 /** Inicia una partida solo cuando los equipos están completos y todos confirmaron. */
-export async function startRoom(code: string, userId: string): Promise<string> {
-  return transaction(async (db) => {
-    const room = await loadRoom(code, db, true),
-      players = await loadPlayers(code, db);
-    if (room.host_id !== userId) throw new HttpError(403, 'Solo el anfitrión puede iniciar.');
-    if (room.game_id) return room.game_id;
-    const capacity = room.mode === 'duel' ? 2 : 4;
-    if (players.length !== capacity || !players.every((player) => player.ready))
-      throw new HttpError(409, 'Faltan jugadores o confirmaciones.');
-    if (players.filter((player) => player.team === 0).length !== capacity / 2)
-      throw new HttpError(409, 'Los equipos deben estar equilibrados.');
-    const gameId = await createGame(parseJson(room.config), room.mode, players, db);
-    await write('UPDATE rooms SET game_id=? WHERE code=?', [gameId, code], db);
-    return gameId;
+export async function iniciarSala(codigo: string, usuarioId: string): Promise<string> {
+  return transaccion(async (bd) => {
+    const sala = await cargarSala(codigo, bd, true),
+      jugadores = await cargarJugadores(codigo, bd);
+    if (sala.anfitrion_id !== usuarioId)
+      throw new ErrorHttp(403, 'Solo el anfitrión puede iniciar.');
+    if (sala.partida_id) return sala.partida_id;
+    const capacidad = sala.modo === 'duelo' ? 2 : 4;
+    if (jugadores.length !== capacidad || !jugadores.every((jugador) => jugador.listo))
+      throw new ErrorHttp(409, 'Faltan jugadores o confirmaciones.');
+    if (jugadores.filter((jugador) => jugador.equipo === 0).length !== capacidad / 2)
+      throw new ErrorHttp(409, 'Los equipos deben estar equilibrados.');
+    const partidaId = await crearPartida(
+      interpretarJson(sala.configuracion),
+      sala.modo,
+      jugadores,
+      bd,
+    );
+    await escribir('UPDATE salas SET partida_id=? WHERE codigo=?', [partidaId, codigo], bd);
+    return partidaId;
   });
 }
 
 /** Actualiza la confirmación o cambia a un equipo con espacio; una partida empezada es inmutable. */
-export async function updateRoomPlayer(
-  code: string,
-  userId: string,
-  action: 'ready' | 'team',
-  ready?: boolean,
+export async function actualizarJugadorSala(
+  codigo: string,
+  usuarioId: string,
+  accion: 'listo' | 'equipo',
+  listo?: boolean,
 ): Promise<void> {
-  await transaction(async (db) => {
-    const room = await loadRoom(code, db, true),
-      players = await loadPlayers(code, db);
-    const player = players.find((member) => member.id === userId);
-    if (!player) throw new HttpError(403, 'No estás en esta sala.');
-    if (room.game_id) throw new HttpError(409, 'La partida ya empezó.');
-    if (action === 'team') {
+  await transaccion(async (bd) => {
+    const sala = await cargarSala(codigo, bd, true),
+      jugadores = await cargarJugadores(codigo, bd);
+    const jugador = jugadores.find((miembro) => miembro.id === usuarioId);
+    if (!jugador) throw new ErrorHttp(403, 'No estás en esta sala.');
+    if (sala.partida_id) throw new ErrorHttp(409, 'La partida ya empezó.');
+    if (accion === 'equipo') {
       if (
-        room.mode !== 'teams' ||
-        players.filter((member) => member.team !== player.team).length >= 2
+        sala.modo !== 'equipos' ||
+        jugadores.filter((miembro) => miembro.equipo !== jugador.equipo).length >= 2
       )
-        throw new HttpError(409, 'El otro equipo está completo.');
-      await write(
-        'UPDATE room_players SET team=?,ready=FALSE WHERE room_code=? AND user_id=?',
-        [1 - player.team, code, userId],
-        db,
+        throw new ErrorHttp(409, 'El otro equipo está completo.');
+      await escribir(
+        'UPDATE jugadores_sala SET equipo=?,listo=FALSE WHERE sala_codigo=? AND usuario_id=?',
+        [1 - jugador.equipo, codigo, usuarioId],
+        bd,
       );
     } else
-      await write(
-        'UPDATE room_players SET ready=? WHERE room_code=? AND user_id=?',
-        [!!ready, code, userId],
-        db,
+      await escribir(
+        'UPDATE jugadores_sala SET listo=? WHERE sala_codigo=? AND usuario_id=?',
+        [!!listo, codigo, usuarioId],
+        bd,
       );
   });
 }
 
 /** Sale de una sala y transfiere el rol de anfitrión; elimina salas vacías en cascada. */
-export async function leaveRoom(code: string, userId: string): Promise<void> {
-  await transaction(async (db) => {
-    const room = await loadRoom(code, db, true);
-    await write('DELETE FROM room_players WHERE room_code=? AND user_id=?', [code, userId], db);
-    const players = await loadPlayers(code, db);
-    if (!players.length) await write('DELETE FROM rooms WHERE code=?', [code], db);
-    else if (room.host_id === userId)
-      await write('UPDATE rooms SET host_id=? WHERE code=?', [players[0].id, code], db);
+export async function salirDeSala(codigo: string, usuarioId: string): Promise<void> {
+  await transaccion(async (bd) => {
+    const sala = await cargarSala(codigo, bd, true);
+    await escribir(
+      'DELETE FROM jugadores_sala WHERE sala_codigo=? AND usuario_id=?',
+      [codigo, usuarioId],
+      bd,
+    );
+    const jugadores = await cargarJugadores(codigo, bd);
+    if (!jugadores.length) await escribir('DELETE FROM salas WHERE codigo=?', [codigo], bd);
+    else if (sala.anfitrion_id === usuarioId)
+      await escribir(
+        'UPDATE salas SET anfitrion_id=? WHERE codigo=?',
+        [jugadores[0].id, codigo],
+        bd,
+      );
   });
 }
 
 /** Guarda un mensaje validado del chat después de comprobar la pertenencia a la sala. */
-export async function sendRoomMessage(code: string, userId: string, text: string): Promise<void> {
-  await getRoom(code, userId);
-  await write('INSERT INTO room_messages(room_code,user_id,message) VALUES (?,?,?)', [
-    code,
-    userId,
-    text,
+export async function enviarMensajeSala(
+  codigo: string,
+  usuarioId: string,
+  texto: string,
+): Promise<void> {
+  await obtenerSala(codigo, usuarioId);
+  await escribir('INSERT INTO mensajes_sala(sala_codigo,usuario_id,mensaje) VALUES (?,?,?)', [
+    codigo,
+    usuarioId,
+    texto,
   ]);
 }

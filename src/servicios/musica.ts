@@ -1,32 +1,36 @@
 /** Obtiene las opciones musicales disponibles para configurar partidas. */
 import { useEffect, useState } from 'react';
 import { api } from './api';
-import type { MusicOptions } from '../../compartido/musica';
+import type { OpcionesMusica } from '../../compartido/musica';
 
 /** Obtiene los géneros reales del proveedor para configurar individual, duelo o equipos. */
-export function useMusicOptions(): { options: MusicOptions; error: string; loading: boolean } {
-  const [options, setOptions] = useState<MusicOptions>({
-      genres: [],
+export function useOpcionesMusica(): {
+  opciones: OpcionesMusica;
+  error: string;
+  cargando: boolean;
+} {
+  const [opciones, fijarOpciones] = useState<OpcionesMusica>({
+      generos: [],
       total: 0,
-      artists: 0,
+      artistas: 0,
     }),
-    [error, setError] = useState(''),
-    [loading, setLoading] = useState(true);
+    [error, fijarError] = useState(''),
+    [cargando, fijarCargando] = useState(true);
   useEffect(() => {
-    let disposed = false;
-    void api<MusicOptions>('/music/options')
-      .then((value) => {
-        if (!disposed) setOptions(value);
+    let descartado = false;
+    void api<OpcionesMusica>('/musica/opciones')
+      .then((valor) => {
+        if (!descartado) fijarOpciones(valor);
       })
-      .catch((failure) => {
-        if (!disposed) setError(failure.message);
+      .catch((fallo) => {
+        if (!descartado) fijarError(fallo.message);
       })
       .finally(() => {
-        if (!disposed) setLoading(false);
+        if (!descartado) fijarCargando(false);
       });
     return () => {
-      disposed = true;
+      descartado = true;
     };
   }, []);
-  return { options, error, loading };
+  return { opciones, error, cargando };
 }

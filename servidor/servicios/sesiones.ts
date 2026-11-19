@@ -1,67 +1,71 @@
 /** Gestiona sesiones, cookies y acceso de usuarios. */
 import { randomBytes, createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';
-import { query, write } from '../datos/base-datos.js';
-import { env } from '../configuracion.js';
-import { HttpError } from '../errores.js';
-import type { User } from '../../compartido/tipos.js';
+import { consultar, escribir } from '../datos/base-datos.js';
+import { entorno } from '../configuracion.js';
+import { ErrorHttp } from '../errores.js';
+import type { Usuario } from '../../compartido/tipos.js';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: User;
+      usuario?: Usuario;
     }
   }
 }
 
 /** Nombre de la cookie HttpOnly que guarda el token de sesión. */
-export const SESSION_COOKIE = 'beat_session';
+export const COOKIE_SESION = 'beat_sesion';
 
 /** Hashea el token de sesión para que MySQL nunca almacene la cookie en claro. */
-export function hashToken(token: string): string {
+export function hashearToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
 /** Resuelve una sesión vigente de MySQL y devuelve únicamente el perfil público. */
-export async function findSession(token?: string): Promise<User | undefined> {
+export async function buscarSesion(token?: string): Promise<Usuario | undefined> {
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return undefined;
-  const [user] = await query<User>(
-    'SELECT u.id,u.name,u.email FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?',
-    [hashToken(token), Date.now()],
+  const [usuario] = await consultar<Usuario>(
+    'SELECT u.id,u.nombre,u.correo FROM sesiones s JOIN usuarios u ON u.id=s.usuario_id WHERE s.hash_token=? AND s.expira_en>?',
+    [hashearToken(token), Date.now()],
   );
-  return user;
+  return usuario;
 }
 
 /** Exige una sesión válida antes de acceder a perfiles, salas o partidas. */
-export async function requireUser(req: Request, _res: Response, next: NextFunction): Promise<void> {
+export async function exigirUsuario(
+  req: Request,
+  _res: Response,
+  siguiente: NextFunction,
+): Promise<void> {
   try {
-    req.user = await findSession(req.cookies?.[SESSION_COOKIE]);
-    if (!req.user) throw new HttpError(401, 'Inicia sesión para continuar.');
-    next();
+    req.usuario = await buscarSesion(req.cookies?.[COOKIE_SESION]);
+    if (!req.usuario) throw new ErrorHttp(401, 'Inicia sesión para continuar.');
+    siguiente();
   } catch (error) {
-    next(error);
+    siguiente(error);
   }
 }
 
 /** Crea una sesión aleatoria y una cookie HttpOnly; recordar extiende su vigencia a 30 días. */
-export async function createSession(
+export async function crearSesion(
   res: Response,
-  userId: string,
-  remember = false,
+  usuarioId: string,
+  recordar = false,
 ): Promise<void> {
   const token = randomBytes(32).toString('hex');
-  const maxAge = (remember ? 30 : 1) * 86400000;
-  await write('DELETE FROM sessions WHERE expires_at<?', [Date.now()]);
-  await write('INSERT INTO sessions(token_hash,user_id,expires_at) VALUES (?,?,?)', [
-    hashToken(token),
-    userId,
-    Date.now() + maxAge,
+  const duracionMaxima = (recordar ? 30 : 1) * 86400000;
+  await escribir('DELETE FROM sesiones WHERE expira_en<?', [Date.now()]);
+  await escribir('INSERT INTO sesiones(hash_token,usuario_id,expira_en) VALUES (?,?,?)', [
+    hashearToken(token),
+    usuarioId,
+    Date.now() + duracionMaxima,
   ]);
-  res.cookie(SESSION_COOKIE, token, {
+  res.cookie(COOKIE_SESION, token, {
     httpOnly: true,
-    secure: env.NODE_ENV === 'production',
+    secure: entorno.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    ...(remember ? { maxAge } : {}),
+    ...(recordar ? { maxAge: duracionMaxima } : {}),
   });
 }

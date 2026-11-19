@@ -1,112 +1,112 @@
 /** Define los datos que comparten el cliente y el servidor. */
 /** Contratos compartidos: el cliente nunca recibe las respuestas de rondas futuras. */
-export interface User {
+export interface Usuario {
   id: string;
-  name: string;
-  email: string;
+  nombre: string;
+  correo: string;
 }
-export interface Stats {
-  played: number;
-  bestStreak: number;
-  bestScore: number;
+export interface Estadisticas {
+  jugadas: number;
+  mejorRacha: number;
+  mejorPuntuacion: number;
 }
-export interface Settings {
-  volume: number;
-  music: number;
-  effects: number;
-  countdown: boolean;
-  autoplay: boolean;
-  contrast: boolean;
-  largeInterface: boolean;
+export interface Preferencias {
+  volumen: number;
+  musica: number;
+  efectos: number;
+  cuentaRegresiva: boolean;
+  reproduccionAutomatica: boolean;
+  altoContraste: boolean;
+  interfazGrande: boolean;
 }
-export const DEFAULT_SETTINGS: Settings = {
-  volume: 78,
-  music: 92,
-  effects: 56,
-  countdown: true,
-  autoplay: true,
-  contrast: false,
-  largeInterface: false,
+export const PREFERENCIAS_PREDETERMINADAS: Preferencias = {
+  volumen: 78,
+  musica: 92,
+  efectos: 56,
+  cuentaRegresiva: true,
+  reproduccionAutomatica: true,
+  altoContraste: false,
+  interfazGrande: false,
 };
-export interface GameConfig {
-  genre: string;
-  rounds: number;
-  seconds: number;
-  answerMode: 'both' | 'title';
+export interface ConfiguracionPartida {
+  genero: string;
+  rondas: number;
+  segundos: number;
+  modoRespuesta: 'ambos' | 'titulo';
 }
-export const DEFAULT_CONFIG: GameConfig = {
-  genre: 'Todas',
-  rounds: 10,
-  seconds: 20,
-  answerMode: 'both',
+export const CONFIGURACION_PREDETERMINADA: ConfiguracionPartida = {
+  genero: 'Todas',
+  rondas: 10,
+  segundos: 20,
+  modoRespuesta: 'ambos',
 };
-export interface RoundResult {
-  round: number;
-  title: string;
-  artist: string;
-  answer: string;
-  correct: boolean;
-  points: number;
-  elapsed: number;
-  userId: string;
-  sourceUrl?: string | null;
-  licenseUrl?: string | null;
+export interface ResultadoRonda {
+  ronda: number;
+  titulo: string;
+  artista: string;
+  respuesta: string;
+  correcta: boolean;
+  puntos: number;
+  transcurrido: number;
+  usuarioId: string;
+  urlFuente?: string | null;
+  urlLicencia?: string | null;
 }
-export interface Player {
+export interface Jugador {
   id: string;
-  name: string;
-  team: number;
-  score: number;
-  ready: boolean;
+  nombre: string;
+  equipo: number;
+  puntuacion: number;
+  listo: boolean;
 }
-export interface GameSnapshot {
+export interface EstadoPartida {
   id: string;
-  mode: 'solo' | 'duel' | 'teams';
-  status: 'playing' | 'finished' | 'abandoned';
-  config: GameConfig;
-  round: number;
+  modo: 'individual' | 'duelo' | 'equipos';
+  estado: 'en_curso' | 'terminada' | 'abandonada';
+  configuracion: ConfiguracionPartida;
+  ronda: number;
   total: number;
-  startedAt: number;
-  serverNow: number;
-  players: Player[];
-  results: RoundResult[];
-  answered: boolean;
-  audioStart: number;
-  audioDuration: number;
-  audioSource: 'builtin' | 'local' | 'jamendo' | 'audius' | 'deezer';
+  iniciadaEn: number;
+  ahoraServidor: number;
+  jugadores: Jugador[];
+  resultados: ResultadoRonda[];
+  respondida: boolean;
+  inicioAudio: number;
+  duracionAudio: number;
+  fuenteAudio: 'integrado' | 'local' | 'jamendo' | 'audius' | 'deezer';
 }
-export interface RoomSnapshot {
-  code: string;
-  name: string;
-  mode: 'duel' | 'teams';
-  hostId: string;
-  players: Player[];
-  config: GameConfig;
-  gameId: string | null;
-  messages: { id: number; name: string; text: string }[];
+export interface EstadoSala {
+  codigo: string;
+  nombre: string;
+  modo: 'duelo' | 'equipos';
+  anfitrionId: string;
+  jugadores: Jugador[];
+  configuracion: ConfiguracionPartida;
+  partidaId: string | null;
+  mensajes: { id: number; nombre: string; texto: string }[];
 }
 
 /** Perfiles públicos: las búsquedas y solicitudes nunca exponen correos ajenos. */
-export interface PublicUser {
+export interface UsuarioPublico {
   id: string;
-  name: string;
+  nombre: string;
 }
-export interface RoomInvitation {
+export interface InvitacionSala {
   id: string;
-  roomCode: string;
-  roomName: string;
-  mode: 'duel' | 'teams';
-  sender: PublicUser;
-  recipient: PublicUser;
-  expiresAt: number;
+  codigoSala: string;
+  nombreSala: string;
+  modo: 'duelo' | 'equipos';
+  remitente: UsuarioPublico;
+  destinatario: UsuarioPublico;
+  expiraEn: number;
 }
-export interface SocialSnapshot {
-  friends: PublicUser[];
-  incomingRequests: PublicUser[];
-  outgoingRequests: PublicUser[];
-  invitations: RoomInvitation[];
-  sentInvitations: RoomInvitation[];
+export interface EstadoSocial {
+  amigos: UsuarioPublico[];
+  solicitudesRecibidas: UsuarioPublico[];
+  solicitudesEnviadas: UsuarioPublico[];
+  invitaciones: InvitacionSala[];
+  invitacionesEnviadas: InvitacionSala[];
 }
-export interface UserSearchResult extends PublicUser {
-  relationship: 'none' | 'friend' | 'incoming' | 'outgoing';
+export interface ResultadoBusquedaUsuario extends UsuarioPublico {
+  relacion: 'ninguna' | 'amigo' | 'recibida' | 'enviada';
 }

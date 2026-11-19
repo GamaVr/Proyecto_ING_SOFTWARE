@@ -2,48 +2,48 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { query } from '../datos/base-datos.js';
-import { HttpError } from '../errores.js';
-import { musicOptions } from '../servicios/musica/catalogo.js';
-import { serveMusicAudio, type MusicFetch } from '../servicios/musica/deezer.js';
+import { consultar } from '../datos/base-datos.js';
+import { ErrorHttp } from '../errores.js';
+import { opcionesMusica } from '../servicios/musica/catalogo.js';
+import { transmitirAudioMusica, type ConsultaMusica } from '../servicios/musica/deezer.js';
 
 /** Expone opciones de partida y búsquedas con muestras breves de las canciones del catálogo. */
 
-export function musicRouter(fetcher: MusicFetch = fetch): Router {
-  const router = Router();
-  router.get('/options', async (_req, res) => {
-    res.json(await musicOptions(fetcher));
+export function rutasMusica(consultarProveedor: ConsultaMusica = fetch): Router {
+  const enrutador = Router();
+  enrutador.get('/opciones', async (_req, res) => {
+    res.json(await opcionesMusica(consultarProveedor));
   });
-  router.get('/search', async (req, res) => {
+  enrutador.get('/buscar', async (req, res) => {
     const { q } = z.object({ q: z.string().trim().min(2).max(80) }).parse(req.query);
-    const term = `%${q}%`;
-    const tracks = await query<{ id: string; title: string; artist: string }>(
-      `SELECT s.id,s.title,s.artist
-       FROM songs s JOIN song_media m ON m.song_id=s.id
-       WHERE m.source='deezer' AND m.enabled=TRUE
-         AND (s.title LIKE ? OR s.artist LIKE ?)
-       ORDER BY CASE WHEN LOWER(s.title)=LOWER(?) THEN 0
-                     WHEN LOWER(s.artist)=LOWER(?) THEN 1 ELSE 2 END,
-                s.title
+    const termino = `%${q}%`;
+    const pistas = await consultar<{ id: string; titulo: string; artista: string }>(
+      `SELECT s.id,s.titulo,s.artista
+       FROM canciones s JOIN medios_cancion m ON m.cancion_id=s.id
+       WHERE m.fuente='deezer' AND m.habilitada=TRUE
+         AND (s.titulo LIKE ? OR s.artista LIKE ?)
+       ORDER BY CASE WHEN LOWER(s.titulo)=LOWER(?) THEN 0
+                     WHEN LOWER(s.artista)=LOWER(?) THEN 1 ELSE 2 END,
+                s.titulo
        LIMIT 12`,
-      [term, term, q, q],
+      [termino, termino, q, q],
     );
-    res.json({ tracks });
+    res.json({ pistas });
   });
-  router.get('/search/:id/audio', async (req, res) => {
+  enrutador.get('/buscar/:id/audio', async (req, res) => {
     const id = z.string().min(1).max(40).parse(req.params.id);
-    const [media] = await query<{ external_id: string | null }>(
-      "SELECT external_id FROM song_media WHERE song_id=? AND source='deezer' AND enabled=TRUE",
+    const [medio] = await consultar<{ id_externo: string | null }>(
+      "SELECT id_externo FROM medios_cancion WHERE cancion_id=? AND fuente='deezer' AND habilitada=TRUE",
       [id],
     );
-    if (!media?.external_id || !/^\d+$/.test(media.external_id))
-      throw new HttpError(404, 'No hay una muestra disponible para esta canción.');
-    await serveMusicAudio(
-      { url: `https://api.deezer.com/track/${media.external_id}` },
+    if (!medio?.id_externo || !/^\d+$/.test(medio.id_externo))
+      throw new ErrorHttp(404, 'No hay una muestra disponible para esta canción.');
+    await transmitirAudioMusica(
+      { url: `https://api.deezer.com/track/${medio.id_externo}` },
       req,
       res,
-      fetcher,
+      consultarProveedor,
     );
   });
-  return router;
+  return enrutador;
 }

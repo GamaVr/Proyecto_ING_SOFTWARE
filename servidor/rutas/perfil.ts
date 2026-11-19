@@ -2,78 +2,89 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { query, write, transaction } from '../datos/base-datos.js';
-import { HttpError } from '../errores.js';
-import { createSession } from '../servicios/sesiones.js';
-import { settingsSchema, passwordSchema, recoveryCodeSchema } from '../validacion.js';
-import { DEFAULT_SETTINGS, type Settings } from '../../compartido/tipos.js';
-import { parseJson } from '../servicios/puntuacion.js';
-import { getStats } from '../servicios/partidas.js';
+import { consultar, escribir, transaccion } from '../datos/base-datos.js';
+import { ErrorHttp } from '../errores.js';
+import { crearSesion } from '../servicios/sesiones.js';
+import {
+  esquemaPreferencias,
+  esquemaContrasena,
+  esquemaCodigoRecuperacion,
+} from '../validacion.js';
+import { PREFERENCIAS_PREDETERMINADAS, type Preferencias } from '../../compartido/tipos.js';
+import { interpretarJson } from '../servicios/puntuacion.js';
+import { obtenerEstadisticas } from '../servicios/partidas.js';
 
 /** Crea las rutas del perfil de la persona con sesión iniciada. */
-export function profileRoutes(): Router {
-  const router = Router();
-  router.put('/me/recovery-code', async (req, res) => {
-    const input = z
-      .object({ currentPassword: passwordSchema, recoveryCode: recoveryCodeSchema })
+export function rutasPerfil(): Router {
+  const enrutador = Router();
+  enrutador.put('/perfil/codigo-recuperacion', async (req, res) => {
+    const entrada = z
+      .object({
+        contrasenaActual: esquemaContrasena,
+        codigoRecuperacion: esquemaCodigoRecuperacion,
+      })
       .parse(req.body);
-    const [user] = await query<{ password_hash: string }>(
-      'SELECT password_hash FROM users WHERE id=?',
-      [req.user!.id],
+    const [usuario] = await consultar<{ hash_contrasena: string }>(
+      'SELECT hash_contrasena FROM usuarios WHERE id=?',
+      [req.usuario!.id],
     );
-    if (!user || !(await bcrypt.compare(input.currentPassword, user.password_hash)))
-      throw new HttpError(401, 'La contraseña actual es incorrecta.');
-    const recoveryCodeHash = await bcrypt.hash(input.recoveryCode, 12);
-    await write('UPDATE users SET recovery_code_hash=? WHERE id=?', [
-      recoveryCodeHash,
-      req.user!.id,
+    if (!usuario || !(await bcrypt.compare(entrada.contrasenaActual, usuario.hash_contrasena)))
+      throw new ErrorHttp(401, 'La contraseña actual es incorrecta.');
+    const hashCodigoRecuperacion = await bcrypt.hash(entrada.codigoRecuperacion, 12);
+    await escribir('UPDATE usuarios SET hash_codigo_recuperacion=? WHERE id=?', [
+      hashCodigoRecuperacion,
+      req.usuario!.id,
     ]);
-    res.json({ message: 'Código de recuperación actualizado.' });
+    res.json({ mensaje: 'Código de recuperación actualizado.' });
   });
-  router.get('/me', async (req, res) => {
-    res.json({ user: req.user, stats: await getStats(req.user!.id) });
+  enrutador.get('/perfil', async (req, res) => {
+    res.json({ usuario: req.usuario, estadisticas: await obtenerEstadisticas(req.usuario!.id) });
   });
-  router.put('/me', async (req, res) => {
-    const { name } = z.object({ name: z.string().trim().min(2).max(30) }).parse(req.body);
-    await write('UPDATE users SET name=? WHERE id=?', [name, req.user!.id]);
-    res.json({ user: { ...req.user, name } });
+  enrutador.put('/perfil', async (req, res) => {
+    const { nombre } = z.object({ nombre: z.string().trim().min(2).max(30) }).parse(req.body);
+    await escribir('UPDATE usuarios SET nombre=? WHERE id=?', [nombre, req.usuario!.id]);
+    res.json({ usuario: { ...req.usuario, nombre } });
   });
-  router.put('/me/password', async (req, res) => {
-    const input = z
-      .object({ currentPassword: z.string().max(72), newPassword: passwordSchema })
+  enrutador.put('/perfil/contrasena', async (req, res) => {
+    const entrada = z
+      .object({ contrasenaActual: z.string().max(72), contrasenaNueva: esquemaContrasena })
       .parse(req.body);
-    const [user] = await query<{ password_hash: string }>(
-      'SELECT password_hash FROM users WHERE id=?',
-      [req.user!.id],
+    const [usuario] = await consultar<{ hash_contrasena: string }>(
+      'SELECT hash_contrasena FROM usuarios WHERE id=?',
+      [req.usuario!.id],
     );
-    if (!(await bcrypt.compare(input.currentPassword, user.password_hash)))
-      throw new HttpError(401, 'Tu contraseña actual no es correcta.');
-    const hash = await bcrypt.hash(input.newPassword, 12);
-    await transaction(async (db) => {
-      await write('UPDATE users SET password_hash=? WHERE id=?', [hash, req.user!.id], db);
-      await write('DELETE FROM sessions WHERE user_id=?', [req.user!.id], db);
+    if (!(await bcrypt.compare(entrada.contrasenaActual, usuario.hash_contrasena)))
+      throw new ErrorHttp(401, 'Tu contraseña actual no es correcta.');
+    const hash = await bcrypt.hash(entrada.contrasenaNueva, 12);
+    await transaccion(async (bd) => {
+      await escribir(
+        'UPDATE usuarios SET hash_contrasena=? WHERE id=?',
+        [hash, req.usuario!.id],
+        bd,
+      );
+      await escribir('DELETE FROM sesiones WHERE usuario_id=?', [req.usuario!.id], bd);
     });
-    await createSession(res, req.user!.id);
+    await crearSesion(res, req.usuario!.id);
     res.json({ ok: true });
   });
-  router.get('/settings', async (req, res) => {
-    const [row] = await query<{ settings: string | Settings }>(
-      'SELECT settings FROM user_settings WHERE user_id=?',
-      [req.user!.id],
+  enrutador.get('/preferencias', async (req, res) => {
+    const [fila] = await consultar<{ preferencias: string | Preferencias }>(
+      'SELECT preferencias FROM preferencias_usuario WHERE usuario_id=?',
+      [req.usuario!.id],
     );
     res.json({
-      settings: row
-        ? { ...DEFAULT_SETTINGS, ...parseJson<Settings>(row.settings) }
-        : DEFAULT_SETTINGS,
+      preferencias: fila
+        ? { ...PREFERENCIAS_PREDETERMINADAS, ...interpretarJson<Preferencias>(fila.preferencias) }
+        : PREFERENCIAS_PREDETERMINADAS,
     });
   });
-  router.put('/settings', async (req, res) => {
-    const settings = settingsSchema.parse(req.body);
-    await write(
-      'INSERT INTO user_settings(user_id,settings) VALUES (?,?) ON DUPLICATE KEY UPDATE settings=VALUES(settings)',
-      [req.user!.id, JSON.stringify(settings)],
+  enrutador.put('/preferencias', async (req, res) => {
+    const preferencias = esquemaPreferencias.parse(req.body);
+    await escribir(
+      'INSERT INTO preferencias_usuario(usuario_id,preferencias) VALUES (?,?) ON DUPLICATE KEY UPDATE preferencias=VALUES(preferencias)',
+      [req.usuario!.id, JSON.stringify(preferencias)],
     );
-    res.json({ settings });
+    res.json({ preferencias });
   });
-  return router;
+  return enrutador;
 }

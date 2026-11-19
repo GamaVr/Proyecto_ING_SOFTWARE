@@ -1,11 +1,11 @@
 /** Define los artistas y la cantidad de canciones de cada género. */
 // Selección representativa de artistas reconocidos; no constituye una clasificación histórica oficial.
-export const ARTISTS_PER_GENRE = 35;
-export const TRACKS_PER_ARTIST = 5;
-export const RECORDING_GENRES = [
+export const ARTISTAS_POR_GENERO = 35;
+export const PISTAS_POR_ARTISTA = 5;
+export const GENEROS_GRABACIONES = [
   {
-    name: 'Rock',
-    artists: [
+    nombre: 'Rock',
+    artistas: [
       'Linkin Park',
       'Imagine Dragons',
       'Queen',
@@ -42,11 +42,11 @@ export const RECORDING_GENRES = [
       'Billy Idol',
       'The Who',
     ],
-    alternates: ['Foreigner', 'Styx', 'REO Speedwagon', 'Steve Miller Band', 'Heart'],
+    alternativos: ['Foreigner', 'Styx', 'REO Speedwagon', 'Steve Miller Band', 'Heart'],
   },
   {
-    name: 'Pop',
-    artists: [
+    nombre: 'Pop',
+    artistas: [
       'Katy Perry',
       'Lady Gaga',
       'Dua Lipa',
@@ -83,7 +83,7 @@ export const RECORDING_GENRES = [
       'ABBA',
       'Cyndi Lauper',
     ],
-    alternates: [
+    alternativos: [
       'Kylie Minogue',
       'Robbie Williams',
       'George Michael',
@@ -92,8 +92,8 @@ export const RECORDING_GENRES = [
     ],
   },
   {
-    name: 'Hip hop / Rap',
-    artists: [
+    nombre: 'Hip hop / Rap',
+    artistas: [
       'Eminem',
       'Kendrick Lamar',
       'Drake',
@@ -130,11 +130,11 @@ export const RECORDING_GENRES = [
       'Ice Cube',
       'Ludacris',
     ],
-    alternates: ['Busta Rhymes', 'Missy Elliott', 'Nelly', 'Wiz Khalifa', 'A Tribe Called Quest'],
+    alternativos: ['Busta Rhymes', 'Missy Elliott', 'Nelly', 'Wiz Khalifa', 'A Tribe Called Quest'],
   },
   {
-    name: 'Electrónica',
-    artists: [
+    nombre: 'Electrónica',
+    artistas: [
       'Daft Punk',
       'Avicii',
       'David Guetta',
@@ -171,11 +171,11 @@ export const RECORDING_GENRES = [
       'Fatboy Slim',
       'Moby',
     ],
-    alternates: ['Benny Benassi', 'Eric Prydz', 'Paul van Dyk', 'Faithless', 'Pendulum'],
+    alternativos: ['Benny Benassi', 'Eric Prydz', 'Paul van Dyk', 'Faithless', 'Pendulum'],
   },
   {
-    name: 'Latina',
-    artists: [
+    nombre: 'Latina',
+    artistas: [
       'Shakira',
       'Bad Bunny',
       'Daddy Yankee',
@@ -212,7 +212,7 @@ export const RECORDING_GENRES = [
       'Luis Fonsi',
       'Selena',
     ],
-    alternates: [
+    alternativos: [
       'Julieta Venegas',
       'Carlos Vives',
       'Juan Luis Guerra',
@@ -221,8 +221,8 @@ export const RECORDING_GENRES = [
     ],
   },
   {
-    name: 'Reggae',
-    artists: [
+    nombre: 'Reggae',
+    artistas: [
       'Bob Marley & The Wailers',
       'UB40',
       'Sean Paul',
@@ -259,7 +259,7 @@ export const RECORDING_GENRES = [
       'Rebelution',
       'Matisyahu',
     ],
-    alternates: [
+    alternativos: [
       'Ziggy Marley',
       'Stephen Marley',
       'Gondwana',
@@ -271,8 +271,8 @@ export const RECORDING_GENRES = [
     ],
   },
   {
-    name: 'R&B / Soul',
-    artists: [
+    nombre: 'R&B / Soul',
+    artistas: [
       'The Weeknd',
       'Alicia Keys',
       'Beyoncé',
@@ -309,11 +309,11 @@ export const RECORDING_GENRES = [
       'Otis Redding',
       'Sam Cooke',
     ],
-    alternates: ["D'Angelo", 'Erykah Badu', 'Jill Scott', 'Lauryn Hill', 'Lionel Richie'],
+    alternativos: ["D'Angelo", 'Erykah Badu', 'Jill Scott', 'Lauryn Hill', 'Lionel Richie'],
   },
   {
-    name: 'Metal',
-    artists: [
+    nombre: 'Metal',
+    artistas: [
       'Metallica',
       'Slipknot',
       'System Of A Down',
@@ -350,11 +350,11 @@ export const RECORDING_GENRES = [
       'Amon Amarth',
       'Sabaton',
     ],
-    alternates: ['Ghost', 'Sleep Token', 'Architects', 'Bring Me The Horizon', 'Powerwolf'],
+    alternativos: ['Ghost', 'Sleep Token', 'Architects', 'Bring Me The Horizon', 'Powerwolf'],
   },
   {
-    name: 'Alternativa',
-    artists: [
+    nombre: 'Alternativa',
+    artistas: [
       'Deftones',
       'Radiohead',
       'Nirvana',
@@ -391,6 +391,12 @@ export const RECORDING_GENRES = [
       'Tame Impala',
       'Cage The Elephant',
     ],
-    alternates: ['The White Stripes', 'Yeah Yeah Yeahs', 'Franz Ferdinand', 'Interpol', 'Placebo'],
+    alternativos: [
+      'The White Stripes',
+      'Yeah Yeah Yeahs',
+      'Franz Ferdinand',
+      'Interpol',
+      'Placebo',
+    ],
   },
 ];

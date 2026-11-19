@@ -1,214 +1,235 @@
 /** Consulta Deezer, sincroniza canciones y entrega el audio autorizado. */
 import { createHash } from 'node:crypto';
-import { query, write, transaction, type Database } from '../../datos/base-datos.js';
-import { env } from '../../configuracion.js';
-import { HttpError } from '../../errores.js';
-import { REMOVED_MUSIC_GENRES, type MusicOptions } from '../../../compartido/musica.js';
-import { RECORDING_GENRES, ARTISTS_PER_GENRE, TRACKS_PER_ARTIST } from './artistas.js';
-import { DEEZER_TERMS, fetchArtistRecordings, type MusicFetch, type Recording } from './deezer.js';
-export { RECORDING_GENRES, ARTISTS_PER_GENRE, TRACKS_PER_ARTIST } from './artistas.js';
+import { consultar, escribir, transaccion, type BaseDatos } from '../../datos/base-datos.js';
+import { entorno } from '../../configuracion.js';
+import { ErrorHttp } from '../../errores.js';
+import { GENEROS_RETIRADOS, type OpcionesMusica } from '../../../compartido/musica.js';
+import { GENEROS_GRABACIONES, ARTISTAS_POR_GENERO, PISTAS_POR_ARTISTA } from './artistas.js';
+import {
+  TERMINOS_DEEZER,
+  obtenerGrabacionesArtista,
+  type ConsultaMusica,
+  type Grabacion,
+} from './deezer.js';
+export {
+  GENEROS_GRABACIONES as RECORDING_GENRES,
+  ARTISTAS_POR_GENERO as ARTISTS_PER_GENRE,
+  PISTAS_POR_ARTISTA as TRACKS_PER_ARTIST,
+} from './artistas.js';
 
-const running = new Map<string, Promise<void>>(),
-  lastSuccess = new Map<string, number>(),
-  lastFailure = new Map<string, number>();
-let backgroundRefresh: Promise<void> | undefined;
+const enCurso = new Map<string, Promise<void>>(),
+  ultimoExito = new Map<string, number>(),
+  ultimoFallo = new Map<string, number>();
+let actualizacionEnSegundoPlano: Promise<void> | undefined;
 
 /** Reúne un género conservando a los artistas disponibles si falla otro perfil. */
-async function fetchRecordings(genre: string, fetcher: MusicFetch = fetch): Promise<Recording[]> {
-  const mapping = RECORDING_GENRES.find((item) => item.name === genre);
-  if (!mapping) throw new HttpError(422, 'Ese género no está disponible.');
-  const tracks: Recording[] = [];
-  const selected = new Set<number>();
-  for (const name of [...mapping.artists, ...mapping.alternates]) {
-    if (selected.size === ARTISTS_PER_GENRE) break;
+async function obtenerGrabaciones(
+  genero: string,
+  consultarProveedor: ConsultaMusica = fetch,
+): Promise<Grabacion[]> {
+  const correspondencia = GENEROS_GRABACIONES.find((elemento) => elemento.nombre === genero);
+  if (!correspondencia) throw new ErrorHttp(422, 'Ese género no está disponible.');
+  const pistas: Grabacion[] = [];
+  const seleccionado = new Set<number>();
+  for (const nombre of [...correspondencia.artistas, ...correspondencia.alternativos]) {
+    if (seleccionado.size === ARTISTAS_POR_GENERO) break;
     try {
-      const songs = await fetchArtistRecordings(name, fetcher);
-      if (songs.length !== TRACKS_PER_ARTIST)
-        throw new Error(`solo ${songs.length} muestras disponibles`);
-      if (selected.has(songs[0].artist.id)) continue;
-      selected.add(songs[0].artist.id);
-      tracks.push(...songs);
+      const canciones = await obtenerGrabacionesArtista(nombre, consultarProveedor);
+      if (canciones.length !== PISTAS_POR_ARTISTA)
+        throw new Error(`solo ${canciones.length} muestras disponibles`);
+      if (seleccionado.has(canciones[0].artist.id)) continue;
+      seleccionado.add(canciones[0].artist.id);
+      pistas.push(...canciones);
     } catch (error) {
-      if (fetcher === fetch)
+      if (consultarProveedor === fetch)
         console.warn(
-          `Catálogo pendiente: ${name}`,
+          `Catálogo pendiente: ${nombre}`,
           error instanceof Error ? error.message : 'proveedor',
         );
     }
   }
   if (
-    selected.size !== ARTISTS_PER_GENRE ||
-    new Set(tracks.map((track) => track.id)).size !== ARTISTS_PER_GENRE * TRACKS_PER_ARTIST
+    seleccionado.size !== ARTISTAS_POR_GENERO ||
+    new Set(pistas.map((pista) => pista.id)).size !== ARTISTAS_POR_GENERO * PISTAS_POR_ARTISTA
   )
-    throw new HttpError(
+    throw new ErrorHttp(
       502,
-      `${genre}: solo se encontraron ${selected.size}/${ARTISTS_PER_GENRE} artistas con cinco canciones oficiales disponibles.`,
+      `${genero}: solo se encontraron ${seleccionado.size}/${ARTISTAS_POR_GENERO} artistas con cinco canciones oficiales disponibles.`,
     );
-  return tracks;
+  return pistas;
 }
 
 /** Persiste referencias y metadatos; las URL firmadas de audio se resuelven al reproducir cada ronda. */
-export async function storeRecordings(
-  genre: string,
-  tracks: Recording[],
-  connection?: Database,
+export async function almacenarGrabaciones(
+  genero: string,
+  pistas: Grabacion[],
+  conexion?: BaseDatos,
 ): Promise<void> {
-  if (REMOVED_MUSIC_GENRES.some((removed) => removed.toLowerCase() === genre.trim().toLowerCase()))
-    throw new HttpError(422, 'Esta categoría fue retirada del juego.');
+  if (
+    GENEROS_RETIRADOS.some((eliminado) => eliminado.toLowerCase() === genero.trim().toLowerCase())
+  )
+    throw new ErrorHttp(422, 'Esta categoría fue retirada del juego.');
   /** Escribe un lote con la misma transacción para no publicar catálogos parciales. */
-  async function store(db: Database): Promise<void> {
-    for (const track of tracks) {
-      const id = `deezer-${track.id}`,
-        year = Number(track.release_date?.slice(0, 4)) || 0;
-      const aliases = JSON.stringify(
-        track.title_short && track.title_short !== track.title ? [track.title_short] : [],
+  async function almacenar(bd: BaseDatos): Promise<void> {
+    for (const pista of pistas) {
+      const id = `deezer-${pista.id}`,
+        anio = Number(pista.release_date?.slice(0, 4)) || 0;
+      const alias = JSON.stringify(
+        pista.title_short && pista.title_short !== pista.title ? [pista.title_short] : [],
       );
-      await write(
-        'INSERT INTO songs(id,title,artist,aliases,genre,release_year,audio_file) VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE title=VALUES(title),artist=VALUES(artist),aliases=VALUES(aliases),genre=VALUES(genre),release_year=VALUES(release_year)',
-        [id, track.title, track.artist.name, aliases, genre, year, `${id}.mp3`],
-        db,
+      await escribir(
+        'INSERT INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento,archivo_audio) VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE titulo=VALUES(titulo),artista=VALUES(artista),alias=VALUES(alias),genero=VALUES(genero),anio_lanzamiento=VALUES(anio_lanzamiento)',
+        [id, pista.title, pista.artist.name, alias, genero, anio, `${id}.mp3`],
+        bd,
       );
-      await write(
-        "INSERT INTO song_media(song_id,source,external_id,audio_url,license_url,source_url,enabled,clip_start,duration) VALUES (?,'deezer',?,?,?,?,TRUE,0,30) ON DUPLICATE KEY UPDATE enabled=TRUE,audio_url=VALUES(audio_url),license_url=VALUES(license_url),source_url=VALUES(source_url),clip_start=0,duration=30,updated_at=CURRENT_TIMESTAMP",
+      await escribir(
+        "INSERT INTO medios_cancion(cancion_id,fuente,id_externo,url_audio,url_licencia,url_fuente,habilitada,inicio_fragmento,duracion) VALUES (?,'deezer',?,?,?,?,TRUE,0,30) ON DUPLICATE KEY UPDATE habilitada=TRUE,url_audio=VALUES(url_audio),url_licencia=VALUES(url_licencia),url_fuente=VALUES(url_fuente),inicio_fragmento=0,duracion=30,actualizado_en=CURRENT_TIMESTAMP",
         [
           id,
-          String(track.id),
-          `https://api.deezer.com/track/${track.id}`,
-          DEEZER_TERMS,
-          `https://www.deezer.com/track/${track.id}`,
+          String(pista.id),
+          `https://api.deezer.com/track/${pista.id}`,
+          TERMINOS_DEEZER,
+          `https://www.deezer.com/track/${pista.id}`,
         ],
-        db,
+        bd,
       );
     }
   }
-  if (connection) await store(connection);
-  else await transaction(store);
+  if (conexion) await almacenar(conexion);
+  else await transaccion(almacenar);
 }
 
 /** Comparte sincronizaciones por género y reutiliza referencias recientes incluso después de reiniciar. */
-export async function ensureRecordingGenre(
-  genre: string,
-  fetcher: MusicFetch = fetch,
-  force = false,
+export async function asegurarGeneroGrabaciones(
+  genero: string,
+  consultarProveedor: ConsultaMusica = fetch,
+  forzar = false,
 ): Promise<void> {
-  if (!force && env.NODE_ENV === 'test') return;
-  const now = Date.now();
-  if (!force && now - (lastSuccess.get(genre) || 0) < 12 * 3600000) return;
-  if (!force && now - (lastFailure.get(genre) || 0) < 60000) return;
-  const pending = running.get(genre);
-  if (pending) return pending;
-  const operation = (async () => {
+  if (!forzar && entorno.NODE_ENV === 'test') return;
+  const ahora = Date.now();
+  if (!forzar && ahora - (ultimoExito.get(genero) || 0) < 12 * 3600000) return;
+  if (!forzar && ahora - (ultimoFallo.get(genero) || 0) < 60000) return;
+  const pendiente = enCurso.get(genero);
+  if (pendiente) return pendiente;
+  const operacion = (async () => {
     try {
-      const mapping = RECORDING_GENRES.find((item) => item.name === genre);
-      if (!mapping) throw new HttpError(422, 'Ese género no está disponible.');
+      const correspondencia = GENEROS_GRABACIONES.find((elemento) => elemento.nombre === genero);
+      if (!correspondencia) throw new ErrorHttp(422, 'Ese género no está disponible.');
       const version = createHash('sha256')
-        .update(JSON.stringify({ mapping, tracks: TRACKS_PER_ARTIST, selection: 'rank-v2' }))
+        .update(
+          JSON.stringify({ correspondencia, pistas: PISTAS_POR_ARTISTA, seleccion: 'rank-v2' }),
+        )
         .digest('hex');
-      const [cached] = force
+      const [enCache] = forzar
         ? []
-        : await query<{ genre: string }>(
-            'SELECT genre FROM music_catalog_sync WHERE genre=? AND version=? AND updated_at>DATE_SUB(NOW(),INTERVAL 12 HOUR)',
-            [genre, version],
+        : await consultar<{ genero: string }>(
+            'SELECT genero FROM sincronizacion_catalogo WHERE genero=? AND version=? AND actualizado_en>DATE_SUB(NOW(),INTERVAL 12 HOUR)',
+            [genero, version],
           );
-      if (!cached) {
-        const tracks = await fetchRecordings(genre, fetcher);
-        await transaction(async (db) => {
-          await write(
-            "UPDATE song_media m JOIN songs s ON s.id=m.song_id SET m.enabled=FALSE WHERE m.source='deezer' AND s.genre=?",
-            [genre],
-            db,
+      if (!enCache) {
+        const pistas = await obtenerGrabaciones(genero, consultarProveedor);
+        await transaccion(async (bd) => {
+          await escribir(
+            "UPDATE medios_cancion m JOIN canciones s ON s.id=m.cancion_id SET m.habilitada=FALSE WHERE m.fuente='deezer' AND s.genero=?",
+            [genero],
+            bd,
           );
-          await storeRecordings(genre, tracks, db);
-          await write(
-            'INSERT INTO music_catalog_sync(genre,version,artist_count,track_count) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE version=VALUES(version),artist_count=VALUES(artist_count),track_count=VALUES(track_count),updated_at=CURRENT_TIMESTAMP',
-            [genre, version, ARTISTS_PER_GENRE, tracks.length],
-            db,
+          await almacenarGrabaciones(genero, pistas, bd);
+          await escribir(
+            'INSERT INTO sincronizacion_catalogo(genero,version,cantidad_artistas,cantidad_pistas) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE version=VALUES(version),cantidad_artistas=VALUES(cantidad_artistas),cantidad_pistas=VALUES(cantidad_pistas),actualizado_en=CURRENT_TIMESTAMP',
+            [genero, version, ARTISTAS_POR_GENERO, pistas.length],
+            bd,
           );
         });
-        if (fetcher === fetch)
+        if (consultarProveedor === fetch)
           console.log(
-            `${genre}: ${ARTISTS_PER_GENRE} artistas · ${tracks.length} canciones oficiales.`,
+            `${genero}: ${ARTISTAS_POR_GENERO} artistas · ${pistas.length} canciones oficiales.`,
           );
       }
-      lastSuccess.set(genre, Date.now());
-      lastFailure.delete(genre);
+      ultimoExito.set(genero, Date.now());
+      ultimoFallo.delete(genero);
     } catch (error) {
-      lastFailure.set(genre, Date.now());
+      ultimoFallo.set(genero, Date.now());
       throw error;
     } finally {
-      running.delete(genre);
+      enCurso.delete(genero);
     }
   })();
-  running.set(genre, operation);
-  return operation;
+  enCurso.set(genero, operacion);
+  return operacion;
 }
 
 /** Prepara tres géneros simultáneos con un límite global de consultas al proveedor. */
-export async function prepareRecordings(fetcher: MusicFetch = fetch, force = false): Promise<void> {
-  if (!force && env.NODE_ENV === 'test') return;
+export async function prepararGrabaciones(
+  consultarProveedor: ConsultaMusica = fetch,
+  forzar = false,
+): Promise<void> {
+  if (!forzar && entorno.NODE_ENV === 'test') return;
   /** Recorre los géneros sin multiplicar las consultas por cada navegador conectado. */
-  async function synchronize(): Promise<void> {
-    const failures: string[] = [];
-    for (let i = 0; i < RECORDING_GENRES.length; i += 3) {
-      const group = RECORDING_GENRES.slice(i, i + 3);
-      const results = await Promise.allSettled(
-        group.map((genre) => ensureRecordingGenre(genre.name, fetcher, force)),
+  async function sincronizarGeneros(): Promise<void> {
+    const fallos: string[] = [];
+    for (let i = 0; i < GENEROS_GRABACIONES.length; i += 3) {
+      const grupo = GENEROS_GRABACIONES.slice(i, i + 3);
+      const resultados = await Promise.allSettled(
+        grupo.map((genero) => asegurarGeneroGrabaciones(genero.nombre, consultarProveedor, forzar)),
       );
-      results.forEach((result, index) => {
-        if (result.status === 'rejected') failures.push(group[index].name);
+      resultados.forEach((resultado, indice) => {
+        if (resultado.status === 'rejected') fallos.push(grupo[indice].nombre);
       });
     }
-    if (failures.length) console.warn('Géneros pendientes de Deezer:', failures.join(', '));
-    if (force && failures.length)
-      throw new HttpError(
+    if (fallos.length) console.warn('Géneros pendientes de Deezer:', fallos.join(', '));
+    if (forzar && fallos.length)
+      throw new ErrorHttp(
         502,
-        `No se completó el catálogo de: ${failures.join(', ')}. Se conservó el catálogo anterior de esos géneros.`,
+        `No se completó el catálogo de: ${fallos.join(', ')}. Se conservó el catálogo anterior de esos géneros.`,
       );
   }
-  if (force) {
-    await synchronize();
+  if (forzar) {
+    await sincronizarGeneros();
     return;
   }
-  const [available] = await query<{ count: number }>(
-    "SELECT COUNT(*) AS count FROM song_media m JOIN songs s ON s.id=m.song_id WHERE m.source='deezer' AND m.enabled=1 AND s.genre NOT IN (?,?,?)",
-    [...REMOVED_MUSIC_GENRES],
+  const [disponibles] = await consultar<{ cantidad: number }>(
+    "SELECT COUNT(*) AS cantidad FROM medios_cancion m JOIN canciones s ON s.id=m.cancion_id WHERE m.fuente='deezer' AND m.habilitada=1 AND s.genero NOT IN (?,?,?)",
+    [...GENEROS_RETIRADOS],
   );
-  const operation =
-    backgroundRefresh ??
-    (backgroundRefresh = synchronize().finally(() => {
-      backgroundRefresh = undefined;
+  const operacion =
+    actualizacionEnSegundoPlano ??
+    (actualizacionEnSegundoPlano = sincronizarGeneros().finally(() => {
+      actualizacionEnSegundoPlano = undefined;
     }));
-  if (Number(available.count) >= 5) {
+  if (Number(disponibles.cantidad) >= 5) {
     // El repertorio publicado sigue disponible mientras se renueva el catálogo grande.
-    void operation.catch((error) =>
+    void operacion.catch((error) =>
       console.warn(
         'Actualización musical pendiente:',
         error instanceof Error ? error.message : 'proveedor',
       ),
     );
-  } else await operation;
+  } else await operacion;
 }
 
 /** Ofrece únicamente categorías con suficientes grabaciones oficiales para comenzar una partida. */
-export async function musicOptions(fetcher: MusicFetch = fetch): Promise<MusicOptions> {
-  await prepareRecordings(fetcher);
-  const genres = await query<{ name: string; count: number; artists: number }>(
-    "SELECT s.genre AS name,COUNT(*) AS count,COUNT(DISTINCT s.artist) AS artists FROM songs s JOIN song_media m ON m.song_id=s.id WHERE m.enabled=1 AND m.source='deezer' AND s.genre NOT IN (?,?,?) GROUP BY s.genre HAVING COUNT(*)>=5 ORDER BY s.genre",
-    [...REMOVED_MUSIC_GENRES],
+export async function opcionesMusica(
+  consultarProveedor: ConsultaMusica = fetch,
+): Promise<OpcionesMusica> {
+  await prepararGrabaciones(consultarProveedor);
+  const generos = await consultar<{ nombre: string; cantidad: number; artistas: number }>(
+    "SELECT s.genero AS nombre,COUNT(*) AS cantidad,COUNT(DISTINCT s.artista) AS artistas FROM canciones s JOIN medios_cancion m ON m.cancion_id=s.id WHERE m.habilitada=1 AND m.fuente='deezer' AND s.genero NOT IN (?,?,?) GROUP BY s.genero HAVING COUNT(*)>=5 ORDER BY s.genero",
+    [...GENEROS_RETIRADOS],
   );
-  const total = genres.reduce((sum, item) => sum + Number(item.count), 0);
+  const total = generos.reduce((suma, elemento) => suma + Number(elemento.cantidad), 0);
   if (!total)
-    throw new HttpError(
+    throw new ErrorHttp(
       503,
       'El catálogo de canciones oficiales aún no está disponible. Comprueba Internet y vuelve a cargar.',
     );
   return {
-    genres: genres.map((item) => ({
-      ...item,
-      count: Number(item.count),
-      artists: Number(item.artists),
+    generos: generos.map((elemento) => ({
+      ...elemento,
+      cantidad: Number(elemento.cantidad),
+      artistas: Number(elemento.artistas),
     })),
-    artists: genres.reduce((sum, item) => sum + Number(item.artists), 0),
+    artistas: generos.reduce((suma, elemento) => suma + Number(elemento.artistas), 0),
     total,
   };
 }

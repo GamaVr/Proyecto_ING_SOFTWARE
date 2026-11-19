@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { io } from 'socket.io-client';
 
-const icons: Record<string, string> = {
+const iconos: Record<string, string> = {
   logo: 'c8e83',
   home: '0ce20',
   homeActive: '0ca5d',
@@ -52,20 +52,20 @@ const icons: Record<string, string> = {
 };
 
 /** Muestra un recurso SVG original de Figma a sus dimensiones intrínsecas. */
-export function Icon({ name }: { name: string }): ReactNode {
+export function Icono({ nombre }: { nombre: string }): ReactNode {
   return (
     <span className="icon" aria-hidden="true">
-      <img src={`/assets/figma/${icons[name] || icons.disc}.svg`} alt="" />
+      <img src={`/assets/figma/${iconos[nombre] || iconos.disc}.svg`} alt="" />
     </span>
   );
 }
 
 /** Renderiza la identidad visual reutilizada en acceso y navegación. */
-export function Brand(): ReactNode {
+export function Marca(): ReactNode {
   return (
     <a className="brand" href="#/inicio" aria-label="Guess The Beat, inicio">
       <span className="brand-mark">
-        <Icon name="logo" />
+        <Icono nombre="logo" />
       </span>
       <span>GUESS THE BEAT</span>
     </a>
@@ -73,47 +73,47 @@ export function Brand(): ReactNode {
 }
 
 /** Dibuja las luces ambientales con los archivos originales exportados desde Figma. */
-export function Ambient({ auth = false }: { auth?: boolean }): ReactNode {
+export function Ambiente({ acceso: acceso = false }: { acceso?: boolean }): ReactNode {
   return (
-    <div className={`ambient ${auth ? 'ambient-auth' : ''}`} aria-hidden="true">
-      <img className="glow-one" src={`/assets/figma/${auth ? '90c35' : 'f2f21'}.svg`} alt="" />
-      <img className="glow-two" src={`/assets/figma/${auth ? 'a8693' : '0903b'}.svg`} alt="" />
+    <div className={`ambient ${acceso ? 'ambient-auth' : ''}`} aria-hidden="true">
+      <img className="glow-one" src={`/assets/figma/${acceso ? '90c35' : 'f2f21'}.svg`} alt="" />
+      <img className="glow-two" src={`/assets/figma/${acceso ? 'a8693' : '0903b'}.svg`} alt="" />
     </div>
   );
 }
 
 /** Presenta una etiqueta compacta de estado sin depender exclusivamente del color. */
-export function Badge({
+export function Insignia({
   children,
-  tone = 'cyan',
-  icon,
+  tono: tono = 'cyan',
+  icono,
 }: {
   children: ReactNode;
-  tone?: string;
-  icon?: string;
+  tono?: string;
+  icono?: string;
 }): ReactNode {
   return (
-    <span className={`badge ${tone}`}>
-      {icon && <Icon name={icon} />}
+    <span className={`badge ${tono}`}>
+      {icono && <Icono nombre={icono} />}
       {children}
     </span>
   );
 }
 
 /** Crea un botón accesible con variante, icono y bloqueo durante operaciones pendientes. */
-export function Button({
+export function Boton({
   children,
   onClick,
-  tone = 'primary',
-  icon,
+  tono: tono = 'primary',
+  icono,
   disabled,
   type = 'button',
   className = '',
 }: {
   children: ReactNode;
   onClick?: () => void;
-  tone?: string;
-  icon?: string;
+  tono?: string;
+  icono?: string;
   disabled?: boolean;
   type?: 'button' | 'submit';
   className?: string;
@@ -121,18 +121,18 @@ export function Button({
   return (
     <button
       type={type}
-      className={`button ${tone} ${className}`}
+      className={`button ${tono} ${className}`}
       onClick={onClick}
       disabled={disabled}
     >
-      {icon && <Icon name={icon} />}
+      {icono && <Icono nombre={icono} />}
       {children}
     </button>
   );
 }
 
 /** Agrupa contenido en una tarjeta con borde y superficie de los tokens del diseño. */
-export function Card({
+export function Tarjeta({
   children,
   className = '',
 }: {
@@ -143,46 +143,46 @@ export function Card({
 }
 
 /** Organiza la introducción de cada pantalla y una acción opcional a la derecha. */
-export function Heading({
-  eyebrow,
-  title,
+export function Encabezado({
+  antetitulo,
+  titulo,
   children,
 }: {
-  eyebrow: string;
-  title: string;
+  antetitulo: string;
+  titulo: string;
   children?: ReactNode;
 }): ReactNode {
   return (
     <div className="page-heading">
       <div>
-        <p className="eyebrow">{eyebrow}</p>
-        <h1>{title}</h1>
+        <p className="eyebrow">{antetitulo}</p>
+        <h1>{titulo}</h1>
       </div>
       {children}
     </div>
   );
 }
 
-const heights = [
+const alturas = [
   13, 24, 17, 32, 22, 40, 27, 45, 30, 19, 37, 49, 32, 22, 42, 27, 47, 35, 20, 36, 52, 27, 40, 23,
   33, 46, 27, 16, 36, 24, 43, 30, 17, 35, 20, 48, 29, 40, 22, 32,
 ];
 
 /** Representa la onda del diseño y anima sus barras solo mientras hay reproducción real. */
-export function Waveform({
-  playing = false,
-  progress = 0.62,
+export function FormaOnda({
+  reproduciendo: reproduciendo = false,
+  progreso: progreso = 0.62,
 }: {
-  playing?: boolean;
-  progress?: number;
+  reproduciendo?: boolean;
+  progreso?: number;
 }): ReactNode {
   return (
-    <div className={`waveform ${playing ? 'playing' : ''}`} aria-hidden="true">
-      {heights.map((height, i) => (
+    <div className={`waveform ${reproduciendo ? 'playing' : ''}`} aria-hidden="true">
+      {alturas.map((altura, i) => (
         <span
           key={i}
-          className={i / heights.length < progress ? 'lit' : ''}
-          style={{ height, animationDelay: `${i * -0.07}s` }}
+          className={i / alturas.length < progreso ? 'lit' : ''}
+          style={{ height: altura, animationDelay: `${i * -0.07}s` }}
         />
       ))}
     </div>
@@ -190,31 +190,31 @@ export function Waveform({
 }
 
 /** Construye una barra segmentada y etiqueta el avance para lectores de pantalla. */
-export function Progress({
-  value,
+export function Progreso({
+  valor,
   total = 10,
-  label,
+  etiqueta,
 }: {
-  value: number;
+  valor: number;
   total?: number;
-  label?: string;
+  etiqueta?: string;
 }): ReactNode {
   return (
     <div className="progress">
       <div className="progress-label">
-        <span>{label}</span>
-        <small>{Math.round((value / total) * 100)}%</small>
+        <span>{etiqueta}</span>
+        <small>{Math.round((valor / total) * 100)}%</small>
       </div>
       <div
         className="segments"
         role="progressbar"
-        aria-label={label || 'Progreso'}
+        aria-label={etiqueta || 'Progreso'}
         aria-valuemin={0}
         aria-valuemax={total}
-        aria-valuenow={value}
+        aria-valuenow={valor}
       >
         {Array.from({ length: total }, (_, i) => (
-          <i key={i} className={i < value ? 'complete' : ''} />
+          <i key={i} className={i < valor ? 'complete' : ''} />
         ))}
       </div>
     </div>
@@ -222,23 +222,23 @@ export function Progress({
 }
 
 /** Muestra un valor estadístico real con su etiqueta e icono opcional. */
-export function Metric({
-  label,
-  value,
-  icon,
+export function Metrica({
+  etiqueta,
+  valor,
+  icono,
   cyan = false,
 }: {
-  label: string;
-  value: ReactNode;
-  icon?: string;
+  etiqueta: string;
+  valor: ReactNode;
+  icono?: string;
   cyan?: boolean;
 }): ReactNode {
   return (
     <div className={`metric ${cyan ? 'cyan-text' : ''}`}>
-      {icon && <Icon name={icon} />}
+      {icono && <Icono nombre={icono} />}
       <div>
-        <strong>{value}</strong>
-        <small>{label}</small>
+        <strong>{valor}</strong>
+        <small>{etiqueta}</small>
       </div>
     </div>
   );
@@ -246,45 +246,45 @@ export function Metric({
 
 /** Presenta una inicial derivada del nombre real del usuario o jugador. */
 export function Avatar({
-  name,
+  nombre,
   purple = false,
-  large = false,
+  grande: grande = false,
 }: {
-  name: string;
+  nombre: string;
   purple?: boolean;
-  large?: boolean;
+  grande?: boolean;
 }): ReactNode {
   return (
-    <span className={`avatar ${purple ? 'purple' : ''} ${large ? 'large' : ''}`}>
-      {name.slice(0, 2).toUpperCase()}
+    <span className={`avatar ${purple ? 'purple' : ''} ${grande ? 'large' : ''}`}>
+      {nombre.slice(0, 2).toUpperCase()}
     </span>
   );
 }
 
 /** Muestra un interruptor con semántica ARIA y etiqueta accesible. */
-export function Toggle({
-  label,
-  detail,
-  value,
+export function Interruptor({
+  etiqueta,
+  detalle,
+  valor,
   onChange,
 }: {
-  label: string;
-  detail?: string;
-  value: boolean;
+  etiqueta: string;
+  detalle?: string;
+  valor: boolean;
   onChange: () => void;
 }): ReactNode {
   return (
     <div className="toggle-row">
       <div>
-        <strong>{label}</strong>
-        {detail && <small>{detail}</small>}
+        <strong>{etiqueta}</strong>
+        {detalle && <small>{detalle}</small>}
       </div>
       <button
-        className={`toggle ${value ? 'on' : ''}`}
+        className={`toggle ${valor ? 'on' : ''}`}
         type="button"
         role="switch"
-        aria-checked={value}
-        aria-label={label}
+        aria-checked={valor}
+        aria-label={etiqueta}
         onClick={onChange}
       >
         <span />
@@ -294,72 +294,72 @@ export function Toggle({
 }
 
 /** Sincroniza un recurso mediante Socket.IO con sondeo de respaldo y libera suscripciones al salir. */
-export function useLive<T>(
-  channel: string,
-  fetcher: () => Promise<T>,
-): { data: T | null; setData: (data: T) => void; error: string } {
-  const [data, setData] = useState<T | null>(null),
-    [error, setError] = useState('');
-  const latest = useRef(fetcher);
-  latest.current = fetcher;
+export function useEnVivo<T>(
+  canal: string,
+  consultarProveedor: () => Promise<T>,
+): { datos: T | null; fijarDatos: (datos: T) => void; error: string } {
+  const [datos, fijarDatos] = useState<T | null>(null),
+    [error, fijarError] = useState('');
+  const masReciente = useRef(consultarProveedor);
+  masReciente.current = consultarProveedor;
   useEffect(() => {
-    let disposed = false,
-      running = false;
+    let descartado = false,
+      enCurso = false;
     /** Actualiza el recurso sin solapar solicitudes de sondeo y notificaciones. */
-    async function refresh(): Promise<void> {
-      if (running) return;
-      running = true;
+    async function actualizar(): Promise<void> {
+      if (enCurso) return;
+      enCurso = true;
       try {
-        const value = await latest.current();
-        if (!disposed) {
-          setData(value);
-          setError('');
+        const valor = await masReciente.current();
+        if (!descartado) {
+          fijarDatos(valor);
+          fijarError('');
         }
-      } catch (failure) {
-        if (!disposed) setError((failure as Error).message);
+      } catch (fallo) {
+        if (!descartado) fijarError((fallo as Error).message);
       } finally {
-        running = false;
+        enCurso = false;
       }
     }
     const socket = io({ autoConnect: true });
-    socket.on('connect', () => socket.emit('subscribe', channel));
-    socket.on('refresh', refresh);
-    void refresh();
-    const timer = window.setInterval(refresh, 2000);
+    socket.on('connect', () => socket.emit('suscribir', canal));
+    socket.on('actualizar', actualizar);
+    void actualizar();
+    const temporizador = window.setInterval(actualizar, 2000);
     return () => {
-      disposed = true;
-      window.clearInterval(timer);
+      descartado = true;
+      window.clearInterval(temporizador);
       socket.disconnect();
     };
-  }, [channel]);
-  return { data, setData, error };
+  }, [canal]);
+  return { datos, fijarDatos, error };
 }
 
 /** Evita dobles envíos y centraliza los mensajes de operaciones asíncronas del usuario. */
-export function useAction(notify: (message: string) => void): {
-  busy: boolean;
-  run: (operation: () => Promise<void>) => Promise<void>;
+export function useAccion(notificar: (mensaje: string) => void): {
+  ocupado: boolean;
+  ejecutar: (operacion: () => Promise<void>) => Promise<void>;
 } {
-  const [busy, setBusy] = useState(false);
-  const active = useRef(false);
+  const [ocupado, fijarOcupado] = useState(false);
+  const activo = useRef(false);
   /** Ejecuta una operación exclusiva y vuelve a habilitar controles tanto en éxito como en error. */
-  async function run(operation: () => Promise<void>): Promise<void> {
-    if (active.current) return;
-    active.current = true;
-    setBusy(true);
+  async function ejecutar(operacion: () => Promise<void>): Promise<void> {
+    if (activo.current) return;
+    activo.current = true;
+    fijarOcupado(true);
     try {
-      await operation();
+      await operacion();
     } catch (error) {
-      notify((error as Error).message);
+      notificar((error as Error).message);
     } finally {
-      active.current = false;
-      setBusy(false);
+      activo.current = false;
+      fijarOcupado(false);
     }
   }
-  return { busy, run };
+  return { ocupado, ejecutar };
 }
 
 /** Formatea puntuaciones de forma coherente con la presentación en español del diseño. */
-export function points(value: number): string {
-  return value.toLocaleString('es-ES');
+export function puntos(valor: number): string {
+  return valor.toLocaleString('es-ES');
 }

@@ -1,99 +1,102 @@
 /** Comunicación en tiempo real: canales de Socket.IO y reloj de las partidas multijugador. */
 import type { Server as HttpServer } from 'node:http';
 import { Server } from 'socket.io';
-import { allowedOrigins } from './configuracion.js';
-import { findSession, SESSION_COOKIE } from './servicios/sesiones.js';
-import { getRoom } from './servicios/salas.js';
-import { getGame, advanceGame } from './servicios/partidas.js';
-import { query } from './datos/base-datos.js';
+import { origenesPermitidos } from './configuracion.js';
+import { buscarSesion, COOKIE_SESION } from './servicios/sesiones.js';
+import { obtenerSala } from './servicios/salas.js';
+import { obtenerPartida, avanzarPartida } from './servicios/partidas.js';
+import { consultar } from './datos/base-datos.js';
 
 /** Controles que el arranque necesita para avisar a los clientes y detener el servicio. */
-export interface Realtime {
+export interface TiempoReal {
   /** Envía una señal de actualización; cada cliente recupera su estado privado mediante la API. */
-  notify: (channel: string) => void;
+  notificar: (canal: string) => void;
   /** Detiene el reloj y cierra los sockets. */
-  stop: () => void;
+  detener: () => void;
 }
 
 /** Conecta Socket.IO al servidor HTTP, exige sesión y arranca el reloj de las partidas. */
-export function createRealtime(http: HttpServer): Realtime {
-  const io = new Server(http, {
+export function crearTiempoReal(servidorHttp: HttpServer): TiempoReal {
+  const io = new Server(servidorHttp, {
     maxHttpBufferSize: 4096,
-    allowRequest: (req, callback) => {
-      const origin = req.headers.origin;
-      callback(
+    allowRequest: (req, responder) => {
+      const origen = req.headers.origin;
+      responder(
         null,
-        !origin ||
+        !origen ||
           [
-            ...allowedOrigins(),
+            ...origenesPermitidos(),
             `http://${req.headers.host}`,
             `https://${req.headers.host}`,
-          ].includes(origin),
+          ].includes(origen),
       );
     },
   });
-  const notify = (channel: string): void => {
-    io.to(channel).emit('refresh');
+  const notificar = (canal: string): void => {
+    io.to(canal).emit('actualizar');
   };
-  io.use(async (socket, next) => {
+  io.use(async (socket, siguiente) => {
     try {
       const cookie = socket.request.headers.cookie
         ?.split(';')
-        .map((part) => part.trim())
-        .find((part) => part.startsWith(`${SESSION_COOKIE}=`))
-        ?.slice(SESSION_COOKIE.length + 1);
-      const user = await findSession(cookie);
-      if (!user) return next(new Error('Inicia sesión.'));
-      socket.data.userId = user.id;
-      next();
+        .map((parte) => parte.trim())
+        .find((parte) => parte.startsWith(`${COOKIE_SESION}=`))
+        ?.slice(COOKIE_SESION.length + 1);
+      const usuario = await buscarSesion(cookie);
+      if (!usuario) return siguiente(new Error('Inicia sesión.'));
+      socket.data.usuarioId = usuario.id;
+      siguiente();
     } catch {
-      next(new Error('No se pudo verificar la sesión.'));
+      siguiente(new Error('No se pudo verificar la sesión.'));
     }
   });
   io.on('connection', (socket) => {
     // El canal personal recibe invitaciones incluso cuando el usuario entra a una sala o partida.
-    const personal = `user:${socket.data.userId}`;
+    const personal = `usuario:${socket.data.usuarioId}`;
     void socket.join(personal);
-    socket.on('subscribe', async (channel: unknown) => {
-      if (typeof channel !== 'string' || channel.length > 50) return;
+    socket.on('suscribir', async (canal: unknown) => {
+      if (typeof canal !== 'string' || canal.length > 50) return;
       try {
-        if (channel.startsWith('room:')) await getRoom(channel.slice(5), socket.data.userId);
-        else if (channel.startsWith('game:')) await getGame(channel.slice(5), socket.data.userId);
-        else if (channel !== personal) return;
-        for (const room of socket.rooms)
-          if (room !== socket.id && room !== personal) await socket.leave(room);
-        await socket.join(channel);
+        // Solo se permite escuchar salas y partidas en las que la persona participa.
+        if (canal.startsWith('sala:'))
+          await obtenerSala(canal.slice('sala:'.length), socket.data.usuarioId);
+        else if (canal.startsWith('partida:'))
+          await obtenerPartida(canal.slice('partida:'.length), socket.data.usuarioId);
+        else if (canal !== personal) return;
+        for (const sala of socket.rooms)
+          if (sala !== socket.id && sala !== personal) await socket.leave(sala);
+        await socket.join(canal);
       } catch {
-        socket.emit('subscription-error', 'No tienes acceso a este espacio.');
+        socket.emit('error-suscripcion', 'No tienes acceso a este espacio.');
       }
     });
   });
 
-  let ticking = false;
+  let avanzandoReloj = false;
   /** Avanza los relojes multijugador incluso si los navegadores se desconectan. */
-  async function tick(): Promise<void> {
-    if (ticking) return;
-    ticking = true;
+  async function avanzarReloj(): Promise<void> {
+    if (avanzandoReloj) return;
+    avanzandoReloj = true;
     try {
-      const games = await query<{ id: string }>(
-        "SELECT id FROM games WHERE status='playing' AND mode<>'solo'",
+      const partidas = await consultar<{ id: string }>(
+        "SELECT id FROM partidas WHERE estado='en_curso' AND modo<>'individual'",
       );
-      for (const game of games) {
-        await advanceGame(game.id);
-        notify(`game:${game.id}`);
+      for (const partida of partidas) {
+        await avanzarPartida(partida.id);
+        notificar(`partida:${partida.id}`);
       }
     } catch (error) {
       console.error('Sincronización:', (error as Error).message);
     } finally {
-      ticking = false;
+      avanzandoReloj = false;
     }
   }
-  const timer = setInterval(tick, 1000);
+  const temporizador = setInterval(avanzarReloj, 1000);
 
   return {
-    notify,
-    stop: () => {
-      clearInterval(timer);
+    notificar,
+    detener: () => {
+      clearInterval(temporizador);
       void io.close();
     },
   };

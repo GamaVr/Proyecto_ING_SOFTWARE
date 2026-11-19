@@ -6,31 +6,31 @@ import cookieParser from 'cookie-parser';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 import { ZodError } from 'zod';
-import { env, allowedOrigins } from './configuracion.js';
-import { query } from './datos/base-datos.js';
-import { HttpError } from './errores.js';
-import { type MusicFetch } from './servicios/musica/deezer.js';
-import { musicRouter } from './rutas/musica.js';
-import { authRoutes } from './rutas/autenticacion.js';
-import { profileRoutes } from './rutas/perfil.js';
-import { socialRoutes } from './rutas/social.js';
-import { gameRoutes } from './rutas/partidas.js';
-import { roomRoutes } from './rutas/salas.js';
-import { requireUser } from './servicios/sesiones.js';
+import { entorno, origenesPermitidos } from './configuracion.js';
+import { consultar } from './datos/base-datos.js';
+import { ErrorHttp } from './errores.js';
+import { type ConsultaMusica } from './servicios/musica/deezer.js';
+import { rutasMusica } from './rutas/musica.js';
+import { rutasAutenticacion } from './rutas/autenticacion.js';
+import { rutasPerfil } from './rutas/perfil.js';
+import { rutasSocial } from './rutas/social.js';
+import { rutasPartidas } from './rutas/partidas.js';
+import { rutasSalas } from './rutas/salas.js';
+import { exigirUsuario } from './servicios/sesiones.js';
 
 /** Construye la API con validación, sesiones, protección de origen y errores públicos consistentes. */
-export function createApp(
-  notify: (channel: string) => void = () => {},
-  musicFetch?: MusicFetch,
+export function crearAplicacion(
+  notificar: (canal: string) => void = () => {},
+  consultarMusica?: ConsultaMusica,
 ): express.Express {
-  const app = express();
-  app.disable('x-powered-by');
+  const aplicacion = express();
+  aplicacion.disable('x-powered-by');
   // La aplicación solo recibe tráfico detrás de un proxy local (por ejemplo, cloudflared).
-  app.set('trust proxy', 1);
-  app.use(
+  aplicacion.set('trust proxy', 1);
+  aplicacion.use(
     helmet({
       contentSecurityPolicy:
-        env.NODE_ENV === 'production'
+        entorno.NODE_ENV === 'production'
           ? {
               directives: {
                 defaultSrc: ["'self'"],
@@ -42,12 +42,12 @@ export function createApp(
               },
             }
           : false,
-      strictTransportSecurity: env.NODE_ENV === 'production' ? undefined : false,
+      strictTransportSecurity: entorno.NODE_ENV === 'production' ? undefined : false,
     }),
   );
-  app.use(express.json({ limit: '12kb' }));
-  app.use(cookieParser());
-  app.use(
+  aplicacion.use(express.json({ limit: '12kb' }));
+  aplicacion.use(cookieParser());
+  aplicacion.use(
     '/api',
     rateLimit({
       windowMs: 60000,
@@ -58,41 +58,43 @@ export function createApp(
     }),
   );
   // Los navegadores envían Origin en escrituras; se comprueba además de SameSite.
-  app.use('/api', (req, _res, next) => {
-    const origin = req.headers.origin;
-    const allowed = [
-      ...allowedOrigins(),
+  aplicacion.use('/api', (req, _res, siguiente) => {
+    const origen = req.headers.origin;
+    const permitidos = [
+      ...origenesPermitidos(),
       `http://${req.headers.host}`,
       `https://${req.headers.host}`,
     ];
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && origin && !allowed.includes(origin))
-      return next(new HttpError(403, 'Origen de solicitud no permitido.'));
-    next();
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && origen && !permitidos.includes(origen))
+      return siguiente(new ErrorHttp(403, 'Origen de solicitud no permitido.'));
+    siguiente();
   });
-  app.get('/api/health', async (_req, res) => {
+  aplicacion.get('/api/estado', async (_req, res) => {
     try {
-      const [row] = await query<{ version: string }>('SELECT VERSION() AS version');
-      res.json({ status: 'ok', database: 'mysql', version: row.version });
+      const [fila] = await consultar<{ version: string }>('SELECT VERSION() AS version');
+      res.json({ estado: 'ok', baseDatos: 'mysql', version: fila.version });
     } catch {
       res.status(503).json({
-        status: 'unavailable',
+        estado: 'unavailable',
         error: 'No hay conexión con MySQL. Revisa .env y el servidor de base de datos.',
       });
     }
   });
-  app.use('/api', authRoutes());
-  app.use('/api', requireUser);
-  app.use('/api/music', musicRouter(musicFetch));
-  app.use('/api', profileRoutes());
-  app.use('/api', socialRoutes(notify));
-  app.use('/api', gameRoutes(notify, musicFetch));
-  app.use('/api', roomRoutes(notify, musicFetch));
-  app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Ruta no encontrada.')));
+  aplicacion.use('/api', rutasAutenticacion());
+  aplicacion.use('/api', exigirUsuario);
+  aplicacion.use('/api/musica', rutasMusica(consultarMusica));
+  aplicacion.use('/api', rutasPerfil());
+  aplicacion.use('/api', rutasSocial(notificar));
+  aplicacion.use('/api', rutasPartidas(notificar, consultarMusica));
+  aplicacion.use('/api', rutasSalas(notificar, consultarMusica));
+  aplicacion.use('/api', (_req, _res, siguiente) =>
+    siguiente(new ErrorHttp(404, 'Ruta no encontrada.')),
+  );
   if (existsSync(path.resolve('dist/index.html'))) {
-    app.use(express.static(path.resolve('dist')));
-    app.get('/{*path}', (_req, res) => res.sendFile(path.resolve('dist/index.html')));
+    aplicacion.use(express.static(path.resolve('dist')));
+    aplicacion.get('/{*path}', (_req, res) => res.sendFile(path.resolve('dist/index.html')));
   }
-  app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  aplicacion.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (res.headersSent) {
       _next(error);
       return;
@@ -101,18 +103,18 @@ export function createApp(
       res.status(422).json({ error: error.issues[0]?.message || 'Revisa los datos enviados.' });
       return;
     }
-    if (error instanceof HttpError) {
-      res.status(error.status).json({ error: error.message });
+    if (error instanceof ErrorHttp) {
+      res.status(error.estado).json({ error: error.message });
       return;
     }
     if (error instanceof SyntaxError) {
       res.status(400).json({ error: 'JSON inválido.' });
       return;
     }
-    const code = (error as { code?: string }).code;
+    const codigo = (error as { code?: string }).code;
     if (
-      code &&
-      ['ECONNREFUSED', 'EACCES', 'ER_ACCESS_DENIED_ERROR', 'ER_BAD_DB_ERROR'].includes(code)
+      codigo &&
+      ['ECONNREFUSED', 'EACCES', 'ER_ACCESS_DENIED_ERROR', 'ER_BAD_DB_ERROR'].includes(codigo)
     ) {
       res
         .status(503)
@@ -122,5 +124,5 @@ export function createApp(
     console.error('Error interno:', error instanceof Error ? error.message : 'desconocido');
     res.status(500).json({ error: 'Ocurrió un error en el servidor. Vuelve a intentarlo.' });
   });
-  return app;
+  return aplicacion;
 }

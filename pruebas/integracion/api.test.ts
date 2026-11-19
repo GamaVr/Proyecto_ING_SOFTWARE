@@ -2,355 +2,430 @@ import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { createApp } from '../../servidor/aplicacion.js';
-import { pool, query, write } from '../../servidor/datos/base-datos.js';
-import { advanceGame } from '../../servidor/servicios/partidas.js';
+import { crearAplicacion } from '../../servidor/aplicacion.js';
+import { conexiones, consultar, escribir } from '../../servidor/datos/base-datos.js';
+import { avanzarPartida } from '../../servidor/servicios/partidas.js';
 import {
-  DEFAULT_CONFIG,
-  DEFAULT_SETTINGS,
-  type GameSnapshot,
-  type RoomSnapshot,
-  type User,
+  CONFIGURACION_PREDETERMINADA,
+  PREFERENCIAS_PREDETERMINADAS,
+  type EstadoPartida,
+  type EstadoSala,
+  type Usuario,
 } from '../../compartido/tipos.js';
 
-let server: Server,
+let servidor: Server,
   base = '';
-const users: { user: User; cookie: string; password: string }[] = [],
-  games: string[] = [],
-  rooms: string[] = [];
+const usuarios: { usuario: Usuario; cookie: string; contrasena: string }[] = [],
+  partidas: string[] = [],
+  salas: string[] = [];
 /** Envía una solicitud HTTP a la API de pruebas con su conexión MySQL real. */
-async function request<T>(
-  route: string,
-  method = 'GET',
-  body?: unknown,
+async function solicitar<T>(
+  rutaDestino: string,
+  metodo = 'GET',
+  cuerpo?: unknown,
   cookie = '',
-): Promise<{ status: number; data: T; cookie: string }> {
-  const response = await fetch(`${base}/api${route}`, {
-    method,
+): Promise<{ estado: number; datos: T; cookie: string }> {
+  const respuestaHttp = await fetch(`${base}/api${rutaDestino}`, {
+    method: metodo,
     headers: {
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(cuerpo !== undefined ? { 'Content-Type': 'application/json' } : {}),
       ...(cookie ? { cookie } : {}),
     },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    ...(cuerpo !== undefined ? { body: JSON.stringify(cuerpo) } : {}),
   });
   return {
-    status: response.status,
-    data: response.status === 204 ? (undefined as T) : ((await response.json()) as T),
-    cookie: response.headers.get('set-cookie') || '',
+    estado: respuestaHttp.status,
+    datos: respuestaHttp.status === 204 ? (undefined as T) : ((await respuestaHttp.json()) as T),
+    cookie: respuestaHttp.headers.get('set-cookie') || '',
   };
 }
 before(async () => {
-  server = createServer(createApp());
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  servidor = createServer(crearAplicacion());
+  await new Promise<void>((resolve) => servidor.listen(0, '127.0.0.1', resolve));
+  base = `http://127.0.0.1:${(servidor.address() as { port: number }).port}`;
 });
 after(async () => {
   // Solo elimina los UUID y códigos creados por esta ejecución.
-  for (const code of rooms) await write('DELETE FROM rooms WHERE code=?', [code]);
-  for (const id of games) await write('DELETE FROM games WHERE id=?', [id]);
-  for (const item of users) await write('DELETE FROM users WHERE id=?', [item.user.id]);
-  await pool.end();
-  await new Promise<void>((resolve) => server.close(() => resolve()));
+  for (const codigo of salas) await escribir('DELETE FROM salas WHERE codigo=?', [codigo]);
+  for (const id of partidas) await escribir('DELETE FROM partidas WHERE id=?', [id]);
+  for (const elemento of usuarios)
+    await escribir('DELETE FROM usuarios WHERE id=?', [elemento.usuario.id]);
+  await conexiones.end();
+  await new Promise<void>((resolve) => servidor.close(() => resolve()));
 });
 test('API y MySQL: identidad, puntuación, aislamiento y salas de cuatro personas', async (t) => {
   await t.test('usa MySQL oficial y exige sesión', async () => {
-    const health = await request<{ version: string }>('/health');
-    assert.equal(health.status, 200);
-    assert.match(health.data.version, /^8\./);
-    assert.doesNotMatch(health.data.version, /MariaDB/);
-    assert.equal((await request('/me')).status, 401);
+    const salud = await solicitar<{ version: string }>('/estado');
+    assert.equal(salud.estado, 200);
+    assert.match(salud.datos.version, /^8\./);
+    assert.doesNotMatch(salud.datos.version, /MariaDB/);
+    assert.equal((await solicitar('/perfil')).estado, 401);
     assert.equal(
-      (await request('/auth/register', 'POST', { name: 'A', email: 'bad', password: '123' }))
-        .status,
+      (
+        await solicitar('/autenticacion/registro', 'POST', {
+          nombre: 'A',
+          correo: 'bad',
+          contrasena: '123',
+        })
+      ).estado,
       422,
     );
     for (let i = 0; i < 4; i++) {
-      const email = `qa-${randomUUID()}@example.test`,
-        password = `Prueba-${randomUUID()}`;
-      const result = await request<{ user: User }>('/auth/register', 'POST', {
-        name: `QA ${i + 1}`,
-        email,
-        password,
-        recoveryCode: '1234',
+      const correo = `qa-${randomUUID()}@example.test`,
+        contrasena = `Prueba-${randomUUID()}`;
+      const resultado = await solicitar<{ usuario: Usuario }>('/autenticacion/registro', 'POST', {
+        nombre: `QA ${i + 1}`,
+        correo,
+        contrasena,
+        codigoRecuperacion: '1234',
       });
-      assert.equal(result.status, 201);
-      assert.match(result.cookie, /HttpOnly/);
-      assert.match(result.cookie, /SameSite=Lax/);
-      users.push({ user: result.data.user, cookie: result.cookie.split(';')[0], password });
+      assert.equal(resultado.estado, 201);
+      assert.match(resultado.cookie, /HttpOnly/);
+      assert.match(resultado.cookie, /SameSite=Lax/);
+      usuarios.push({
+        usuario: resultado.datos.usuario,
+        cookie: resultado.cookie.split(';')[0],
+        contrasena,
+      });
     }
     assert.equal(
       (
-        await request('/auth/register', 'POST', {
-          ...users[0].user,
-          password: users[0].password,
-          recoveryCode: '1234',
+        await solicitar('/autenticacion/registro', 'POST', {
+          ...usuarios[0].usuario,
+          contrasena: usuarios[0].contrasena,
+          codigoRecuperacion: '1234',
         })
-      ).status,
+      ).estado,
       409,
     );
     assert.equal(
-      (await request('/auth/login', 'POST', { email: users[0].user.email, password: 'incorrecta' }))
-        .status,
+      (
+        await solicitar('/autenticacion/iniciar-sesion', 'POST', {
+          correo: usuarios[0].usuario.correo,
+          contrasena: 'incorrecta',
+        })
+      ).estado,
       401,
     );
     assert.equal(
       (
-        await request('/auth/login', 'POST', {
-          email: users[0].user.email,
-          password: users[0].password,
-          remember: true,
+        await solicitar('/autenticacion/iniciar-sesion', 'POST', {
+          correo: usuarios[0].usuario.correo,
+          contrasena: usuarios[0].contrasena,
+          recordar: true,
         })
-      ).status,
+      ).estado,
       200,
     );
   });
   await t.test('guarda preferencias y rechaza orígenes externos', async () => {
-    const settings = { ...DEFAULT_SETTINGS, volume: 41, largeInterface: true };
-    assert.equal((await request('/settings', 'PUT', settings, users[0].cookie)).status, 200);
+    const preferencias = { ...PREFERENCIAS_PREDETERMINADAS, volumen: 41, interfazGrande: true };
+    assert.equal(
+      (await solicitar('/preferencias', 'PUT', preferencias, usuarios[0].cookie)).estado,
+      200,
+    );
     assert.deepEqual(
-      (await request<{ settings: unknown }>('/settings', 'GET', undefined, users[0].cookie)).data
-        .settings,
-      settings,
+      (
+        await solicitar<{ preferencias: unknown }>(
+          '/preferencias',
+          'GET',
+          undefined,
+          usuarios[0].cookie,
+        )
+      ).datos.preferencias,
+      preferencias,
     );
     assert.equal(
-      (await request('/settings', 'PUT', { ...settings, volume: 200 }, users[0].cookie)).status,
+      (
+        await solicitar(
+          '/preferencias',
+          'PUT',
+          { ...preferencias, volumen: 200 },
+          usuarios[0].cookie,
+        )
+      ).estado,
       422,
     );
-    const response = await fetch(`${base}/api/settings`, {
+    const respuestaHttp = await fetch(`${base}/api/preferencias`, {
       method: 'PUT',
       headers: {
         Origin: 'https://untrusted.example',
         'Content-Type': 'application/json',
-        cookie: users[0].cookie,
+        cookie: usuarios[0].cookie,
       },
-      body: JSON.stringify(settings),
+      body: JSON.stringify(preferencias),
     });
-    assert.equal(response.status, 403);
+    assert.equal(respuestaHttp.status, 403);
   });
   await t.test(
     'mantiene respuestas privadas y evita puntuar dos veces y saltar rondas',
     async () => {
-      const result = await request<GameSnapshot>(
-        '/games',
+      const resultado = await solicitar<EstadoPartida>(
+        '/partidas',
         'POST',
-        { ...DEFAULT_CONFIG, rounds: 5 },
-        users[0].cookie,
+        { ...CONFIGURACION_PREDETERMINADA, rondas: 5 },
+        usuarios[0].cookie,
       );
-      assert.equal(result.status, 201);
-      const game = result.data;
-      games.push(game.id);
-      assert.equal('song_ids' in game, false);
-      assert.equal(game.results.length, 0);
+      assert.equal(resultado.estado, 201);
+      const partida = resultado.datos;
+      partidas.push(partida.id);
+      assert.equal('song_ids' in partida, false);
+      assert.equal(partida.resultados.length, 0);
       assert.equal(
-        (await request(`/games/${game.id}`, 'GET', undefined, users[1].cookie)).status,
+        (await solicitar(`/partidas/${partida.id}`, 'GET', undefined, usuarios[1].cookie)).estado,
         403,
       );
       assert.equal(
-        (await request(`/games/${game.id}/audio`, 'GET', undefined, users[1].cookie)).status,
+        (await solicitar(`/partidas/${partida.id}/audio`, 'GET', undefined, usuarios[1].cookie))
+          .estado,
         403,
       );
       assert.equal(
-        (await request(`/games/${game.id}/next`, 'POST', { round: 0 }, users[0].cookie)).status,
+        (
+          await solicitar(
+            `/partidas/${partida.id}/siguiente`,
+            'POST',
+            { ronda: 0 },
+            usuarios[0].cookie,
+          )
+        ).estado,
         409,
       );
-      for (let round = 0; round < 5; round++) {
-        await write('UPDATE games SET round_started_at=? WHERE id=?', [Date.now() - 100, game.id]);
-        const [song] = await query<{ title: string }>(
-          'SELECT s.title FROM games g JOIN songs s ON s.id=JSON_UNQUOTE(JSON_EXTRACT(g.song_ids,?)) WHERE g.id=?',
-          [`$[${round}]`, game.id],
+      for (let ronda = 0; ronda < 5; ronda++) {
+        await escribir('UPDATE partidas SET ronda_iniciada_en=? WHERE id=?', [
+          Date.now() - 100,
+          partida.id,
+        ]);
+        const [cancion] = await consultar<{ titulo: string }>(
+          'SELECT s.titulo FROM partidas g JOIN canciones s ON s.id=JSON_UNQUOTE(JSON_EXTRACT(g.canciones_ids,?)) WHERE g.id=?',
+          [`$[${ronda}]`, partida.id],
         );
-        const answer = await request<GameSnapshot>(
-          `/games/${game.id}/answer`,
+        const respuesta = await solicitar<EstadoPartida>(
+          `/partidas/${partida.id}/respuesta`,
           'POST',
-          { round, answer: song.title, points: 9999999 },
-          users[0].cookie,
+          { ronda, respuesta: cancion.titulo, puntos: 9999999 },
+          usuarios[0].cookie,
         );
-        assert.equal(answer.status, 200);
-        assert.equal(answer.data.results.at(-1)?.correct, true);
-        assert.ok(answer.data.results.at(-1)!.points <= 1200);
+        assert.equal(respuesta.estado, 200);
+        assert.equal(respuesta.datos.resultados.at(-1)?.correcta, true);
+        assert.ok(respuesta.datos.resultados.at(-1)!.puntos <= 1200);
         assert.equal(
           (
-            await request(
-              `/games/${game.id}/answer`,
+            await solicitar(
+              `/partidas/${partida.id}/respuesta`,
               'POST',
-              { round, answer: song.title },
-              users[0].cookie,
+              { ronda, respuesta: cancion.titulo },
+              usuarios[0].cookie,
             )
-          ).status,
+          ).estado,
           409,
         );
-        const advance = await request<GameSnapshot>(
-          `/games/${game.id}/next`,
+        const avanzar = await solicitar<EstadoPartida>(
+          `/partidas/${partida.id}/siguiente`,
           'POST',
-          { round },
-          users[0].cookie,
+          { ronda },
+          usuarios[0].cookie,
         );
-        assert.equal(advance.status, 200);
-        if (round < 4)
+        assert.equal(avanzar.estado, 200);
+        if (ronda < 4)
           assert.equal(
             (
-              await request(
-                `/games/${game.id}/answer`,
+              await solicitar(
+                `/partidas/${partida.id}/respuesta`,
                 'POST',
-                { round, answer: song.title },
-                users[0].cookie,
+                { ronda, respuesta: cancion.titulo },
+                usuarios[0].cookie,
               )
-            ).status,
+            ).estado,
             409,
           );
-        if (round === 4) assert.equal(advance.data.status, 'finished');
+        if (ronda === 4) assert.equal(avanzar.datos.estado, 'terminada');
       }
-      const me = await request<{ stats: { played: number; bestStreak: number } }>(
-        '/me',
+      const yo = await solicitar<{ estadisticas: { jugadas: number; mejorRacha: number } }>(
+        '/perfil',
         'GET',
         undefined,
-        users[0].cookie,
+        usuarios[0].cookie,
       );
-      assert.equal(me.data.stats.played, 1);
-      assert.equal(me.data.stats.bestStreak, 5);
+      assert.equal(yo.datos.estadisticas.jugadas, 1);
+      assert.equal(yo.datos.estadisticas.mejorRacha, 5);
     },
   );
   await t.test('sincroniza cuatro jugadores, chat, equipos y permisos del anfitrión', async () => {
-    const created = await request<RoomSnapshot>(
-      '/rooms',
+    const creada = await solicitar<EstadoSala>(
+      '/salas',
       'POST',
-      { name: 'Sala QA', mode: 'teams', config: { ...DEFAULT_CONFIG, rounds: 5 } },
-      users[0].cookie,
+      {
+        nombre: 'Sala QA',
+        modo: 'equipos',
+        configuracion: { ...CONFIGURACION_PREDETERMINADA, rondas: 5 },
+      },
+      usuarios[0].cookie,
     );
-    assert.equal(created.status, 201);
-    const code = created.data.code;
-    rooms.push(code);
-    for (const user of users.slice(1))
-      assert.equal((await request('/rooms/join', 'POST', { code }, user.cookie)).status, 200);
-    const state = await request<RoomSnapshot>(`/rooms/${code}`, 'GET', undefined, users[0].cookie);
-    assert.equal(state.data.players.length, 4);
-    assert.equal(state.data.players.filter((p) => p.team === 0).length, 2);
+    assert.equal(creada.estado, 201);
+    const codigo = creada.datos.codigo;
+    salas.push(codigo);
+    for (const usuario of usuarios.slice(1))
+      assert.equal(
+        (await solicitar('/salas/unirse', 'POST', { codigo }, usuario.cookie)).estado,
+        200,
+      );
+    const estadoActual = await solicitar<EstadoSala>(
+      `/salas/${codigo}`,
+      'GET',
+      undefined,
+      usuarios[0].cookie,
+    );
+    assert.equal(estadoActual.datos.jugadores.length, 4);
+    assert.equal(estadoActual.datos.jugadores.filter((p) => p.equipo === 0).length, 2);
     assert.equal(
-      (await request(`/rooms/${code}/start`, 'POST', undefined, users[0].cookie)).status,
+      (await solicitar(`/salas/${codigo}/iniciar`, 'POST', undefined, usuarios[0].cookie)).estado,
       409,
     );
     assert.equal(
-      (await request(`/rooms/${code}/start`, 'POST', undefined, users[1].cookie)).status,
+      (await solicitar(`/salas/${codigo}/iniciar`, 'POST', undefined, usuarios[1].cookie)).estado,
       403,
     );
-    for (const user of users)
+    for (const usuario of usuarios)
       assert.equal(
         (
-          await request(
-            `/rooms/${code}/player`,
+          await solicitar(
+            `/salas/${codigo}/jugador`,
             'PATCH',
-            { action: 'ready', ready: true },
-            user.cookie,
+            { accion: 'listo', listo: true },
+            usuario.cookie,
           )
-        ).status,
+        ).estado,
         200,
       );
-    await request(
-      `/rooms/${code}/messages`,
+    await solicitar(
+      `/salas/${codigo}/mensajes`,
       'POST',
-      { text: 'Mensaje de prueba <b>literal</b>' },
-      users[0].cookie,
+      { texto: 'Mensaje de prueba <b>literal</b>' },
+      usuarios[0].cookie,
     );
-    const chat = await request<RoomSnapshot>(`/rooms/${code}`, 'GET', undefined, users[1].cookie);
-    assert.equal(chat.data.messages[0].text, 'Mensaje de prueba <b>literal</b>');
-    const start = await request<{ gameId: string }>(
-      `/rooms/${code}/start`,
+    const chat = await solicitar<EstadoSala>(
+      `/salas/${codigo}`,
+      'GET',
+      undefined,
+      usuarios[1].cookie,
+    );
+    assert.equal(chat.datos.mensajes[0].texto, 'Mensaje de prueba <b>literal</b>');
+    const inicio = await solicitar<{ partidaId: string }>(
+      `/salas/${codigo}/iniciar`,
       'POST',
       undefined,
-      users[0].cookie,
+      usuarios[0].cookie,
     );
-    assert.equal(start.status, 200);
-    games.push(start.data.gameId);
-    for (const user of users) {
-      const game = await request<GameSnapshot>(
-        `/games/${start.data.gameId}`,
+    assert.equal(inicio.estado, 200);
+    partidas.push(inicio.datos.partidaId);
+    for (const usuario of usuarios) {
+      const partida = await solicitar<EstadoPartida>(
+        `/partidas/${inicio.datos.partidaId}`,
         'GET',
         undefined,
-        user.cookie,
+        usuario.cookie,
       );
-      assert.equal(game.data.id, start.data.gameId);
-      assert.equal(game.data.players.length, 4);
+      assert.equal(partida.datos.id, inicio.datos.partidaId);
+      assert.equal(partida.datos.jugadores.length, 4);
     }
-    for (let round = 0; round < 5; round++) {
-      await write('UPDATE games SET round_started_at=? WHERE id=?', [
+    for (let ronda = 0; ronda < 5; ronda++) {
+      await escribir('UPDATE partidas SET ronda_iniciada_en=? WHERE id=?', [
         // Tiempo de ronda agotado más la pausa de 2,2 s entre rondas.
-        Date.now() - (DEFAULT_CONFIG.seconds * 1000 + 3000),
-        start.data.gameId,
+        Date.now() - (CONFIGURACION_PREDETERMINADA.segundos * 1000 + 3000),
+        inicio.datos.partidaId,
       ]);
-      await advanceGame(start.data.gameId);
+      await avanzarPartida(inicio.datos.partidaId);
     }
     assert.equal(
       (
-        await request<GameSnapshot>(
-          `/games/${start.data.gameId}`,
+        await solicitar<EstadoPartida>(
+          `/partidas/${inicio.datos.partidaId}`,
           'GET',
           undefined,
-          users[0].cookie,
+          usuarios[0].cookie,
         )
-      ).data.status,
-      'finished',
+      ).datos.estado,
+      'terminada',
     );
   });
   await t.test('duelo privado exige confirmación de ambos y comienzo del anfitrión', async () => {
-    const created = await request<RoomSnapshot>(
-      '/rooms',
+    const creada = await solicitar<EstadoSala>(
+      '/salas',
       'POST',
-      { name: 'Duelo privado QA', mode: 'duel', config: { ...DEFAULT_CONFIG, rounds: 5 } },
-      users[0].cookie,
+      {
+        nombre: 'Duelo privado QA',
+        modo: 'duelo',
+        configuracion: { ...CONFIGURACION_PREDETERMINADA, rondas: 5 },
+      },
+      usuarios[0].cookie,
     );
-    assert.equal(created.status, 201);
-    const code = created.data.code;
-    rooms.push(code);
-    const joined = await request<RoomSnapshot>('/rooms/join', 'POST', { code }, users[1].cookie);
-    assert.equal(joined.status, 200);
-    assert.equal(joined.data.gameId, null);
-    assert.ok(joined.data.players.every((player) => !player.ready));
+    assert.equal(creada.estado, 201);
+    const codigo = creada.datos.codigo;
+    salas.push(codigo);
+    const unido = await solicitar<EstadoSala>(
+      '/salas/unirse',
+      'POST',
+      { codigo },
+      usuarios[1].cookie,
+    );
+    assert.equal(unido.estado, 200);
+    assert.equal(unido.datos.partidaId, null);
+    assert.ok(unido.datos.jugadores.every((jugador) => !jugador.listo));
     assert.equal(
-      (await request(`/rooms/${code}/start`, 'POST', undefined, users[0].cookie)).status,
+      (await solicitar(`/salas/${codigo}/iniciar`, 'POST', undefined, usuarios[0].cookie)).estado,
       409,
     );
-    for (const user of users.slice(0, 2))
+    for (const usuario of usuarios.slice(0, 2))
       assert.equal(
         (
-          await request(
-            `/rooms/${code}/player`,
+          await solicitar(
+            `/salas/${codigo}/jugador`,
             'PATCH',
-            { action: 'ready', ready: true },
-            user.cookie,
+            { accion: 'listo', listo: true },
+            usuario.cookie,
           )
-        ).status,
+        ).estado,
         200,
       );
     assert.equal(
-      (await request(`/rooms/${code}/start`, 'POST', undefined, users[1].cookie)).status,
+      (await solicitar(`/salas/${codigo}/iniciar`, 'POST', undefined, usuarios[1].cookie)).estado,
       403,
     );
-    const started = await request<{ gameId: string }>(
-      `/rooms/${code}/start`,
+    const iniciada = await solicitar<{ partidaId: string }>(
+      `/salas/${codigo}/iniciar`,
       'POST',
       undefined,
-      users[0].cookie,
+      usuarios[0].cookie,
     );
-    assert.equal(started.status, 200);
-    games.push(started.data.gameId);
-    for (let round = 0; round < 5; round++) {
-      await write('UPDATE games SET round_started_at=? WHERE id=?', [
+    assert.equal(iniciada.estado, 200);
+    partidas.push(iniciada.datos.partidaId);
+    for (let ronda = 0; ronda < 5; ronda++) {
+      await escribir('UPDATE partidas SET ronda_iniciada_en=? WHERE id=?', [
         // Tiempo de ronda agotado más la pausa de 2,2 s entre rondas.
-        Date.now() - (DEFAULT_CONFIG.seconds * 1000 + 3000),
-        started.data.gameId,
+        Date.now() - (CONFIGURACION_PREDETERMINADA.segundos * 1000 + 3000),
+        iniciada.datos.partidaId,
       ]);
-      await advanceGame(started.data.gameId);
+      await avanzarPartida(iniciada.datos.partidaId);
     }
-    const profile = await request<{ stats: Record<string, number> }>(
-      '/me',
+    const perfil = await solicitar<{ estadisticas: Record<string, number> }>(
+      '/perfil',
       'GET',
       undefined,
-      users[0].cookie,
+      usuarios[0].cookie,
     );
-    assert.deepEqual(Object.keys(profile.data.stats).sort(), ['bestScore', 'bestStreak', 'played']);
+    assert.deepEqual(Object.keys(perfil.datos.estadisticas).sort(), [
+      'jugadas',
+      'mejorPuntuacion',
+      'mejorRacha',
+    ]);
   });
   await t.test('revoca la sesión al cerrar sesión', async () => {
-    assert.equal((await request('/auth/logout', 'POST', undefined, users[0].cookie)).status, 204);
-    assert.equal((await request('/me', 'GET', undefined, users[0].cookie)).status, 401);
+    assert.equal(
+      (await solicitar('/autenticacion/cerrar-sesion', 'POST', undefined, usuarios[0].cookie))
+        .estado,
+      204,
+    );
+    assert.equal((await solicitar('/perfil', 'GET', undefined, usuarios[0].cookie)).estado, 401);
   });
 });

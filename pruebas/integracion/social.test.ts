@@ -2,269 +2,330 @@ import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { createApp } from '../../servidor/aplicacion.js';
-import { query, write, pool } from '../../servidor/datos/base-datos.js';
+import { crearAplicacion } from '../../servidor/aplicacion.js';
+import { consultar, escribir, conexiones } from '../../servidor/datos/base-datos.js';
 import {
-  DEFAULT_CONFIG,
-  type RoomSnapshot,
-  type SocialSnapshot,
-  type User,
-  type UserSearchResult,
+  CONFIGURACION_PREDETERMINADA,
+  type EstadoSala,
+  type EstadoSocial,
+  type Usuario,
+  type ResultadoBusquedaUsuario,
 } from '../../compartido/tipos.js';
 
-let server: Server,
+let servidor: Server,
   base = '';
-const users: { user: User; cookie: string }[] = [],
-  rooms: string[] = [];
+const usuarios: { usuario: Usuario; cookie: string }[] = [],
+  salas: string[] = [];
 
 /** Llama a la API de prueba con la cookie de la cuenta elegida. */
-async function call<T>(
-  path: string,
-  method = 'GET',
-  body?: unknown,
-  account = 0,
-): Promise<{ status: number; data: T }> {
-  const response = await fetch(`${base}/api${path}`, {
-    method,
+async function llamar<T>(
+  ruta: string,
+  metodo = 'GET',
+  cuerpo?: unknown,
+  cuenta = 0,
+): Promise<{ estado: number; datos: T }> {
+  const respuestaHttp = await fetch(`${base}/api${ruta}`, {
+    method: metodo,
     headers: {
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      ...(users[account] ? { cookie: users[account].cookie } : {}),
+      ...(cuerpo !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(usuarios[cuenta] ? { cookie: usuarios[cuenta].cookie } : {}),
     },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    ...(cuerpo !== undefined ? { body: JSON.stringify(cuerpo) } : {}),
   });
   return {
-    status: response.status,
-    data: response.status === 204 ? (undefined as T) : ((await response.json()) as T),
+    estado: respuestaHttp.status,
+    datos: respuestaHttp.status === 204 ? (undefined as T) : ((await respuestaHttp.json()) as T),
   };
 }
 
 /** Crea una amistad aceptada entre dos cuentas de prueba. */
-async function connect(from: number, to: number): Promise<void> {
-  assert.equal((await call('/friends', 'POST', { userId: users[to].user.id }, from)).status, 201);
+async function conectar(desde: number, hacia: number): Promise<void> {
   assert.equal(
-    (await call(`/friends/${users[from].user.id}/accept`, 'POST', undefined, to)).status,
+    (await llamar('/amigos', 'POST', { usuarioId: usuarios[hacia].usuario.id }, desde)).estado,
+    201,
+  );
+  assert.equal(
+    (await llamar(`/amigos/${usuarios[desde].usuario.id}/aceptar`, 'POST', undefined, hacia))
+      .estado,
     200,
   );
 }
 
 /** Crea una sala aislada y registra su código para retirarla al terminar. */
-async function room(mode: 'duel' | 'teams'): Promise<RoomSnapshot> {
-  const result = await call<RoomSnapshot>('/rooms', 'POST', {
-    name: 'Social QA',
-    mode,
-    config: { ...DEFAULT_CONFIG, rounds: 5 },
+async function sala(modo: 'duelo' | 'equipos'): Promise<EstadoSala> {
+  const resultado = await llamar<EstadoSala>('/salas', 'POST', {
+    nombre: 'Social QA',
+    modo,
+    configuracion: { ...CONFIGURACION_PREDETERMINADA, rondas: 5 },
   });
-  assert.equal(result.status, 201);
-  rooms.push(result.data.code);
-  return result.data;
+  assert.equal(resultado.estado, 201);
+  salas.push(resultado.datos.codigo);
+  return resultado.datos;
 }
 
 /** Envía una invitación desde el anfitrión a un amigo y devuelve el buzón de este último. */
-async function invite(code: string, recipient: number): Promise<SocialSnapshot> {
+async function invitar(codigo: string, destinatario: number): Promise<EstadoSocial> {
   assert.equal(
-    (await call(`/rooms/${code}/invitations`, 'POST', { userId: users[recipient].user.id })).status,
+    (
+      await llamar(`/salas/${codigo}/invitaciones`, 'POST', {
+        usuarioId: usuarios[destinatario].usuario.id,
+      })
+    ).estado,
     201,
   );
-  return (await call<SocialSnapshot>('/social', 'GET', undefined, recipient)).data;
+  return (await llamar<EstadoSocial>('/social', 'GET', undefined, destinatario)).datos;
 }
 
 before(async () => {
-  server = createServer(createApp());
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  servidor = createServer(crearAplicacion());
+  await new Promise<void>((resolve) => servidor.listen(0, '127.0.0.1', resolve));
+  base = `http://127.0.0.1:${(servidor.address() as { port: number }).port}`;
   for (let i = 0; i < 6; i++) {
-    const response = await fetch(`${base}/api/auth/register`, {
+    const respuestaHttp = await fetch(`${base}/api/autenticacion/registro`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: `Social QA ${i}`,
-        email: `social-${randomUUID()}@example.test`,
-        password: `Prueba-${randomUUID()}`,
-        recoveryCode: '1234',
+        nombre: `Social QA ${i}`,
+        correo: `social-${randomUUID()}@example.test`,
+        contrasena: `Prueba-${randomUUID()}`,
+        codigoRecuperacion: '1234',
       }),
     });
-    assert.equal(response.status, 201);
-    const result = (await response.json()) as { user: User };
-    users.push({ user: result.user, cookie: response.headers.get('set-cookie')!.split(';')[0] });
+    assert.equal(respuestaHttp.status, 201);
+    const resultado = (await respuestaHttp.json()) as { usuario: Usuario };
+    usuarios.push({
+      usuario: resultado.usuario,
+      cookie: respuestaHttp.headers.get('set-cookie')!.split(';')[0],
+    });
   }
 });
 after(async () => {
-  for (const code of rooms) await write('DELETE FROM rooms WHERE code=?', [code]);
-  for (const { user } of users) await write('DELETE FROM users WHERE id=?', [user.id]);
-  await pool.end();
-  await new Promise<void>((resolve) => server.close(() => resolve()));
+  for (const codigo of salas) await escribir('DELETE FROM salas WHERE codigo=?', [codigo]);
+  for (const { usuario } of usuarios)
+    await escribir('DELETE FROM usuarios WHERE id=?', [usuario.id]);
+  await conexiones.end();
+  await new Promise<void>((resolve) => servidor.close(() => resolve()));
 });
 
 test('amigos e invitaciones usan MySQL y respetan destinatarios y capacidad', async (t) => {
   await t.test('la búsqueda limita datos públicos y escapa comodines', async () => {
-    const result = await call<{ users: UserSearchResult[] }>(
-      `/users/search?q=${encodeURIComponent(users[1].user.email)}`,
+    const resultado = await llamar<{ usuarios: ResultadoBusquedaUsuario[] }>(
+      `/usuarios/buscar?q=${encodeURIComponent(usuarios[1].usuario.correo)}`,
     );
-    assert.equal(result.status, 200);
-    assert.equal(result.data.users[0].id, users[1].user.id);
+    assert.equal(resultado.estado, 200);
+    assert.equal(resultado.datos.usuarios[0].id, usuarios[1].usuario.id);
     assert.ok(
-      result.data.users.every((user) => !('email' in user) && user.id !== users[0].user.id),
+      resultado.datos.usuarios.every(
+        (usuario) => !('email' in usuario) && usuario.id !== usuarios[0].usuario.id,
+      ),
     );
-    assert.equal((await call('/users/search?q=x')).status, 422);
+    assert.equal((await llamar('/usuarios/buscar?q=x')).estado, 422);
     assert.deepEqual(
-      (await call<{ users: UserSearchResult[] }>('/users/search?q=__')).data.users,
+      (await llamar<{ usuarios: ResultadoBusquedaUsuario[] }>('/usuarios/buscar?q=__')).datos
+        .usuarios,
       [],
     );
   });
   await t.test('una solicitud no puede aceptarse desde la cuenta que la envió', async () => {
-    assert.equal((await call('/friends', 'POST', { userId: users[0].user.id })).status, 422);
-    assert.equal((await call('/friends', 'POST', { userId: randomUUID() })).status, 404);
-    assert.equal((await call('/friends', 'POST', { userId: users[1].user.id })).status, 201);
-    assert.equal((await call('/friends', 'POST', { userId: users[1].user.id })).status, 409);
-    assert.equal((await call(`/friends/${users[1].user.id}/accept`, 'POST')).status, 403);
     assert.equal(
-      (await call(`/friends/${users[0].user.id}/accept`, 'POST', undefined, 5)).status,
+      (await llamar('/amigos', 'POST', { usuarioId: usuarios[0].usuario.id })).estado,
+      422,
+    );
+    assert.equal((await llamar('/amigos', 'POST', { usuarioId: randomUUID() })).estado, 404);
+    assert.equal(
+      (await llamar('/amigos', 'POST', { usuarioId: usuarios[1].usuario.id })).estado,
+      201,
+    );
+    assert.equal(
+      (await llamar('/amigos', 'POST', { usuarioId: usuarios[1].usuario.id })).estado,
+      409,
+    );
+    assert.equal((await llamar(`/amigos/${usuarios[1].usuario.id}/aceptar`, 'POST')).estado, 403);
+    assert.equal(
+      (await llamar(`/amigos/${usuarios[0].usuario.id}/aceptar`, 'POST', undefined, 5)).estado,
       404,
     );
     assert.equal(
-      (await call<SocialSnapshot>('/social', 'GET', undefined, 1)).data.incomingRequests[0].id,
-      users[0].user.id,
+      (await llamar<EstadoSocial>('/social', 'GET', undefined, 1)).datos.solicitudesRecibidas[0].id,
+      usuarios[0].usuario.id,
     );
     assert.equal(
-      (await call(`/friends/${users[0].user.id}/accept`, 'POST', undefined, 1)).status,
+      (await llamar(`/amigos/${usuarios[0].usuario.id}/aceptar`, 'POST', undefined, 1)).estado,
       200,
     );
-    assert.equal((await call<SocialSnapshot>('/social')).data.friends[0].id, users[1].user.id);
-    for (const i of [2, 3, 4]) await connect(0, i);
-    assert.equal((await call<SocialSnapshot>('/social')).data.friends.length, 4);
+    assert.equal(
+      (await llamar<EstadoSocial>('/social')).datos.amigos[0].id,
+      usuarios[1].usuario.id,
+    );
+    for (const i of [2, 3, 4]) await conectar(0, i);
+    assert.equal((await llamar<EstadoSocial>('/social')).datos.amigos.length, 4);
   });
   await t.test(
     'solo amigos e integrantes pueden enviar invitaciones; duplicados y caducidad se validan',
     async () => {
-      const created = await room('duel');
+      const creada = await sala('duelo');
       assert.equal(
-        (await call(`/rooms/${created.code}/invitations`, 'POST', { userId: users[5].user.id }))
-          .status,
+        (
+          await llamar(`/salas/${creada.codigo}/invitaciones`, 'POST', {
+            usuarioId: usuarios[5].usuario.id,
+          })
+        ).estado,
         403,
       );
       assert.equal(
-        (await call(`/rooms/${created.code}/invitations`, 'POST', { userId: users[0].user.id }, 2))
-          .status,
+        (
+          await llamar(
+            `/salas/${creada.codigo}/invitaciones`,
+            'POST',
+            { usuarioId: usuarios[0].usuario.id },
+            2,
+          )
+        ).estado,
         403,
       );
-      const received = await invite(created.code, 1),
-        oldId = received.invitations[0].id;
-      assert.equal(received.invitations[0].mode, 'duel');
+      const recibido = await invitar(creada.codigo, 1),
+        idAnterior = recibido.invitaciones[0].id;
+      assert.equal(recibido.invitaciones[0].modo, 'duelo');
       assert.equal(
-        (await call(`/rooms/${created.code}/invitations`, 'POST', { userId: users[1].user.id }))
-          .status,
+        (
+          await llamar(`/salas/${creada.codigo}/invitaciones`, 'POST', {
+            usuarioId: usuarios[1].usuario.id,
+          })
+        ).estado,
         409,
       );
       assert.equal(
-        (await call<SocialSnapshot>('/social', 'GET', undefined, 2)).data.invitations.length,
+        (await llamar<EstadoSocial>('/social', 'GET', undefined, 2)).datos.invitaciones.length,
         0,
       );
       assert.equal(
-        (await call(`/invitations/${oldId}/respond`, 'POST', { accept: true }, 2)).status,
+        (await llamar(`/invitaciones/${idAnterior}/responder`, 'POST', { aceptar: true }, 2))
+          .estado,
         404,
       );
-      await write('UPDATE room_invitations SET expires_at=? WHERE id=?', [Date.now() - 1, oldId]);
+      await escribir('UPDATE invitaciones_sala SET expira_en=? WHERE id=?', [
+        Date.now() - 1,
+        idAnterior,
+      ]);
       assert.equal(
-        (await call<SocialSnapshot>('/social', 'GET', undefined, 1)).data.invitations.length,
+        (await llamar<EstadoSocial>('/social', 'GET', undefined, 1)).datos.invitaciones.length,
         0,
       );
       assert.equal(
-        (await call(`/invitations/${oldId}/respond`, 'POST', { accept: true }, 1)).status,
+        (await llamar(`/invitaciones/${idAnterior}/responder`, 'POST', { aceptar: true }, 1))
+          .estado,
         409,
       );
-      const renewed = await invite(created.code, 1),
-        id = renewed.invitations[0].id;
-      assert.notEqual(id, oldId);
+      const renovado = await invitar(creada.codigo, 1),
+        id = renovado.invitaciones[0].id;
+      assert.notEqual(id, idAnterior);
       assert.equal(
-        (await call(`/invitations/${id}/respond`, 'POST', { accept: true }, 1)).status,
+        (await llamar(`/invitaciones/${id}/responder`, 'POST', { aceptar: true }, 1)).estado,
         200,
       );
       assert.equal(
-        (await call(`/invitations/${id}/respond`, 'POST', { accept: true }, 1)).status,
+        (await llamar(`/invitaciones/${id}/responder`, 'POST', { aceptar: true }, 1)).estado,
         409,
       );
-      const state = (await call<RoomSnapshot>(`/rooms/${created.code}`)).data;
-      assert.equal(state.players.length, 2);
-      assert.equal(state.gameId, null);
-      assert.ok(state.players.every((player) => !player.ready));
+      const estadoActual = (await llamar<EstadoSala>(`/salas/${creada.codigo}`)).datos;
+      assert.equal(estadoActual.jugadores.length, 2);
+      assert.equal(estadoActual.partidaId, null);
+      assert.ok(estadoActual.jugadores.every((jugador) => !jugador.listo));
       assert.equal(
-        (await call(`/rooms/${created.code}/invitations`, 'POST', { userId: users[2].user.id }))
-          .status,
+        (
+          await llamar(`/salas/${creada.codigo}/invitaciones`, 'POST', {
+            usuarioId: usuarios[2].usuario.id,
+          })
+        ).estado,
         409,
       );
-      assert.equal((await call('/rooms/join', 'POST', { code: created.code }, 2)).status, 409);
+      assert.equal(
+        (await llamar('/salas/unirse', 'POST', { codigo: creada.codigo }, 2)).estado,
+        409,
+      );
     },
   );
   await t.test('aceptaciones simultáneas no superan los cuatro lugares de equipos', async () => {
-    const created = await room('teams'),
-      invitations: { id: string; account: number }[] = [];
-    for (const account of [1, 2, 3, 4]) {
-      const inbox = await invite(created.code, account);
-      invitations.push({
-        id: inbox.invitations.find((item) => item.roomCode === created.code)!.id,
-        account,
+    const creada = await sala('equipos'),
+      invitaciones: { id: string; cuenta: number }[] = [];
+    for (const cuenta of [1, 2, 3, 4]) {
+      const bandeja = await invitar(creada.codigo, cuenta);
+      invitaciones.push({
+        id: bandeja.invitaciones.find((elemento) => elemento.codigoSala === creada.codigo)!.id,
+        cuenta,
       });
     }
-    const results = await Promise.all(
-      invitations.map((item) =>
-        call(`/invitations/${item.id}/respond`, 'POST', { accept: true }, item.account),
+    const resultados = await Promise.all(
+      invitaciones.map((elemento) =>
+        llamar(
+          `/invitaciones/${elemento.id}/responder`,
+          'POST',
+          { aceptar: true },
+          elemento.cuenta,
+        ),
       ),
     );
-    assert.equal(results.filter((result) => result.status === 200).length, 3);
-    assert.equal(results.filter((result) => result.status === 409).length, 1);
-    const state = (await call<RoomSnapshot>(`/rooms/${created.code}`)).data;
-    assert.equal(state.players.length, 4);
-    assert.equal(state.players.filter((player) => player.team === 0).length, 2);
-    assert.equal(state.gameId, null);
-    const loser = invitations[results.findIndex((result) => result.status === 409)];
+    assert.equal(resultados.filter((resultado) => resultado.estado === 200).length, 3);
+    assert.equal(resultados.filter((resultado) => resultado.estado === 409).length, 1);
+    const estadoActual = (await llamar<EstadoSala>(`/salas/${creada.codigo}`)).datos;
+    assert.equal(estadoActual.jugadores.length, 4);
+    assert.equal(estadoActual.jugadores.filter((jugador) => jugador.equipo === 0).length, 2);
+    assert.equal(estadoActual.partidaId, null);
+    const perdedor = invitaciones[resultados.findIndex((resultado) => resultado.estado === 409)];
     assert.equal(
-      (await call(`/invitations/${loser.id}/respond`, 'POST', { accept: false }, loser.account))
-        .status,
+      (
+        await llamar(
+          `/invitaciones/${perdedor.id}/responder`,
+          'POST',
+          { aceptar: false },
+          perdedor.cuenta,
+        )
+      ).estado,
       200,
     );
   });
   await t.test(
     'rechazar, retirar amistad y cancelar solicitudes invalidan sus acciones pendientes',
     async () => {
-      const created = await room('teams');
-      let inbox = await invite(created.code, 4),
-        id = inbox.invitations.find((item) => item.roomCode === created.code)!.id;
+      const creada = await sala('equipos');
+      let bandeja = await invitar(creada.codigo, 4),
+        id = bandeja.invitaciones.find((elemento) => elemento.codigoSala === creada.codigo)!.id;
       assert.equal(
-        (await call(`/invitations/${id}/respond`, 'POST', { accept: false }, 4)).status,
+        (await llamar(`/invitaciones/${id}/responder`, 'POST', { aceptar: false }, 4)).estado,
         200,
       );
-      inbox = await invite(created.code, 4);
-      id = inbox.invitations.find((item) => item.roomCode === created.code)!.id;
-      await call(`/friends/${users[4].user.id}`, 'DELETE', undefined, 1);
+      bandeja = await invitar(creada.codigo, 4);
+      id = bandeja.invitaciones.find((elemento) => elemento.codigoSala === creada.codigo)!.id;
+      await llamar(`/amigos/${usuarios[4].usuario.id}`, 'DELETE', undefined, 1);
       assert.ok(
-        (await call<SocialSnapshot>('/social')).data.friends.some(
-          (friend) => friend.id === users[4].user.id,
+        (await llamar<EstadoSocial>('/social')).datos.amigos.some(
+          (amigo) => amigo.id === usuarios[4].usuario.id,
         ),
       );
-      assert.equal((await call(`/friends/${users[4].user.id}`, 'DELETE')).status, 204);
+      assert.equal((await llamar(`/amigos/${usuarios[4].usuario.id}`, 'DELETE')).estado, 204);
       assert.ok(
-        !(await call<SocialSnapshot>('/social', 'GET', undefined, 4)).data.invitations.some(
-          (item) => item.id === id,
+        !(await llamar<EstadoSocial>('/social', 'GET', undefined, 4)).datos.invitaciones.some(
+          (elemento) => elemento.id === id,
         ),
       );
       assert.equal(
-        (await call(`/invitations/${id}/respond`, 'POST', { accept: true }, 4)).status,
+        (await llamar(`/invitaciones/${id}/responder`, 'POST', { aceptar: true }, 4)).estado,
         409,
       );
-      await call('/friends', 'POST', { userId: users[1].user.id }, 5);
+      await llamar('/amigos', 'POST', { usuarioId: usuarios[1].usuario.id }, 5);
       assert.equal(
-        (await call(`/friends/${users[5].user.id}`, 'DELETE', undefined, 1)).status,
+        (await llamar(`/amigos/${usuarios[5].usuario.id}`, 'DELETE', undefined, 1)).estado,
         204,
       );
       assert.equal(
-        (await call(`/friends/${users[5].user.id}/accept`, 'POST', undefined, 1)).status,
+        (await llamar(`/amigos/${usuarios[5].usuario.id}/aceptar`, 'POST', undefined, 1)).estado,
         404,
       );
-      await call('/friends', 'POST', { userId: users[4].user.id }, 5);
-      await call('/friends', 'POST', { userId: users[5].user.id }, 4);
+      await llamar('/amigos', 'POST', { usuarioId: usuarios[4].usuario.id }, 5);
+      await llamar('/amigos', 'POST', { usuarioId: usuarios[5].usuario.id }, 4);
       assert.ok(
-        (await call<SocialSnapshot>('/social', 'GET', undefined, 5)).data.friends.some(
-          (friend) => friend.id === users[4].user.id,
+        (await llamar<EstadoSocial>('/social', 'GET', undefined, 5)).datos.amigos.some(
+          (amigo) => amigo.id === usuarios[4].usuario.id,
         ),
       );
     },
@@ -273,13 +334,15 @@ test('amigos e invitaciones usan MySQL y respetan destinatarios y capacidad', as
     'los datos retirados no forman parte de la respuesta ni del esquema activo',
     async () => {
       assert.deepEqual(
-        Object.keys((await call<{ stats: unknown }>('/me')).data.stats as object).sort(),
-        ['bestScore', 'bestStreak', 'played'],
+        Object.keys(
+          (await llamar<{ estadisticas: unknown }>('/perfil')).datos.estadisticas as object,
+        ).sort(),
+        ['jugadas', 'mejorPuntuacion', 'mejorRacha'],
       );
-      const tables = await query<{ TABLE_NAME: string }>(
+      const tablas = await consultar<{ TABLE_NAME: string }>(
         "SELECT TABLE_NAME FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('player_ratings','matchmaking_queue','matchmaking_mutex')",
       );
-      assert.equal(tables.length, 0);
+      assert.equal(tablas.length, 0);
     },
   );
 });

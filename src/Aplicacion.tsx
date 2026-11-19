@@ -1,229 +1,253 @@
 /** Coordina las pantallas, la sesión y la navegación principal. */
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { api, ApiError } from './servicios/api';
-import { AppContext, navigate } from './estado/contexto';
-import { Ambient, Avatar, Brand, Icon, Button } from './componentes/comunes';
-import { AuthPage } from './paginas/Acceso';
-import { HomePage } from './paginas/Inicio';
-import { SetupPage } from './paginas/PrepararPartida';
-import { GamePage, ResultsPage } from './paginas/Partida';
-import { MultiplayerPage, LobbyPage } from './paginas/Multijugador';
-import { SettingsPage } from './paginas/Opciones';
-import { FriendsPage } from './paginas/Amigos';
-import { SocialProvider, FriendNavBadge } from './estado/social';
-import { DEFAULT_SETTINGS, type User, type Stats, type Settings } from '../compartido/tipos';
+import { api, ErrorApi } from './servicios/api';
+import { ContextoAplicacion, navegar } from './estado/contexto';
+import { Ambiente, Avatar, Marca, Icono, Boton } from './componentes/comunes';
+import { PaginaAcceso } from './paginas/Acceso';
+import { PaginaInicio } from './paginas/Inicio';
+import { PaginaPrepararPartida } from './paginas/PrepararPartida';
+import { PaginaPartida, PaginaResultados } from './paginas/Partida';
+import { PaginaMultijugador, PaginaSalaEspera } from './paginas/Multijugador';
+import { PaginaOpciones } from './paginas/Opciones';
+import { PaginaAmigos } from './paginas/Amigos';
+import { ProveedorSocial, InsigniaAmigosNavegacion } from './estado/social';
+import {
+  PREFERENCIAS_PREDETERMINADAS,
+  type Usuario,
+  type Estadisticas,
+  type Preferencias,
+} from '../compartido/tipos';
 
-const initialStats: Stats = {
-  played: 0,
-  bestScore: 0,
-  bestStreak: 0,
+const estadisticasIniciales: Estadisticas = {
+  jugadas: 0,
+  mejorPuntuacion: 0,
+  mejorRacha: 0,
 };
 
 /** Coordina sesión, rutas copiables, preferencias globales y notificaciones de la aplicación. */
-export function App(): ReactNode {
-  const [path, setPath] = useState(window.location.hash.slice(2) || 'inicio'),
-    [user, setUser] = useState<User | null>(null),
-    [stats, setStats] = useState(initialStats),
-    [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS),
-    [ready, setReady] = useState(false),
-    [serverError, setServerError] = useState(''),
-    [toast, setToast] = useState('');
-  const notify = useCallback((message: string) => setToast(message), []);
+export function Aplicacion(): ReactNode {
+  const [ruta, fijarRuta] = useState(window.location.hash.slice(2) || 'inicio'),
+    [usuario, fijarUsuario] = useState<Usuario | null>(null),
+    [estadisticas, fijarEstadisticas] = useState(estadisticasIniciales),
+    [preferencias, fijarPreferencias] = useState<Preferencias>(PREFERENCIAS_PREDETERMINADAS),
+    [listo, fijarListo] = useState(false),
+    [errorServidor, fijarErrorServidor] = useState(''),
+    [aviso, fijarAviso] = useState('');
+  const notificar = useCallback((mensaje: string) => fijarAviso(mensaje), []);
   /** Refresca el perfil y las métricas después de completar partidas o cambiar el nombre. */
-  const refresh = useCallback(async (): Promise<void> => {
-    const result = await api<{ user: User; stats: Stats }>('/me');
-    setUser(result.user);
-    setStats(result.stats);
+  const actualizar = useCallback(async (): Promise<void> => {
+    const resultado = await api<{ usuario: Usuario; estadisticas: Estadisticas }>('/perfil');
+    fijarUsuario(resultado.usuario);
+    fijarEstadisticas(resultado.estadisticas);
   }, []);
   /** Revoca la cookie en el servidor y devuelve al acceso sin conservar credenciales. */
-  const logout = useCallback(async (): Promise<void> => {
-    await api('/auth/logout', 'POST');
-    setUser(null);
-    setStats(initialStats);
-    setSettings(DEFAULT_SETTINGS);
-    navigate('login');
+  const cerrarSesion = useCallback(async (): Promise<void> => {
+    await api('/autenticacion/cerrar-sesion', 'POST');
+    fijarUsuario(null);
+    fijarEstadisticas(estadisticasIniciales);
+    fijarPreferencias(PREFERENCIAS_PREDETERMINADAS);
+    navegar('login');
   }, []);
   useEffect(() => {
-    const listener = (): void => {
-      setPath(window.location.hash.slice(2) || 'inicio');
+    const oyente = (): void => {
+      fijarRuta(window.location.hash.slice(2) || 'inicio');
       window.scrollTo({ top: 0 });
     };
-    window.addEventListener('hashchange', listener);
-    return () => window.removeEventListener('hashchange', listener);
+    window.addEventListener('hashchange', oyente);
+    return () => window.removeEventListener('hashchange', oyente);
   }, []);
   useEffect(() => {
-    let cancelled = false;
-    void api<{ user: User; stats: Stats }>('/me')
-      .then((result) => {
-        if (!cancelled) {
-          setUser(result.user);
-          setStats(result.stats);
+    let cancelado = false;
+    void api<{ usuario: Usuario; estadisticas: Estadisticas }>('/perfil')
+      .then((resultado) => {
+        if (!cancelado) {
+          fijarUsuario(resultado.usuario);
+          fijarEstadisticas(resultado.estadisticas);
         }
       })
       .catch((error) => {
-        if (!cancelled && (!(error instanceof ApiError) || error.status !== 401))
-          setServerError(error.message);
+        if (!cancelado && (!(error instanceof ErrorApi) || error.estado !== 401))
+          fijarErrorServidor(error.message);
       })
       .finally(() => {
-        if (!cancelled) setReady(true);
+        if (!cancelado) fijarListo(true);
       });
     return () => {
-      cancelled = true;
+      cancelado = true;
     };
   }, []);
   useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    void api<{ settings: Settings }>('/settings')
-      .then((result) => {
-        if (!cancelled) setSettings(result.settings);
+    if (!usuario) return;
+    let cancelado = false;
+    void api<{ preferencias: Preferencias }>('/preferencias')
+      .then((resultado) => {
+        if (!cancelado) fijarPreferencias(resultado.preferencias);
       })
-      .catch((error) => notify(error.message));
-    void refresh().catch((error) => notify(error.message));
+      .catch((error) => notificar(error.message));
+    void actualizar().catch((error) => notificar(error.message));
     return () => {
-      cancelled = true;
+      cancelado = true;
     };
-  }, [user?.id, refresh, notify]);
+  }, [usuario?.id, actualizar, notificar]);
   useEffect(() => {
-    document.documentElement.classList.toggle('high-contrast', settings.contrast);
-    document.documentElement.classList.toggle('large-interface', settings.largeInterface);
-  }, [settings.contrast, settings.largeInterface]);
+    document.documentElement.classList.toggle('high-contrast', preferencias.altoContraste);
+    document.documentElement.classList.toggle('large-interface', preferencias.interfazGrande);
+  }, [preferencias.altoContraste, preferencias.interfazGrande]);
   useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(''), 5000);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
+    if (!aviso) return;
+    const temporizador = window.setTimeout(() => fijarAviso(''), 5000);
+    return () => window.clearTimeout(temporizador);
+  }, [aviso]);
   /** Conserva una invitación pendiente al entrar y abre el inicio para rutas de autenticación. */
-  function onLogin(profile: User): void {
-    setUser(profile);
-    setServerError('');
-    if (['inicio', 'login', 'registro'].includes(path)) navigate('inicio');
+  function alIniciarSesion(perfil: Usuario): void {
+    fijarUsuario(perfil);
+    fijarErrorServidor('');
+    if (['inicio', 'login', 'registro'].includes(ruta)) navegar('inicio');
   }
-  if (!ready)
+  if (!listo)
     return (
       <div className="app-loading">
-        <Brand />
+        <Marca />
         <p>Preparando el escenario…</p>
       </div>
     );
-  if (!user)
+  if (!usuario)
     return (
-      <AuthPage onLogin={onLogin} initialRegister={path === 'registro'} serverError={serverError} />
+      <PaginaAcceso
+        alIniciarSesion={alIniciarSesion}
+        registroInicial={ruta === 'registro'}
+        errorServidor={errorServidor}
+      />
     );
-  const [page, parameter] = path.split('/'),
-    active = ['partida', 'resultados'].includes(page)
+  const [pagina, parametro] = ruta.split('/'),
+    activo = ['partida', 'resultados'].includes(pagina)
       ? 'un-jugador'
-      : ['sala', 'duelo', 'duelo-invitacion', 'equipos'].includes(page)
+      : ['sala', 'duelo', 'duelo-invitacion', 'equipos'].includes(pagina)
         ? 'multijugador'
-        : page;
-  let content: ReactNode;
-  switch (page) {
+        : pagina;
+  let contenido: ReactNode;
+  switch (pagina) {
     case 'inicio':
     case 'login':
     case 'registro':
-      content = <HomePage />;
+      contenido = <PaginaInicio />;
       break;
     case 'un-jugador':
-      content = <SetupPage />;
+      contenido = <PaginaPrepararPartida />;
       break;
     case 'duelo':
     case 'duelo-invitacion':
-      content = <MultiplayerPage key="duel" mode="duel" />;
+      contenido = <PaginaMultijugador key="duelo" modo="duelo" />;
       break;
     case 'equipos':
     case 'multijugador':
-      content = <MultiplayerPage key="teams" mode="teams" />;
+      contenido = <PaginaMultijugador key="equipos" modo="equipos" />;
       break;
     case 'sala':
-      content = /^[A-Z0-9]{6}$/.test(parameter || '') ? (
-        <LobbyPage key={parameter} code={parameter} />
+      contenido = /^[A-Z0-9]{6}$/.test(parametro || '') ? (
+        <PaginaSalaEspera key={parametro} codigo={parametro} />
       ) : (
-        <NotFound />
+        <NoEncontrado />
       );
       break;
     case 'partida':
-      content = /^[a-f0-9-]{36}$/.test(parameter || '') ? (
-        <GamePage key={parameter} id={parameter} />
+      contenido = /^[a-f0-9-]{36}$/.test(parametro || '') ? (
+        <PaginaPartida key={parametro} id={parametro} />
       ) : (
-        <NotFound />
+        <NoEncontrado />
       );
       break;
     case 'resultados':
-      content = /^[a-f0-9-]{36}$/.test(parameter || '') ? (
-        <ResultsPage key={parameter} id={parameter} />
+      contenido = /^[a-f0-9-]{36}$/.test(parametro || '') ? (
+        <PaginaResultados key={parametro} id={parametro} />
       ) : (
-        <NotFound />
+        <NoEncontrado />
       );
       break;
     case 'amigos':
-      content = <FriendsPage />;
+      contenido = <PaginaAmigos />;
       break;
     case 'opciones':
-      content = <SettingsPage tab={parameter} />;
+      contenido = <PaginaOpciones pestana={parametro} />;
       break;
     default:
-      content = <NotFound />;
+      contenido = <NoEncontrado />;
   }
   return (
-    <AppContext.Provider value={{ user, stats, settings, setSettings, refresh, notify, logout }}>
-      <SocialProvider key={user.id}>
+    <ContextoAplicacion.Provider
+      value={{
+        usuario,
+        estadisticas,
+        preferencias,
+        fijarPreferencias,
+        actualizar,
+        notificar,
+        cerrarSesion,
+      }}
+    >
+      <ProveedorSocial key={usuario.id}>
         <div className="application">
-          <Ambient />
+          <Ambiente />
           <header className="topbar">
-            <Brand />
+            <Marca />
             <nav className="main-nav" aria-label="Navegación principal">
               {[
-                { route: 'inicio', label: 'Inicio', icon: 'home' },
-                { route: 'un-jugador', label: 'Un jugador', icon: 'headphones' },
-                { route: 'equipos', active: 'multijugador', label: 'Multijugador', icon: 'users' },
-                { route: 'amigos', label: 'Amigos', icon: 'users' },
-                { route: 'opciones', label: 'Opciones', icon: 'settings' },
-              ].map((item) => {
-                const selected = active === (item.active || item.route);
+                { rutaDestino: 'inicio', etiqueta: 'Inicio', icono: 'home' },
+                { rutaDestino: 'un-jugador', etiqueta: 'Un jugador', icono: 'headphones' },
+                {
+                  rutaDestino: 'equipos',
+                  activo: 'multijugador',
+                  etiqueta: 'Multijugador',
+                  icono: 'users',
+                },
+                { rutaDestino: 'amigos', etiqueta: 'Amigos', icono: 'users' },
+                { rutaDestino: 'opciones', etiqueta: 'Opciones', icono: 'settings' },
+              ].map((elemento) => {
+                const seleccionado = activo === (elemento.activo || elemento.rutaDestino);
                 return (
                   <a
-                    key={item.route}
-                    href={`#/${item.route}`}
-                    className={selected ? 'active' : ''}
-                    aria-current={selected ? 'page' : undefined}
+                    key={elemento.rutaDestino}
+                    href={`#/${elemento.rutaDestino}`}
+                    className={seleccionado ? 'active' : ''}
+                    aria-current={seleccionado ? 'page' : undefined}
                   >
-                    <Icon name={selected ? `${item.icon}Active` : item.icon} />
-                    <span>{item.label}</span>
-                    {item.route === 'amigos' && <FriendNavBadge />}
+                    <Icono nombre={seleccionado ? `${elemento.icono}Active` : elemento.icono} />
+                    <span>{elemento.etiqueta}</span>
+                    {elemento.rutaDestino === 'amigos' && <InsigniaAmigosNavegacion />}
                   </a>
                 );
               })}
             </nav>
             <a className="profile" href="#/opciones/cuenta">
-              <Avatar name={user.name} purple />
-              <strong>{user.name}</strong>
+              <Avatar nombre={usuario.nombre} purple />
+              <strong>{usuario.nombre}</strong>
             </a>
           </header>
-          <main className="page-content" key={page === 'sala' ? path : undefined}>
-            {content}
+          <main className="page-content" key={pagina === 'sala' ? ruta : undefined}>
+            {contenido}
           </main>
-          {toast && (
+          {aviso && (
             <div className="toast" role="status">
-              <Icon name="info" />
-              <span>{toast}</span>
-              <button aria-label="Cerrar notificación" onClick={() => setToast('')}>
+              <Icono nombre="info" />
+              <span>{aviso}</span>
+              <button aria-label="Cerrar notificación" onClick={() => fijarAviso('')}>
                 ×
               </button>
             </div>
           )}
         </div>
-      </SocialProvider>
-    </AppContext.Provider>
+      </ProveedorSocial>
+    </ContextoAplicacion.Provider>
   );
 }
 
 /** Ofrece una salida clara ante enlaces inexistentes o parámetros de ruta inválidos. */
-function NotFound(): ReactNode {
+function NoEncontrado(): ReactNode {
   return (
     <div className="empty-state">
       <h1>ESTE ESCENARIO NO EXISTE</h1>
       <p>El enlace puede estar incompleto. Vuelve al inicio y elige cómo quieres jugar.</p>
-      <Button onClick={() => navigate('inicio')}>Volver al inicio</Button>
+      <Boton onClick={() => navegar('inicio')}>Volver al inicio</Boton>
     </div>
   );
 }

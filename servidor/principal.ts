@@ -1,27 +1,27 @@
 /** Punto de entrada del servidor: arranca HTTP, el tiempo real y la carga del catálogo musical. */
 import { createServer } from 'node:http';
-import { createApp } from './aplicacion.js';
-import { createRealtime, type Realtime } from './tiempo-real.js';
-import { env } from './configuracion.js';
-import { pool } from './datos/base-datos.js';
-import { prepareRecordings } from './servicios/musica/catalogo.js';
+import { crearAplicacion } from './aplicacion.js';
+import { crearTiempoReal, type TiempoReal } from './tiempo-real.js';
+import { entorno } from './configuracion.js';
+import { conexiones } from './datos/base-datos.js';
+import { prepararGrabaciones } from './servicios/musica/catalogo.js';
 
 // La API avisa a los clientes por Socket.IO, que se crea después del servidor HTTP.
-let realtime: Realtime | undefined;
-const app = createApp((channel) => realtime?.notify(channel)),
-  http = createServer(app);
-realtime = createRealtime(http);
-void prepareRecordings().catch((error) => console.error('Catálogo real:', error.message));
-http.listen(env.PORT, env.HOST, () =>
-  console.log(`Guess The Beat API · http://${env.HOST}:${env.PORT}`),
+let tiempoReal: TiempoReal | undefined;
+const aplicacion = crearAplicacion((canal) => tiempoReal?.notificar(canal)),
+  servidorHttp = createServer(aplicacion);
+tiempoReal = crearTiempoReal(servidorHttp);
+void prepararGrabaciones().catch((error) => console.error('Catálogo real:', error.message));
+servidorHttp.listen(entorno.PORT, entorno.HOST, () =>
+  console.log(`Guess The Beat API · http://${entorno.HOST}:${entorno.PORT}`),
 );
 
 /** Detiene el reloj, los sockets, HTTP y MySQL sin dejar conexiones abiertas. */
-async function shutdown(): Promise<void> {
-  realtime?.stop();
-  http.close();
-  await pool.end();
+async function apagar(): Promise<void> {
+  tiempoReal?.detener();
+  servidorHttp.close();
+  await conexiones.end();
   process.exit(0);
 }
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+process.on('SIGTERM', apagar);
+process.on('SIGINT', apagar);

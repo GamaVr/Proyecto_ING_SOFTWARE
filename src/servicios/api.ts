@@ -1,33 +1,33 @@
 /** Error HTTP que conserva el estado para diferenciar sesión vencida y fallos de conexión. */
-export class ApiError extends Error {
+export class ErrorApi extends Error {
   /** Construye un error legible con su código HTTP original. */
   constructor(
-    public status: number,
-    message: string,
+    public estado: number,
+    mensaje: string,
   ) {
-    super(message);
+    super(mensaje);
   }
 }
 
 /** Envía JSON con la cookie de sesión y convierte los errores del servidor en mensajes públicos. */
-export async function api<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
-  let response: Response;
+export async function api<T>(ruta: string, metodo = 'GET', cuerpo?: unknown): Promise<T> {
+  let respuestaHttp: Response;
   try {
-    response = await fetch(`/api${path}`, {
-      method,
+    respuestaHttp = await fetch(`/api${ruta}`, {
+      method: metodo,
       credentials: 'same-origin',
-      ...(body !== undefined
-        ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      ...(cuerpo !== undefined
+        ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) }
         : {}),
     });
   } catch {
-    throw new ApiError(0, 'No pudimos conectar con el servidor. Comprueba tu conexión.');
+    throw new ErrorApi(0, 'No pudimos conectar con el servidor. Comprueba tu conexión.');
   }
-  if (response.status === 204) return undefined as T;
-  const result = await response
+  if (respuestaHttp.status === 204) return undefined as T;
+  const resultado = await respuestaHttp
     .json()
     .catch(() => ({ error: 'El servidor no devolvió una respuesta válida.' }));
-  if (!response.ok)
-    throw new ApiError(response.status, result.error || 'No se pudo completar la acción.');
-  return result as T;
+  if (!respuestaHttp.ok)
+    throw new ErrorApi(respuestaHttp.status, resultado.error || 'No se pudo completar la acción.');
+  return resultado as T;
 }

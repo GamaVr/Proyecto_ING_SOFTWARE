@@ -1,94 +1,94 @@
 /** Muestra los formularios de registro e inicio de sesión. */
 import { useState, type ReactNode, type FormEvent } from 'react';
 import { api } from '../servicios/api';
-import { Brand, Ambient, Waveform, Icon, Button } from '../componentes/comunes';
-import type { User } from '../../compartido/tipos';
+import { Marca, Ambiente, FormaOnda, Icono, Boton } from '../componentes/comunes';
+import type { Usuario } from '../../compartido/tipos';
 
 /** Implementa inicio de sesión y registro reales conservando la composición de Figma. */
-export function AuthPage({
-  onLogin,
-  initialRegister = false,
-  serverError,
+export function PaginaAcceso({
+  alIniciarSesion,
+  registroInicial: registroInicial = false,
+  errorServidor,
 }: {
-  onLogin: (user: User) => void;
-  initialRegister?: boolean;
-  serverError: string;
+  alIniciarSesion: (usuario: Usuario) => void;
+  registroInicial?: boolean;
+  errorServidor: string;
 }): ReactNode {
-  const [register, setRegister] = useState(initialRegister),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState('');
-  const [name, setName] = useState(''),
-    [email, setEmail] = useState(''),
-    [password, setPassword] = useState(''),
-    [confirmation, setConfirmation] = useState(''),
-    [remember, setRemember] = useState(false),
-    [showRecovery, setShowRecovery] = useState(false),
-    [recoveryEmail, setRecoveryEmail] = useState(''),
-    [recoveryCode, setRecoveryCode] = useState(''),
-    [recoveryCodeConfirmation, setRecoveryCodeConfirmation] = useState(''),
-    [recoverySent, setRecoverySent] = useState(false),
-    [newPassword, setNewPassword] = useState(''),
-    [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
+  const [registro, fijarRegistro] = useState(registroInicial),
+    [ocupado, fijarOcupado] = useState(false),
+    [error, fijarError] = useState('');
+  const [nombre, fijarNombre] = useState(''),
+    [correo, fijarCorreo] = useState(''),
+    [contrasena, fijarContrasena] = useState(''),
+    [confirmacion, fijarConfirmacion] = useState(''),
+    [recordar, fijarRecordar] = useState(false),
+    [mostrarRecuperacion, fijarMostrarRecuperacion] = useState(false),
+    [correoRecuperacion, fijarCorreoRecuperacion] = useState(''),
+    [codigoRecuperacion, fijarCodigoRecuperacion] = useState(''),
+    [confirmacionCodigoRecuperacion, fijarConfirmacionCodigoRecuperacion] = useState(''),
+    [recuperacionEnviada, fijarRecuperacionEnviada] = useState(false),
+    [contrasenaNueva, fijarContrasenaNueva] = useState(''),
+    [confirmacionContrasenaNueva, fijarConfirmacionContrasenaNueva] = useState('');
   /** Valida la confirmación y envía credenciales a la API sin almacenarlas en el navegador. */
-  async function submit(event: FormEvent): Promise<void> {
-    event.preventDefault();
-    setError('');
-    if (register && password !== confirmation) {
-      setError('Las contraseñas no coinciden.');
+  async function enviarFormulario(evento: FormEvent): Promise<void> {
+    evento.preventDefault();
+    fijarError('');
+    if (registro && contrasena !== confirmacion) {
+      fijarError('Las contraseñas no coinciden.');
       return;
     }
-    if (register && recoveryCode !== recoveryCodeConfirmation) {
-      setError('Los códigos de recuperación no coinciden.');
+    if (registro && codigoRecuperacion !== confirmacionCodigoRecuperacion) {
+      fijarError('Los códigos de recuperación no coinciden.');
       return;
     }
-    setBusy(true);
+    fijarOcupado(true);
     try {
-      const result = await api<{ user?: User }>(
-        `/auth/${register ? 'register' : 'login'}`,
+      const resultado = await api<{ usuario?: Usuario }>(
+        `/autenticacion/${registro ? 'registro' : 'iniciar-sesion'}`,
         'POST',
         {
-          email,
-          password,
-          ...(register ? { name, recoveryCode } : { remember }),
+          correo,
+          contrasena,
+          ...(registro ? { nombre, codigoRecuperacion } : { recordar }),
         },
       );
-      if (result.user) onLogin(result.user);
-    } catch (failure) {
-      setError((failure as Error).message);
+      if (resultado.usuario) alIniciarSesion(resultado.usuario);
+    } catch (fallo) {
+      fijarError((fallo as Error).message);
     } finally {
-      setBusy(false);
+      fijarOcupado(false);
     }
   }
-  async function requestRecovery(event: FormEvent): Promise<void> {
-    event.preventDefault();
-    setBusy(true);
-    setError('');
+  async function solicitarRecuperacion(evento: FormEvent): Promise<void> {
+    evento.preventDefault();
+    fijarOcupado(true);
+    fijarError('');
     try {
-      if (recoveryCode !== recoveryCodeConfirmation) {
-        setError('Los códigos de recuperación no coinciden.');
+      if (codigoRecuperacion !== confirmacionCodigoRecuperacion) {
+        fijarError('Los códigos de recuperación no coinciden.');
         return;
       }
-      if (newPassword !== newPasswordConfirmation) {
-        setError('Las contraseñas no coinciden.');
+      if (contrasenaNueva !== confirmacionContrasenaNueva) {
+        fijarError('Las contraseñas no coinciden.');
         return;
       }
-      await api('/auth/recovery', 'POST', {
-        email: recoveryEmail,
-        recoveryCode,
-        password: newPassword,
+      await api('/autenticacion/recuperar', 'POST', {
+        correo: correoRecuperacion,
+        codigoRecuperacion,
+        contrasena: contrasenaNueva,
       });
-      setRecoverySent(true);
-    } catch (failure) {
-      setError((failure as Error).message);
+      fijarRecuperacionEnviada(true);
+    } catch (fallo) {
+      fijarError((fallo as Error).message);
     } finally {
-      setBusy(false);
+      fijarOcupado(false);
     }
   }
   return (
     <main className="auth-layout">
       <section className="auth-story">
-        <Ambient auth />
-        <Brand />
+        <Ambiente acceso />
+        <Marca />
         <div className="auth-hero">
           <h1>¿RECONOCES EL TEMA ANTES DE QUE SE ACABE EL TIEMPO?</h1>
           <p>
@@ -98,32 +98,32 @@ export function AuthPage({
             <div className="row between">
               <small>00:07 / 00:12</small>
             </div>
-            <Waveform />
+            <FormaOnda />
           </div>
         </div>
         <div className="auth-story-footer" />
       </section>
-      <section className={`auth-panel ${register ? 'register' : 'login'}`}>
+      <section className={`auth-panel ${registro ? 'register' : 'login'}`}>
         <div className="auth-top">
-          <span>{register ? '¿Ya tienes cuenta?' : '¿Aún no tienes cuenta?'}</span>
+          <span>{registro ? '¿Ya tienes cuenta?' : '¿Aún no tienes cuenta?'}</span>
           <button
             className="text-button"
             type="button"
             onClick={() => {
-              setRegister(!register);
-              setError('');
+              fijarRegistro(!registro);
+              fijarError('');
             }}
           >
-            {register ? 'Iniciar sesión' : 'Crear cuenta'}
+            {registro ? 'Iniciar sesión' : 'Crear cuenta'}
           </button>
         </div>
-        {showRecovery && !register ? (
-          <form className="auth-form" onSubmit={requestRecovery}>
+        {mostrarRecuperacion && !registro ? (
+          <form className="auth-form" onSubmit={solicitarRecuperacion}>
             <div className="form-heading">
               <h2>RECUPERA TU ACCESO</h2>
               <p>Confirma tu alias y correo, y elige una contraseña nueva.</p>
             </div>
-            {recoverySent ? (
+            {recuperacionEnviada ? (
               <div className="notice">
                 Contraseña actualizada. Ya puedes iniciar sesión con la nueva contraseña.
               </div>
@@ -132,14 +132,14 @@ export function AuthPage({
                 <label className="field">
                   EMAIL DE LA CUENTA
                   <div className="input-shell">
-                    <Icon name="mail" />
+                    <Icono nombre="mail" />
                     <input
                       type="email"
                       autoComplete="email"
                       required
                       maxLength={254}
-                      value={recoveryEmail}
-                      onChange={(event) => setRecoveryEmail(event.target.value)}
+                      value={correoRecuperacion}
+                      onChange={(evento) => fijarCorreoRecuperacion(evento.target.value)}
                       placeholder="tu@email.com"
                     />
                   </div>
@@ -147,7 +147,7 @@ export function AuthPage({
                 <label className="field">
                   CÓDIGO DE RECUPERACIÓN
                   <div className="input-shell">
-                    <Icon name="lock" />
+                    <Icono nombre="lock" />
                     <input
                       type="password"
                       inputMode="numeric"
@@ -156,15 +156,17 @@ export function AuthPage({
                       minLength={4}
                       maxLength={72}
                       pattern="[0-9]{4,72}"
-                      value={recoveryCode}
-                      onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, ''))}
+                      value={codigoRecuperacion}
+                      onChange={(evento) =>
+                        fijarCodigoRecuperacion(evento.target.value.replace(/\D/g, ''))
+                      }
                     />
                   </div>
                 </label>
                 <label className="field">
                   CONFIRMAR CÓDIGO
                   <div className="input-shell">
-                    <Icon name="lock" />
+                    <Icono nombre="lock" />
                     <input
                       type="password"
                       inputMode="numeric"
@@ -173,9 +175,9 @@ export function AuthPage({
                       minLength={4}
                       maxLength={72}
                       pattern="[0-9]{4,72}"
-                      value={recoveryCodeConfirmation}
-                      onChange={(event) =>
-                        setRecoveryCodeConfirmation(event.target.value.replace(/\D/g, ''))
+                      value={confirmacionCodigoRecuperacion}
+                      onChange={(evento) =>
+                        fijarConfirmacionCodigoRecuperacion(evento.target.value.replace(/\D/g, ''))
                       }
                     />
                   </div>
@@ -183,30 +185,30 @@ export function AuthPage({
                 <label className="field">
                   CONTRASEÑA NUEVA
                   <div className="input-shell">
-                    <Icon name="lock" />
+                    <Icono nombre="lock" />
                     <input
                       type="password"
                       autoComplete="new-password"
                       required
                       minLength={8}
                       maxLength={72}
-                      value={newPassword}
-                      onChange={(event) => setNewPassword(event.target.value)}
+                      value={contrasenaNueva}
+                      onChange={(evento) => fijarContrasenaNueva(evento.target.value)}
                     />
                   </div>
                 </label>
                 <label className="field">
                   CONFIRMAR CONTRASEÑA
                   <div className="input-shell">
-                    <Icon name="lock" />
+                    <Icono nombre="lock" />
                     <input
                       type="password"
                       autoComplete="new-password"
                       required
                       minLength={8}
                       maxLength={72}
-                      value={newPasswordConfirmation}
-                      onChange={(event) => setNewPasswordConfirmation(event.target.value)}
+                      value={confirmacionContrasenaNueva}
+                      onChange={(evento) => fijarConfirmacionContrasenaNueva(evento.target.value)}
                     />
                   </div>
                 </label>
@@ -217,53 +219,53 @@ export function AuthPage({
                 {error}
               </p>
             )}
-            {!recoverySent && (
-              <Button type="submit" icon="lock" disabled={busy}>
-                {busy ? 'Guardando…' : 'Cambiar contraseña'}
-              </Button>
+            {!recuperacionEnviada && (
+              <Boton type="submit" icono="lock" disabled={ocupado}>
+                {ocupado ? 'Guardando…' : 'Cambiar contraseña'}
+              </Boton>
             )}
             <button
               type="button"
               className="text-button"
               onClick={() => {
-                setShowRecovery(false);
-                setRecoverySent(false);
-                setRecoveryEmail('');
-                setRecoveryCode('');
-                setRecoveryCodeConfirmation('');
-                setNewPassword('');
-                setNewPasswordConfirmation('');
-                setError('');
+                fijarMostrarRecuperacion(false);
+                fijarRecuperacionEnviada(false);
+                fijarCorreoRecuperacion('');
+                fijarCodigoRecuperacion('');
+                fijarConfirmacionCodigoRecuperacion('');
+                fijarContrasenaNueva('');
+                fijarConfirmacionContrasenaNueva('');
+                fijarError('');
               }}
             >
               Volver al inicio de sesión
             </button>
           </form>
         ) : (
-          <form className="auth-form" onSubmit={submit}>
+          <form className="auth-form" onSubmit={enviarFormulario}>
             <div className="form-heading">
-              <h2>{register ? 'ÚNETE A LA PARTIDA' : 'VUELVE AL ESCENARIO'}</h2>
+              <h2>{registro ? 'ÚNETE A LA PARTIDA' : 'VUELVE AL ESCENARIO'}</h2>
               <p>
-                {register
+                {registro
                   ? 'Crea tu perfil y empieza a descubrir lo que sabes.'
                   : 'Tus rachas y playlists te están esperando.'}
               </p>
             </div>
-            {serverError && (
+            {errorServidor && (
               <div className="notice error" role="alert">
-                {serverError}
+                {errorServidor}
               </div>
             )}
-            {register && (
+            {registro && (
               <label className="field">
                 NOMBRE DE JUGADOR
                 <div className="input-shell">
-                  <Icon name="user" />
+                  <Icono nombre="user" />
                   <input
                     autoComplete="nickname"
                     placeholder="Tu alias"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
+                    value={nombre}
+                    onChange={(evento) => fijarNombre(evento.target.value)}
                     minLength={2}
                     maxLength={30}
                     required
@@ -271,19 +273,21 @@ export function AuthPage({
                 </div>
               </label>
             )}
-            {register && (
+            {registro && (
               <>
                 <label className="field">
                   CÓDIGO DE RECUPERACIÓN
                   <div className="input-shell">
-                    <Icon name="lock" />
+                    <Icono nombre="lock" />
                     <input
                       type="password"
                       inputMode="numeric"
                       autoComplete="new-password"
                       placeholder="Solo números (mínimo 4)"
-                      value={recoveryCode}
-                      onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, ''))}
+                      value={codigoRecuperacion}
+                      onChange={(evento) =>
+                        fijarCodigoRecuperacion(evento.target.value.replace(/\D/g, ''))
+                      }
                       minLength={4}
                       maxLength={72}
                       pattern="[0-9]{4,72}"
@@ -298,15 +302,15 @@ export function AuthPage({
                 <label className="field">
                   CONFIRMAR CÓDIGO
                   <div className="input-shell">
-                    <Icon name="lock" />
+                    <Icono nombre="lock" />
                     <input
                       type="password"
                       inputMode="numeric"
                       autoComplete="new-password"
                       placeholder="Repite tu código"
-                      value={recoveryCodeConfirmation}
-                      onChange={(event) =>
-                        setRecoveryCodeConfirmation(event.target.value.replace(/\D/g, ''))
+                      value={confirmacionCodigoRecuperacion}
+                      onChange={(evento) =>
+                        fijarConfirmacionCodigoRecuperacion(evento.target.value.replace(/\D/g, ''))
                       }
                       minLength={4}
                       maxLength={72}
@@ -320,66 +324,66 @@ export function AuthPage({
             <label className="field">
               EMAIL
               <div className="input-shell">
-                <Icon name="mail" />
+                <Icono nombre="mail" />
                 <input
                   type="email"
                   autoComplete="email"
                   placeholder="tu@email.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  value={correo}
+                  onChange={(evento) => fijarCorreo(evento.target.value)}
                   maxLength={254}
                   required
                 />
-                {email.includes('@') && <Icon name="check" />}
+                {correo.includes('@') && <Icono nombre="check" />}
               </div>
             </label>
             <label className="field">
               CONTRASEÑA
               <div className="input-shell">
-                <Icon name="lock" />
+                <Icono nombre="lock" />
                 <input
                   type="password"
-                  autoComplete={register ? 'off' : 'current-password'}
+                  autoComplete={registro ? 'off' : 'current-password'}
                   placeholder="••••••••••"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  value={contrasena}
+                  onChange={(evento) => fijarContrasena(evento.target.value)}
                   minLength={8}
                   maxLength={72}
                   required
                 />
               </div>
-              {register && <small>Usa al menos 8 caracteres.</small>}
+              {registro && <small>Usa al menos 8 caracteres.</small>}
             </label>
-            {register && (
+            {registro && (
               <label className="field">
                 CONFIRMAR CONTRASEÑA
                 <div className="input-shell">
-                  <Icon name="lock" />
+                  <Icono nombre="lock" />
                   <input
                     type="password"
                     autoComplete="off"
                     placeholder="Repite tu contraseña"
-                    value={confirmation}
-                    onChange={(event) => setConfirmation(event.target.value)}
+                    value={confirmacion}
+                    onChange={(evento) => fijarConfirmacion(evento.target.value)}
                     required
                   />
                 </div>
               </label>
             )}
-            {!register && (
+            {!registro && (
               <div className="auth-options">
                 <label>
                   <input
                     type="checkbox"
-                    checked={remember}
-                    onChange={(event) => setRemember(event.target.checked)}
+                    checked={recordar}
+                    onChange={(evento) => fijarRecordar(evento.target.checked)}
                   />
                   Recordarme
                 </label>
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => setShowRecovery(!showRecovery)}
+                  onClick={() => fijarMostrarRecuperacion(!mostrarRecuperacion)}
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
@@ -390,9 +394,9 @@ export function AuthPage({
                 {error}
               </p>
             )}
-            <Button type="submit" icon="arrow" disabled={busy}>
-              {busy ? 'Un momento…' : register ? 'Crear mi cuenta' : 'Entrar y jugar'}
-            </Button>
+            <Boton type="submit" icono="arrow" disabled={ocupado}>
+              {ocupado ? 'Un momento…' : registro ? 'Crear mi cuenta' : 'Entrar y jugar'}
+            </Boton>
           </form>
         )}
       </section>

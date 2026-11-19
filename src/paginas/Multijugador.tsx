@@ -2,44 +2,52 @@
 import { useEffect, useState, type ReactNode, type FormEvent } from 'react';
 import { api } from '../servicios/api';
 import {
-  Heading,
-  Card,
-  Badge,
-  Button,
-  Icon,
+  Encabezado,
+  Tarjeta,
+  Insignia,
+  Boton,
+  Icono,
   Avatar,
-  useAction,
-  useLive,
+  useAccion,
+  useEnVivo,
 } from '../componentes/comunes';
-import { useApp, navigate } from '../estado/contexto';
-import { FriendInvitePanel } from '../paginas/Amigos';
-import { useMusicOptions } from '../servicios/musica';
-import { DEFAULT_CONFIG, type GameConfig, type RoomSnapshot } from '../../compartido/tipos';
+import { useAplicacion, navegar } from '../estado/contexto';
+import { PanelInvitarAmigos } from '../paginas/Amigos';
+import { useOpcionesMusica } from '../servicios/musica';
+import {
+  CONFIGURACION_PREDETERMINADA,
+  type ConfiguracionPartida,
+  type EstadoSala,
+} from '../../compartido/tipos';
 
 /** Crea salas privadas de duelo o equipos y dirige a las invitaciones entre amigos. */
-export function MultiplayerPage({ mode }: { mode: 'duel' | 'teams' }): ReactNode {
-  const { options, error, loading } = useMusicOptions();
-  const { notify } = useApp(),
-    { busy, run } = useAction(notify);
-  const [name, setName] = useState(''),
-    [rounds, setRounds] = useState(mode === 'duel' ? 8 : 10),
-    [seconds, setSeconds] = useState(20),
-    [genre, setGenre] = useState('Todas'),
-    [answerMode, setAnswerMode] = useState<GameConfig['answerMode']>(DEFAULT_CONFIG.answerMode);
+export function PaginaMultijugador({ modo }: { modo: 'duelo' | 'equipos' }): ReactNode {
+  const { opciones, error, cargando } = useOpcionesMusica();
+  const { notificar } = useAplicacion(),
+    { ocupado, ejecutar } = useAccion(notificar);
+  const [nombre, fijarNombre] = useState(''),
+    [rondas, fijarRondas] = useState(modo === 'duelo' ? 8 : 10),
+    [segundos, fijarSegundos] = useState(20),
+    [genero, fijarGenero] = useState('Todas'),
+    [modoRespuesta, fijarModoRespuesta] = useState<ConfiguracionPartida['modoRespuesta']>(
+      CONFIGURACION_PREDETERMINADA.modoRespuesta,
+    );
   /** Crea una sala privada con los filtros y la capacidad correspondientes al modo. */
-  async function create(): Promise<void> {
-    const room = await api<RoomSnapshot>('/rooms', 'POST', {
-      name: name.trim(),
-      mode,
-      config: { ...DEFAULT_CONFIG, rounds, seconds, genre, answerMode },
+  async function crear(): Promise<void> {
+    const sala = await api<EstadoSala>('/salas', 'POST', {
+      nombre: nombre.trim(),
+      modo,
+      configuracion: { ...CONFIGURACION_PREDETERMINADA, rondas, segundos, genero, modoRespuesta },
     });
-    navigate(`sala/${room.code}`);
+    navegar(`sala/${sala.codigo}`);
   }
   return (
     <>
-      <Heading
-        eyebrow={mode === 'duel' ? 'Crea una sala · Invita a un amigo' : 'Juega en buena compañía'}
-        title={mode === 'duel' ? 'DUELO 1 VS 1' : 'EQUIPOS 2 VS 2'}
+      <Encabezado
+        antetitulo={
+          modo === 'duelo' ? 'Crea una sala · Invita a un amigo' : 'Juega en buena compañía'
+        }
+        titulo={modo === 'duelo' ? 'DUELO 1 VS 1' : 'EQUIPOS 2 VS 2'}
       />
       {error && (
         <p className="notice error" role="alert">
@@ -47,37 +55,37 @@ export function MultiplayerPage({ mode }: { mode: 'duel' | 'teams' }): ReactNode
         </p>
       )}
       <p className="subtle-note catalog-status">
-        {loading
+        {cargando
           ? 'Conectando con las canciones oficiales…'
-          : `${options.total} canciones oficiales · ${options.artists} artistas · ${options.genres.length} géneros`}
+          : `${opciones.total} canciones oficiales · ${opciones.artistas} artistas · ${opciones.generos.length} géneros`}
       </p>
       <div className="multiplayer-grid">
-        <Card className="create-room">
+        <Tarjeta className="create-room">
           <div className="row between">
-            <Badge icon="radio">Anfitrión</Badge>
+            <Insignia icono="radio">Anfitrión</Insignia>
             <span className="mode-icon">
-              <Icon name={mode === 'duel' ? 'duel' : 'teams'} />
+              <Icono nombre={modo === 'duelo' ? 'duel' : 'teams'} />
             </span>
           </div>
           <h2>CREAR UNA SALA</h2>
           <p>
-            {mode === 'duel'
+            {modo === 'duelo'
               ? 'Invita a un amigo y desafía a otro oído musical.'
               : 'Invita a tus amigos para reunir a los cuatro jugadores.'}
           </p>
           <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void run(create);
+            onSubmit={(evento) => {
+              evento.preventDefault();
+              void ejecutar(crear);
             }}
           >
             <label className="field">
               NOMBRE DE LA SALA
               <div className="input-shell">
-                <Icon name="text" />
+                <Icono nombre="text" />
                 <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  value={nombre}
+                  onChange={(evento) => fijarNombre(evento.target.value)}
                   placeholder="Escribe el nombre de tu sala"
                   minLength={2}
                   maxLength={60}
@@ -87,104 +95,106 @@ export function MultiplayerPage({ mode }: { mode: 'duel' | 'teams' }): ReactNode
             </label>
             <div className="config-grid room-config">
               <label className="select-field">
-                <Icon name="disc" />
+                <Icono nombre="disc" />
                 <span>
                   <small>GÉNERO</small>
                   <select
                     aria-label="Género de sala"
-                    disabled={loading || !!error}
-                    value={genre}
-                    onChange={(event) => setGenre(event.target.value)}
+                    disabled={cargando || !!error}
+                    value={genero}
+                    onChange={(evento) => fijarGenero(evento.target.value)}
                   >
                     <option value="Todas">Todos los géneros</option>
-                    {options.genres.map((item) => (
-                      <option key={item.name} value={item.name}>
-                        {item.name} ({item.count})
+                    {opciones.generos.map((elemento) => (
+                      <option key={elemento.nombre} value={elemento.nombre}>
+                        {elemento.nombre} ({elemento.cantidad})
                       </option>
                     ))}
                   </select>
                 </span>
               </label>
               <label className="select-field">
-                <Icon name="list" />
+                <Icono nombre="list" />
                 <span>
                   <small>RONDAS</small>
                   <select
-                    value={rounds}
-                    onChange={(event) => setRounds(Number(event.target.value))}
+                    value={rondas}
+                    onChange={(evento) => fijarRondas(Number(evento.target.value))}
                   >
-                    {[5, 8, 10].map((value) => (
-                      <option key={value}>{value}</option>
+                    {[5, 8, 10].map((valor) => (
+                      <option key={valor}>{valor}</option>
                     ))}
                   </select>
                 </span>
               </label>
               <label className="select-field">
-                <Icon name="timer" />
+                <Icono nombre="timer" />
                 <span>
                   <small>TIEMPO</small>
                   <select
-                    value={seconds}
-                    onChange={(event) => setSeconds(Number(event.target.value))}
+                    value={segundos}
+                    onChange={(evento) => fijarSegundos(Number(evento.target.value))}
                   >
-                    {[20, 30].map((value) => (
-                      <option key={value} value={value}>
-                        {value} s
+                    {[20, 30].map((valor) => (
+                      <option key={valor} value={valor}>
+                        {valor} s
                       </option>
                     ))}
                   </select>
                 </span>
               </label>
               <label className="select-field">
-                <Icon name="text" />
+                <Icono nombre="text" />
                 <span>
                   <small>TIPO DE RESPUESTA</small>
                   <select
                     aria-label="Tipo de respuesta"
-                    value={answerMode}
-                    onChange={(event) =>
-                      setAnswerMode(event.target.value as GameConfig['answerMode'])
+                    value={modoRespuesta}
+                    onChange={(evento) =>
+                      fijarModoRespuesta(
+                        evento.target.value as ConfiguracionPartida['modoRespuesta'],
+                      )
                     }
                   >
-                    <option value="both">Canción o artista</option>
-                    <option value="title">Solo canción</option>
+                    <option value="ambos">Canción o artista</option>
+                    <option value="titulo">Solo canción</option>
                   </select>
                 </span>
               </label>
             </div>
             <div className="row gap room-info">
-              <Icon name="lock" />
+              <Icono nombre="lock" />
               <small>Privada · Invita a tus amigos desde la sala</small>
             </div>
-            <Button
+            <Boton
               type="submit"
-              icon="plus"
-              disabled={busy || loading || !!error || name.trim().length < 2}
+              icono="plus"
+              disabled={ocupado || cargando || !!error || nombre.trim().length < 2}
             >
-              {busy ? 'Preparando…' : 'Crear sala'}
-            </Button>
+              {ocupado ? 'Preparando…' : 'Crear sala'}
+            </Boton>
           </form>
-        </Card>
+        </Tarjeta>
         <div className="stack">
-          <Card>
-            <Badge tone="purple">Invitado</Badge>
+          <Tarjeta>
+            <Insignia tono="purple">Invitado</Insignia>
             <h2 className="section-title">INVITACIONES DE AMIGOS</h2>
             <p>Acepta las invitaciones de tus amigos para entrar a sus salas.</p>
-            <Button tone="secondary" icon="users" onClick={() => navigate('amigos')}>
+            <Boton tono="secondary" icono="users" onClick={() => navegar('amigos')}>
               Ver mis invitaciones
-            </Button>
-          </Card>
-          <Card>
+            </Boton>
+          </Tarjeta>
+          <Tarjeta>
             <h2>EL RITMO SE COMPARTE</h2>
             <p>
-              {mode === 'duel'
+              {modo === 'duelo'
                 ? 'Dos jugadores escuchan el mismo fragmento. Ambos confirman y el anfitrión inicia la partida.'
                 : 'Cuatro jugadores, dos equipos. Confirma que estás listo antes de empezar.'}
             </p>
             <small>
               Cada jugador debe entrar con su cuenta y aceptar la invitación desde Amigos.
             </small>
-          </Card>
+          </Tarjeta>
         </div>
       </div>
     </>
@@ -192,254 +202,263 @@ export function MultiplayerPage({ mode }: { mode: 'duel' | 'teams' }): ReactNode
 }
 
 /** Sincroniza la sala, confirma jugadores, administra equipos y muestra el chat persistido. */
-export function LobbyPage({ code }: { code: string }): ReactNode {
-  const { user, notify } = useApp(),
-    { busy, run } = useAction(notify);
-  const [text, setText] = useState(''),
-    [joined, setJoined] = useState(false),
-    [joinError, setJoinError] = useState('');
+export function PaginaSalaEspera({ codigo }: { codigo: string }): ReactNode {
+  const { usuario, notificar } = useAplicacion(),
+    { ocupado, ejecutar } = useAccion(notificar);
+  const [texto, fijarTexto] = useState(''),
+    [unido, fijarUnido] = useState(false),
+    [errorUnion, fijarErrorUnion] = useState('');
   useEffect(() => {
-    let cancelled = false;
-    void api<RoomSnapshot>('/rooms/join', 'POST', { code })
+    let cancelado = false;
+    void api<EstadoSala>('/salas/unirse', 'POST', { codigo })
       .then(() => {
-        if (!cancelled) setJoined(true);
+        if (!cancelado) fijarUnido(true);
       })
       .catch((error) => {
-        if (!cancelled) setJoinError(error.message);
+        if (!cancelado) fijarErrorUnion(error.message);
       });
     return () => {
-      cancelled = true;
+      cancelado = true;
     };
-  }, [code]);
+  }, [codigo]);
   // El estado se solicita después de confirmar la membresía, también para enlaces de invitación.
-  if (!joined)
+  if (!unido)
     return (
-      <Card>
-        <h2>{joinError ? 'NO SE PUDO ENTRAR' : 'ENTRANDO A LA SALA…'}</h2>
-        {joinError && (
+      <Tarjeta>
+        <h2>{errorUnion ? 'NO SE PUDO ENTRAR' : 'ENTRANDO A LA SALA…'}</h2>
+        {errorUnion && (
           <>
-            <p className="form-error">{joinError}</p>
-            <Button onClick={() => navigate('equipos')}>Volver a salas</Button>
+            <p className="form-error">{errorUnion}</p>
+            <Boton onClick={() => navegar('equipos')}>Volver a salas</Boton>
           </>
         )}
-      </Card>
+      </Tarjeta>
     );
   return (
-    <LobbyContent
-      code={code}
-      userId={user.id}
-      busy={busy}
-      run={run}
-      text={text}
-      setText={setText}
+    <ContenidoSalaEspera
+      codigo={codigo}
+      usuarioId={usuario.id}
+      ocupado={ocupado}
+      ejecutar={ejecutar}
+      texto={texto}
+      fijarTexto={fijarTexto}
     />
   );
 }
 
 /** Renderiza el estado vivo de una sala una vez que su membresía fue autorizada. */
-function LobbyContent({
-  code,
-  userId,
-  busy,
-  run,
-  text,
-  setText,
+function ContenidoSalaEspera({
+  codigo,
+  usuarioId,
+  ocupado,
+  ejecutar,
+  texto,
+  fijarTexto,
 }: {
-  code: string;
-  userId: string;
-  busy: boolean;
-  run: (operation: () => Promise<void>) => Promise<void>;
-  text: string;
-  setText: (text: string) => void;
+  codigo: string;
+  usuarioId: string;
+  ocupado: boolean;
+  ejecutar: (operacion: () => Promise<void>) => Promise<void>;
+  texto: string;
+  fijarTexto: (texto: string) => void;
 }): ReactNode {
   const {
-    data: room,
+    datos: sala,
     error,
-    setData,
-  } = useLive<RoomSnapshot>(`room:${code}`, () => api(`/rooms/${code}`));
+    fijarDatos,
+  } = useEnVivo<EstadoSala>(`sala:${codigo}`, () => api(`/salas/${codigo}`));
   useEffect(() => {
-    if (room?.gameId) navigate(`partida/${room.gameId}`);
-  }, [room?.gameId]);
+    if (sala?.partidaId) navegar(`partida/${sala.partidaId}`);
+  }, [sala?.partidaId]);
   /** Cambia confirmación o equipo y recibe el estado persistido actualizado. */
-  async function update(action: 'ready' | 'team', ready?: boolean): Promise<void> {
-    setData(await api<RoomSnapshot>(`/rooms/${code}/player`, 'PATCH', { action, ready }));
+  async function modificar(accion: 'listo' | 'equipo', listo?: boolean): Promise<void> {
+    fijarDatos(await api<EstadoSala>(`/salas/${codigo}/jugador`, 'PATCH', { accion, listo }));
   }
   /** Guarda el mensaje del chat y limpia el campo solo después de enviarlo. */
-  async function chat(event: FormEvent): Promise<void> {
-    event.preventDefault();
-    if (!text.trim()) return;
-    await run(async () => {
-      await api(`/rooms/${code}/messages`, 'POST', { text });
-      setText('');
-      setData(await api(`/rooms/${code}`));
+  async function chat(evento: FormEvent): Promise<void> {
+    evento.preventDefault();
+    if (!texto.trim()) return;
+    await ejecutar(async () => {
+      await api(`/salas/${codigo}/mensajes`, 'POST', { texto });
+      fijarTexto('');
+      fijarDatos(await api(`/salas/${codigo}`));
     });
   }
-  if (!room) return <div className="loading">{error || 'Cargando sala…'}</div>;
-  const capacity = room.mode === 'duel' ? 2 : 4,
-    me = room.players.find((player) => player.id === userId),
-    everyoneReady =
-      room.players.length === capacity && room.players.every((player) => player.ready);
+  if (!sala) return <div className="loading">{error || 'Cargando sala…'}</div>;
+  const capacidad = sala.modo === 'duelo' ? 2 : 4,
+    yo = sala.jugadores.find((jugador) => jugador.id === usuarioId),
+    todosListos =
+      sala.jugadores.length === capacidad && sala.jugadores.every((jugador) => jugador.listo);
   return (
     <>
-      <Heading
-        eyebrow={room.mode === 'duel' ? 'Sala de duelo' : 'Sala de equipos'}
-        title={`SALA “${room.name.toUpperCase()}”`}
+      <Encabezado
+        antetitulo={sala.modo === 'duelo' ? 'Sala de duelo' : 'Sala de equipos'}
+        titulo={`SALA “${sala.nombre.toUpperCase()}”`}
       />
       <div className="split-layout">
         <div className="stack">
           <div className="teams-result">
-            {[0, 1].map((team) => (
-              <Card className={`team-card ${team ? 'purple' : ''}`} key={team}>
+            {[0, 1].map((equipo) => (
+              <Tarjeta className={`team-card ${equipo ? 'purple' : ''}`} key={equipo}>
                 <div className="row between card-heading">
                   <h2>
-                    {room.mode === 'teams'
-                      ? `EQUIPO ${team + 1}`
-                      : team
+                    {sala.modo === 'equipos'
+                      ? `EQUIPO ${equipo + 1}`
+                      : equipo
                         ? 'JUGADOR 2'
                         : 'JUGADOR 1'}
                   </h2>
-                  <Badge tone={team ? 'purple' : 'cyan'}>
-                    {room.mode === 'duel'
-                      ? team === me?.team
+                  <Insignia tono={equipo ? 'purple' : 'cyan'}>
+                    {sala.modo === 'duelo'
+                      ? equipo === yo?.equipo
                         ? 'Tú'
                         : 'Oponente'
-                      : team === me?.team
+                      : equipo === yo?.equipo
                         ? 'Tu equipo'
                         : 'Rivales'}
-                  </Badge>
+                  </Insignia>
                 </div>
-                {room.players
-                  .filter((player) => player.team === team)
-                  .map((player) => (
-                    <div className="player" key={player.id}>
-                      <Avatar name={player.name} purple={team === 1} />
+                {sala.jugadores
+                  .filter((jugador) => jugador.equipo === equipo)
+                  .map((jugador) => (
+                    <div className="player" key={jugador.id}>
+                      <Avatar nombre={jugador.nombre} purple={equipo === 1} />
                       <div>
-                        <strong>{player.name}</strong>
+                        <strong>{jugador.nombre}</strong>
                         <small>
-                          {room.hostId === player.id ? 'Anfitrión · ' : ''}
-                          {player.ready ? 'Listo' : 'En la sala'}
+                          {sala.anfitrionId === jugador.id ? 'Anfitrión · ' : ''}
+                          {jugador.listo ? 'Listo' : 'En la sala'}
                         </small>
                       </div>
-                      <span className={`status-dot ${player.ready ? 'ready' : ''}`} />
+                      <span className={`status-dot ${jugador.listo ? 'ready' : ''}`} />
                     </div>
                   ))}
                 {Array.from(
-                  { length: capacity / 2 - room.players.filter((p) => p.team === team).length },
+                  {
+                    length:
+                      capacidad / 2 - sala.jugadores.filter((p) => p.equipo === equipo).length,
+                  },
                   (_, i) => (
                     <div className="empty-player" key={i}>
-                      <Icon name="users" />
+                      <Icono nombre="users" />
                       <span>Esperando jugador…</span>
                     </div>
                   ),
                 )}
-                {room.mode === 'teams' && team === me?.team && (
-                  <Button
-                    tone="ghost"
-                    icon="swap"
-                    disabled={busy}
-                    onClick={() => void run(() => update('team'))}
+                {sala.modo === 'equipos' && equipo === yo?.equipo && (
+                  <Boton
+                    tono="ghost"
+                    icono="swap"
+                    disabled={ocupado}
+                    onClick={() => void ejecutar(() => modificar('equipo'))}
                   >
                     Cambiar de equipo
-                  </Button>
+                  </Boton>
                 )}
-              </Card>
+              </Tarjeta>
             ))}
           </div>
-          <Card className="room-summary">
+          <Tarjeta className="room-summary">
             <span>
-              <Icon name="disc" />
+              <Icono nombre="disc" />
               <small>
                 Categoría
                 <strong>
-                  {room.config.genre === 'Todas' ? 'Todos los géneros' : room.config.genre}
+                  {sala.configuracion.genero === 'Todas'
+                    ? 'Todos los géneros'
+                    : sala.configuracion.genero}
                 </strong>
               </small>
             </span>
             <span>
-              <Icon name="list" />
+              <Icono nombre="list" />
               <small>
-                Rondas<strong>{room.config.rounds}</strong>
+                Rondas<strong>{sala.configuracion.rondas}</strong>
               </small>
             </span>
             <span>
-              <Icon name="timer" />
+              <Icono nombre="timer" />
               <small>
-                Tiempo<strong>{room.config.seconds} s</strong>
+                Tiempo<strong>{sala.configuracion.segundos} s</strong>
               </small>
             </span>
-          </Card>
+          </Tarjeta>
           <div className="lobby-actions">
             <span className="green-text">
-              {room.players.filter((player) => player.ready).length} de {capacity} jugadores listos
+              {sala.jugadores.filter((jugador) => jugador.listo).length} de {capacidad} jugadores
+              listos
             </span>
             <div className="row gap">
-              <Button
-                tone="secondary"
-                disabled={busy}
-                onClick={() => void run(() => update('ready', !me?.ready))}
+              <Boton
+                tono="secondary"
+                disabled={ocupado}
+                onClick={() => void ejecutar(() => modificar('listo', !yo?.listo))}
               >
-                {me?.ready ? 'Todavía no estoy listo' : 'Estoy listo'}
-              </Button>
-              {room.hostId === userId && (
-                <Button
-                  icon="play"
-                  disabled={busy || !everyoneReady}
+                {yo?.listo ? 'Todavía no estoy listo' : 'Estoy listo'}
+              </Boton>
+              {sala.anfitrionId === usuarioId && (
+                <Boton
+                  icono="play"
+                  disabled={ocupado || !todosListos}
                   onClick={() =>
-                    void run(async () => {
-                      const result = await api<{ gameId: string }>(`/rooms/${code}/start`, 'POST');
-                      navigate(`partida/${result.gameId}`);
+                    void ejecutar(async () => {
+                      const resultado = await api<{ partidaId: string }>(
+                        `/salas/${codigo}/iniciar`,
+                        'POST',
+                      );
+                      navegar(`partida/${resultado.partidaId}`);
                     })
                   }
                 >
                   Empezar partida
-                </Button>
+                </Boton>
               )}
             </div>
           </div>
           {error && <p className="form-error">{error}</p>}
         </div>
         <aside className="stack">
-          <FriendInvitePanel room={room} />
-          <Card className="chat-card">
+          <PanelInvitarAmigos sala={sala} />
+          <Tarjeta className="chat-card">
             <h2>CHAT DE SALA</h2>
             <div className="chat-messages" role="log" aria-label="Mensajes de la sala">
-              {room.messages.length ? (
-                room.messages.map((message) => (
-                  <div key={message.id}>
-                    <strong className="cyan-text">{message.name}</strong>
-                    <p>{message.text}</p>
+              {sala.mensajes.length ? (
+                sala.mensajes.map((mensaje) => (
+                  <div key={mensaje.id}>
+                    <strong className="cyan-text">{mensaje.nombre}</strong>
+                    <p>{mensaje.texto}</p>
                   </div>
                 ))
               ) : (
                 <p className="muted">Saluda a los jugadores. Aquí empieza el ritmo.</p>
               )}
             </div>
-            <form onSubmit={(event) => void chat(event)} className="chat-form">
+            <form onSubmit={(evento) => void chat(evento)} className="chat-form">
               <input
                 aria-label="Mensaje de chat"
                 placeholder="Escribe un mensaje…"
-                value={text}
-                onChange={(event) => setText(event.target.value)}
+                value={texto}
+                onChange={(evento) => fijarTexto(evento.target.value)}
                 maxLength={300}
               />
-              <button type="submit" aria-label="Enviar mensaje" disabled={busy || !text.trim()}>
-                <Icon name="chat" />
+              <button type="submit" aria-label="Enviar mensaje" disabled={ocupado || !texto.trim()}>
+                <Icono nombre="chat" />
               </button>
             </form>
-          </Card>
-          <Button
-            tone="danger"
-            icon="logout"
-            disabled={busy}
+          </Tarjeta>
+          <Boton
+            tono="danger"
+            icono="logout"
+            disabled={ocupado}
             onClick={() =>
-              void run(async () => {
-                await api(`/rooms/${code}/leave`, 'POST');
-                navigate(room.mode === 'duel' ? 'duelo' : 'equipos');
+              void ejecutar(async () => {
+                await api(`/salas/${codigo}/salir`, 'POST');
+                navegar(sala.modo === 'duelo' ? 'duelo' : 'equipos');
               })
             }
           >
             Abandonar sala
-          </Button>
+          </Boton>
         </aside>
       </div>
     </>

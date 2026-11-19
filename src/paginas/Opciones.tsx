@@ -1,190 +1,193 @@
 /** Permite modificar audio, accesibilidad y datos de la cuenta. */
 import { useEffect, useState, type ReactNode, type FormEvent } from 'react';
 import { api } from '../servicios/api';
-import { Heading, Card, Icon, Button, Toggle, useAction } from '../componentes/comunes';
-import { useApp } from '../estado/contexto';
-import { DEFAULT_SETTINGS, type Settings } from '../../compartido/tipos';
+import { Encabezado, Tarjeta, Icono, Boton, Interruptor, useAccion } from '../componentes/comunes';
+import { useAplicacion } from '../estado/contexto';
+import { PREFERENCIAS_PREDETERMINADAS, type Preferencias } from '../../compartido/tipos';
 
-const tabs = [
-  { id: 'audio', label: 'Audio', icon: 'volume' },
-  { id: 'interfaz', label: 'Interfaz', icon: 'monitor' },
-  { id: 'cuenta', label: 'Cuenta', icon: 'user' },
+const pestanas = [
+  { id: 'audio', etiqueta: 'Audio', icono: 'volume' },
+  { id: 'interfaz', etiqueta: 'Interfaz', icono: 'monitor' },
+  { id: 'cuenta', etiqueta: 'Cuenta', icono: 'user' },
 ];
 
 /** Edita preferencias persistidas, opciones de accesibilidad y datos de la cuenta autenticada. */
-export function SettingsPage({ tab = 'audio' }: { tab?: string }): ReactNode {
-  const { user, settings, setSettings, notify, refresh, logout } = useApp(),
-    { busy, run } = useAction(notify);
-  const [draft, setDraft] = useState(settings),
-    [name, setName] = useState(user.name),
-    [currentPassword, setCurrentPassword] = useState(''),
-    [newPassword, setNewPassword] = useState(''),
-    [recoveryCurrentPassword, setRecoveryCurrentPassword] = useState(''),
-    [recoveryCode, setRecoveryCode] = useState(''),
-    [recoveryCodeConfirmation, setRecoveryCodeConfirmation] = useState('');
-  const active = tabs.some((item) => item.id === tab) ? tab : 'audio';
-  useEffect(() => setDraft(settings), [settings]);
+export function PaginaOpciones({ pestana: pestana = 'audio' }: { pestana?: string }): ReactNode {
+  const { usuario, preferencias, fijarPreferencias, notificar, actualizar, cerrarSesion } =
+      useAplicacion(),
+    { ocupado, ejecutar } = useAccion(notificar);
+  const [borrador, fijarBorrador] = useState(preferencias),
+    [nombre, fijarNombre] = useState(usuario.nombre),
+    [contrasenaActual, fijarContrasenaActual] = useState(''),
+    [contrasenaNueva, fijarContrasenaNueva] = useState(''),
+    [contrasenaActualRecuperacion, fijarContrasenaActualRecuperacion] = useState(''),
+    [codigoRecuperacion, fijarCodigoRecuperacion] = useState(''),
+    [confirmacionCodigoRecuperacion, fijarConfirmacionCodigoRecuperacion] = useState('');
+  const activo = pestanas.some((elemento) => elemento.id === pestana) ? pestana : 'audio';
+  useEffect(() => fijarBorrador(preferencias), [preferencias]);
   /** Cambia una preferencia tipada de la edición actual antes de guardarla. */
-  function update<K extends keyof Settings>(key: K, value: Settings[K]): void {
-    setDraft((current) => ({ ...current, [key]: value }));
+  function modificar<K extends keyof Preferencias>(clave: K, valor: Preferencias[K]): void {
+    fijarBorrador((actual) => ({ ...actual, [clave]: valor }));
   }
   /** Guarda preferencias en MySQL y activa la configuración global de la sesión. */
-  async function save(): Promise<void> {
-    const result = await api<{ settings: Settings }>('/settings', 'PUT', draft);
-    setSettings(result.settings);
-    notify('Cambios guardados.');
+  async function guardar(): Promise<void> {
+    const resultado = await api<{ preferencias: Preferencias }>('/preferencias', 'PUT', borrador);
+    fijarPreferencias(resultado.preferencias);
+    notificar('Cambios guardados.');
   }
   /** Actualiza el nombre público y refresca la cabecera de todas las pantallas. */
-  async function saveProfile(event: FormEvent): Promise<void> {
-    event.preventDefault();
-    await run(async () => {
-      await api('/me', 'PUT', { name });
-      await refresh();
-      notify('Perfil actualizado.');
+  async function guardarPerfil(evento: FormEvent): Promise<void> {
+    evento.preventDefault();
+    await ejecutar(async () => {
+      await api('/perfil', 'PUT', { nombre });
+      await actualizar();
+      notificar('Perfil actualizado.');
     });
   }
   /** Cambia la contraseña verificando la anterior y renueva la sesión desde el servidor. */
-  async function changePassword(event: FormEvent): Promise<void> {
-    event.preventDefault();
-    await run(async () => {
-      await api('/me/password', 'PUT', { currentPassword, newPassword });
-      setCurrentPassword('');
-      setNewPassword('');
-      notify('Contraseña actualizada. Se cerraron las otras sesiones.');
+  async function cambiarContrasena(evento: FormEvent): Promise<void> {
+    evento.preventDefault();
+    await ejecutar(async () => {
+      await api('/perfil/contrasena', 'PUT', { contrasenaActual, contrasenaNueva });
+      fijarContrasenaActual('');
+      fijarContrasenaNueva('');
+      notificar('Contraseña actualizada. Se cerraron las otras sesiones.');
     });
   }
   /** Define o cambia el código de recuperación tras comprobar la contraseña actual. */
-  async function saveRecoveryCode(event: FormEvent): Promise<void> {
-    event.preventDefault();
-    if (recoveryCode !== recoveryCodeConfirmation) {
-      notify('Los códigos de recuperación no coinciden.');
+  async function guardarCodigoRecuperacion(evento: FormEvent): Promise<void> {
+    evento.preventDefault();
+    if (codigoRecuperacion !== confirmacionCodigoRecuperacion) {
+      notificar('Los códigos de recuperación no coinciden.');
       return;
     }
-    await run(async () => {
-      await api('/me/recovery-code', 'PUT', {
-        currentPassword: recoveryCurrentPassword,
-        recoveryCode,
+    await ejecutar(async () => {
+      await api('/perfil/codigo-recuperacion', 'PUT', {
+        contrasenaActual: contrasenaActualRecuperacion,
+        codigoRecuperacion,
       });
-      setRecoveryCurrentPassword('');
-      setRecoveryCode('');
-      setRecoveryCodeConfirmation('');
-      notify('Código de recuperación actualizado.');
+      fijarContrasenaActualRecuperacion('');
+      fijarCodigoRecuperacion('');
+      fijarConfirmacionCodigoRecuperacion('');
+      notificar('Código de recuperación actualizado.');
     });
   }
   return (
     <>
-      <Heading eyebrow="Personaliza tu experiencia" title="OPCIONES" />
+      <Encabezado antetitulo="Personaliza tu experiencia" titulo="OPCIONES" />
       <div className="settings-layout">
         <nav className="settings-tabs" aria-label="Secciones de opciones">
-          {tabs.map((item) => (
+          {pestanas.map((elemento) => (
             <a
-              key={item.id}
-              href={`#/opciones/${item.id}`}
-              className={active === item.id ? 'active' : ''}
-              aria-current={active === item.id ? 'page' : undefined}
+              key={elemento.id}
+              href={`#/opciones/${elemento.id}`}
+              className={activo === elemento.id ? 'active' : ''}
+              aria-current={activo === elemento.id ? 'page' : undefined}
             >
-              <Icon name={item.icon} />
-              {item.label}
+              <Icono nombre={elemento.icono} />
+              {elemento.etiqueta}
             </a>
           ))}
         </nav>
         <div className="stack">
-          {active === 'audio' && (
+          {activo === 'audio' && (
             <>
-              <Card>
+              <Tarjeta>
                 <h2>AUDIO Y SONIDO</h2>
                 <p>Equilibra música, efectos y comunicación.</p>
                 {[
-                  { key: 'volume' as const, label: 'Volumen general' },
-                  { key: 'music' as const, label: 'Fragmentos musicales' },
-                  { key: 'effects' as const, label: 'Efectos de interfaz' },
-                ].map((item) => (
-                  <label className="slider-field" key={item.key}>
+                  { clave: 'volumen' as const, etiqueta: 'Volumen general' },
+                  { clave: 'musica' as const, etiqueta: 'Fragmentos musicales' },
+                  { clave: 'efectos' as const, etiqueta: 'Efectos de interfaz' },
+                ].map((elemento) => (
+                  <label className="slider-field" key={elemento.clave}>
                     <span>
-                      {item.label}
-                      <strong>{draft[item.key]}%</strong>
+                      {elemento.etiqueta}
+                      <strong>{borrador[elemento.clave]}%</strong>
                     </span>
                     <input
                       type="range"
                       min={0}
                       max={100}
-                      value={draft[item.key]}
-                      onChange={(event) => update(item.key, Number(event.target.value))}
+                      value={borrador[elemento.clave]}
+                      onChange={(evento) => modificar(elemento.clave, Number(evento.target.value))}
                     />
                   </label>
                 ))}
-              </Card>
+              </Tarjeta>
               <div className="settings-cards">
-                <Card>
+                <Tarjeta>
                   <h2 className="card-heading">REPRODUCCIÓN</h2>
-                  <Toggle
-                    label="Cuenta atrás sonora"
-                    detail="Aviso en los últimos 3 segundos"
-                    value={draft.countdown}
-                    onChange={() => update('countdown', !draft.countdown)}
+                  <Interruptor
+                    etiqueta="Cuenta atrás sonora"
+                    detalle="Aviso en los últimos 3 segundos"
+                    valor={borrador.cuentaRegresiva}
+                    onChange={() => modificar('cuentaRegresiva', !borrador.cuentaRegresiva)}
                   />
-                  <Toggle
-                    label="Reproducción automática"
-                    detail="Inicia cada fragmento sin confirmar"
-                    value={draft.autoplay}
-                    onChange={() => update('autoplay', !draft.autoplay)}
+                  <Interruptor
+                    etiqueta="Reproducción automática"
+                    detalle="Inicia cada fragmento sin confirmar"
+                    valor={borrador.reproduccionAutomatica}
+                    onChange={() =>
+                      modificar('reproduccionAutomatica', !borrador.reproduccionAutomatica)
+                    }
                   />
-                </Card>
+                </Tarjeta>
               </div>
             </>
           )}
-          {active === 'interfaz' && (
-            <Card>
+          {activo === 'interfaz' && (
+            <Tarjeta>
               <h2 className="card-heading">INTERFAZ Y ACCESIBILIDAD</h2>
-              <Toggle
-                label="Alto contraste"
-                detail="Aumenta la visibilidad de bordes y textos secundarios"
-                value={draft.contrast}
-                onChange={() => update('contrast', !draft.contrast)}
+              <Interruptor
+                etiqueta="Alto contraste"
+                detalle="Aumenta la visibilidad de bordes y textos secundarios"
+                valor={borrador.altoContraste}
+                onChange={() => modificar('altoContraste', !borrador.altoContraste)}
               />
-              <Toggle
-                label="Interfaz más grande"
-                detail="Amplía textos y controles en toda la aplicación"
-                value={draft.largeInterface}
-                onChange={() => update('largeInterface', !draft.largeInterface)}
+              <Interruptor
+                etiqueta="Interfaz más grande"
+                detalle="Amplía textos y controles en toda la aplicación"
+                valor={borrador.interfazGrande}
+                onChange={() => modificar('interfazGrande', !borrador.interfazGrande)}
               />
-            </Card>
+            </Tarjeta>
           )}
-          {active === 'cuenta' && (
+          {activo === 'cuenta' && (
             <>
-              <Card>
+              <Tarjeta>
                 <h2 className="card-heading">TU PERFIL</h2>
-                <form onSubmit={(event) => void saveProfile(event)}>
+                <form onSubmit={(evento) => void guardarPerfil(evento)}>
                   <label className="field">
                     NOMBRE DE JUGADOR
                     <div className="input-shell">
-                      <Icon name="user" />
+                      <Icono nombre="user" />
                       <input
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
+                        value={nombre}
+                        onChange={(evento) => fijarNombre(evento.target.value)}
                         minLength={2}
                         maxLength={30}
                         required
                       />
                     </div>
                   </label>
-                  <Button type="submit" icon="save" disabled={busy}>
+                  <Boton type="submit" icono="save" disabled={ocupado}>
                     Actualizar perfil
-                  </Button>
+                  </Boton>
                 </form>
-              </Card>
-              <Card>
+              </Tarjeta>
+              <Tarjeta>
                 <h2 className="card-heading">CAMBIAR CONTRASEÑA</h2>
-                <form onSubmit={(event) => void changePassword(event)}>
+                <form onSubmit={(evento) => void cambiarContrasena(evento)}>
                   <label className="field">
                     CONTRASEÑA ACTUAL
                     <div className="input-shell">
-                      <Icon name="lock" />
+                      <Icono nombre="lock" />
                       <input
                         type="password"
                         autoComplete="current-password"
-                        value={currentPassword}
-                        onChange={(event) => setCurrentPassword(event.target.value)}
+                        value={contrasenaActual}
+                        onChange={(evento) => fijarContrasenaActual(evento.target.value)}
                         maxLength={72}
                         required
                       />
@@ -193,39 +196,41 @@ export function SettingsPage({ tab = 'audio' }: { tab?: string }): ReactNode {
                   <label className="field">
                     NUEVA CONTRASEÑA
                     <div className="input-shell">
-                      <Icon name="lock" />
+                      <Icono nombre="lock" />
                       <input
                         type="password"
                         autoComplete="new-password"
-                        value={newPassword}
-                        onChange={(event) => setNewPassword(event.target.value)}
+                        value={contrasenaNueva}
+                        onChange={(evento) => fijarContrasenaNueva(evento.target.value)}
                         minLength={8}
                         maxLength={72}
                         required
                       />
                     </div>
                   </label>
-                  <Button type="submit" disabled={busy}>
+                  <Boton type="submit" disabled={ocupado}>
                     Cambiar contraseña
-                  </Button>
+                  </Boton>
                 </form>
-              </Card>
-              <Card>
+              </Tarjeta>
+              <Tarjeta>
                 <h2 className="card-heading">CÓDIGO DE RECUPERACIÓN</h2>
                 <p>
                   Guárdalo en un lugar seguro. Lo necesitarás junto con tu correo si olvidas la
                   contraseña.
                 </p>
-                <form onSubmit={(event) => void saveRecoveryCode(event)}>
+                <form onSubmit={(evento) => void guardarCodigoRecuperacion(evento)}>
                   <label className="field">
                     CONTRASEÑA ACTUAL
                     <div className="input-shell">
-                      <Icon name="lock" />
+                      <Icono nombre="lock" />
                       <input
                         type="password"
                         autoComplete="current-password"
-                        value={recoveryCurrentPassword}
-                        onChange={(event) => setRecoveryCurrentPassword(event.target.value)}
+                        value={contrasenaActualRecuperacion}
+                        onChange={(evento) =>
+                          fijarContrasenaActualRecuperacion(evento.target.value)
+                        }
                         minLength={8}
                         maxLength={72}
                         required
@@ -235,13 +240,15 @@ export function SettingsPage({ tab = 'audio' }: { tab?: string }): ReactNode {
                   <label className="field">
                     NUEVO CÓDIGO
                     <div className="input-shell">
-                      <Icon name="lock" />
+                      <Icono nombre="lock" />
                       <input
                         type="password"
                         inputMode="numeric"
                         autoComplete="new-password"
-                        value={recoveryCode}
-                        onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, ''))}
+                        value={codigoRecuperacion}
+                        onChange={(evento) =>
+                          fijarCodigoRecuperacion(evento.target.value.replace(/\D/g, ''))
+                        }
                         minLength={4}
                         maxLength={72}
                         pattern="[0-9]{4,72}"
@@ -253,14 +260,16 @@ export function SettingsPage({ tab = 'audio' }: { tab?: string }): ReactNode {
                   <label className="field">
                     CONFIRMAR CÓDIGO
                     <div className="input-shell">
-                      <Icon name="lock" />
+                      <Icono nombre="lock" />
                       <input
                         type="password"
                         inputMode="numeric"
                         autoComplete="new-password"
-                        value={recoveryCodeConfirmation}
-                        onChange={(event) =>
-                          setRecoveryCodeConfirmation(event.target.value.replace(/\D/g, ''))
+                        value={confirmacionCodigoRecuperacion}
+                        onChange={(evento) =>
+                          fijarConfirmacionCodigoRecuperacion(
+                            evento.target.value.replace(/\D/g, ''),
+                          )
                         }
                         minLength={4}
                         maxLength={72}
@@ -269,24 +278,29 @@ export function SettingsPage({ tab = 'audio' }: { tab?: string }): ReactNode {
                       />
                     </div>
                   </label>
-                  <Button type="submit" icon="save" disabled={busy}>
-                    {busy ? 'Guardando…' : 'Guardar código'}
-                  </Button>
+                  <Boton type="submit" icono="save" disabled={ocupado}>
+                    {ocupado ? 'Guardando…' : 'Guardar código'}
+                  </Boton>
                 </form>
-              </Card>
-              <Button tone="danger" icon="logout" onClick={() => void run(logout)} disabled={busy}>
+              </Tarjeta>
+              <Boton
+                tono="danger"
+                icono="logout"
+                onClick={() => void ejecutar(cerrarSesion)}
+                disabled={ocupado}
+              >
                 Cerrar sesión
-              </Button>
+              </Boton>
             </>
           )}
-          {(active === 'audio' || active === 'interfaz') && (
+          {(activo === 'audio' || activo === 'interfaz') && (
             <div className="row between settings-actions">
-              <Button tone="ghost" onClick={() => setDraft(DEFAULT_SETTINGS)}>
+              <Boton tono="ghost" onClick={() => fijarBorrador(PREFERENCIAS_PREDETERMINADAS)}>
                 Restablecer valores
-              </Button>
-              <Button icon="save" disabled={busy} onClick={() => void run(save)}>
-                {busy ? 'Guardando…' : 'Guardar cambios'}
-              </Button>
+              </Boton>
+              <Boton icono="save" disabled={ocupado} onClick={() => void ejecutar(guardar)}>
+                {ocupado ? 'Guardando…' : 'Guardar cambios'}
+              </Boton>
             </div>
           )}
         </div>

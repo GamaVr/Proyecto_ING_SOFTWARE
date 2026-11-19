@@ -2,295 +2,309 @@
 import { useEffect, useRef, useState, type ReactNode, type FormEvent } from 'react';
 import { api } from '../servicios/api';
 import {
-  Heading,
-  Card,
-  Badge,
-  Button,
-  Icon,
-  Metric,
-  Progress,
-  Waveform,
+  Encabezado,
+  Tarjeta,
+  Insignia,
+  Boton,
+  Icono,
+  Metrica,
+  Progreso,
+  FormaOnda,
   Avatar,
-  useLive,
-  useAction,
-  points,
+  useEnVivo,
+  useAccion,
+  puntos,
 } from '../componentes/comunes';
-import { useApp, navigate } from '../estado/contexto';
-import type { GameSnapshot } from '../../compartido/tipos';
-import { remainingRoundSeconds } from '../../compartido/reloj-partida';
-import { countdownBeep } from '../servicios/audio';
+import { useAplicacion, navegar } from '../estado/contexto';
+import type { EstadoPartida } from '../../compartido/tipos';
+import { segundosRestantesRonda } from '../../compartido/reloj-partida';
+import { pitidoCuentaRegresiva } from '../servicios/audio';
 
-interface MusicSearchTrack {
+interface PistaBusquedaMusica {
   id: string;
-  title: string;
-  artist: string;
+  titulo: string;
+  artista: string;
 }
 
 /** Ejecuta una partida con reloj del servidor, audio real y envío único por ronda. */
-export function GamePage({ id }: { id: string }): ReactNode {
-  const { user, notify, settings } = useApp(),
-    { busy, run } = useAction(notify);
+export function PaginaPartida({ id }: { id: string }): ReactNode {
+  const { usuario, notificar, preferencias } = useAplicacion(),
+    { ocupado, ejecutar } = useAccion(notificar);
   const {
-    data: game,
-    setData,
+    datos: partida,
+    fijarDatos,
     error,
-  } = useLive<GameSnapshot>(`game:${id}`, () => api(`/games/${id}`));
-  const [answer, setAnswer] = useState(''),
-    [now, setNow] = useState(Date.now()),
-    [playing, setPlaying] = useState(false),
-    [audioTime, setAudioTime] = useState(0),
-    [suggestions, setSuggestions] = useState<MusicSearchTrack[]>([]),
-    [searchOpen, setSearchOpen] = useState(false),
-    [searchLoading, setSearchLoading] = useState(false),
-    [previewTrackId, setPreviewTrackId] = useState<string | null>(null),
-    [previewPlaying, setPreviewPlaying] = useState(false),
-    [blocked, setBlocked] = useState(false),
-    [audioError, setAudioError] = useState(false),
-    [confirmLeave, setConfirmLeave] = useState(false),
-    [ended, setEnded] = useState(false);
+  } = useEnVivo<EstadoPartida>(`partida:${id}`, () => api(`/partidas/${id}`));
+  const [respuesta, fijarRespuesta] = useState(''),
+    [ahora, fijarAhora] = useState(Date.now()),
+    [reproduciendo, fijarReproduciendo] = useState(false),
+    [tiempoAudio, fijarTiempoAudio] = useState(0),
+    [sugerencias, fijarSugerencias] = useState<PistaBusquedaMusica[]>([]),
+    [busquedaAbierta, fijarBusquedaAbierta] = useState(false),
+    [buscando, fijarBuscando] = useState(false),
+    [idPistaMuestra, fijarIdPistaMuestra] = useState<string | null>(null),
+    [muestraReproduciendo, fijarMuestraReproduciendo] = useState(false),
+    [bloqueado, fijarBloqueado] = useState(false),
+    [errorAudio, fijarErrorAudio] = useState(false),
+    [confirmarSalida, fijarConfirmarSalida] = useState(false),
+    [terminada, fijarTerminada] = useState(false);
   const audio = useRef<HTMLAudioElement>(null),
-    previewAudio = useRef<HTMLAudioElement>(null),
-    input = useRef<HTMLInputElement>(null),
-    offset = useRef(0),
-    submittedTimeout = useRef(-1);
+    audioMuestra = useRef<HTMLAudioElement>(null),
+    entrada = useRef<HTMLInputElement>(null),
+    desfase = useRef(0),
+    tiempoEnvio = useRef(-1);
   useEffect(() => {
-    if (game) offset.current = game.serverNow - Date.now();
-  }, [game?.serverNow]);
-  const round = game?.round,
-    startedAt = game?.startedAt;
+    if (partida) desfase.current = partida.ahoraServidor - Date.now();
+  }, [partida?.ahoraServidor]);
+  const ronda = partida?.ronda,
+    iniciadaEn = partida?.iniciadaEn;
   useEffect(() => {
-    if (!startedAt || game?.answered || game?.status !== 'playing') return;
-    setNow(Date.now());
-    const timer = window.setInterval(() => setNow(Date.now()), 100);
-    return () => window.clearInterval(timer);
-  }, [id, round, startedAt, game?.answered, game?.status]);
+    if (!iniciadaEn || partida?.respondida || partida?.estado !== 'en_curso') return;
+    fijarAhora(Date.now());
+    const temporizador = window.setInterval(() => fijarAhora(Date.now()), 100);
+    return () => window.clearInterval(temporizador);
+  }, [id, ronda, iniciadaEn, partida?.respondida, partida?.estado]);
   useEffect(() => {
-    if (!game) return;
-    if (game.status === 'finished') {
-      navigate(`resultados/${id}`);
+    if (!partida) return;
+    if (partida.estado === 'terminada') {
+      navegar(`resultados/${id}`);
       return;
     }
-    if (game.status === 'abandoned') {
-      notify('La partida fue abandonada.');
-      navigate('inicio');
+    if (partida.estado === 'abandonada') {
+      notificar('La partida fue abandonada.');
+      navegar('inicio');
     }
-  }, [game?.status, id, notify]);
+  }, [partida?.estado, id, notificar]);
   useEffect(() => {
-    setAnswer('');
-    setSuggestions([]);
-    setSearchOpen(false);
-    previewAudio.current?.pause();
-    setPreviewTrackId(null);
-    setPreviewPlaying(false);
-    setAudioTime(0);
-    setPlaying(false);
-    setEnded(false);
-    setBlocked(false);
-    setAudioError(false);
-    submittedTimeout.current = -1;
-    if (!startedAt) return;
-    const timer = window.setTimeout(
+    fijarRespuesta('');
+    fijarSugerencias([]);
+    fijarBusquedaAbierta(false);
+    audioMuestra.current?.pause();
+    fijarIdPistaMuestra(null);
+    fijarMuestraReproduciendo(false);
+    fijarTiempoAudio(0);
+    fijarReproduciendo(false);
+    fijarTerminada(false);
+    fijarBloqueado(false);
+    fijarErrorAudio(false);
+    tiempoEnvio.current = -1;
+    if (!iniciadaEn) return;
+    const temporizador = window.setTimeout(
       () => {
-        input.current?.focus();
-        if (settings.autoplay) void audio.current?.play().catch(() => setBlocked(true));
+        entrada.current?.focus();
+        if (preferencias.reproduccionAutomatica)
+          void audio.current?.play().catch(() => fijarBloqueado(true));
       },
-      Math.max(0, startedAt - (Date.now() + offset.current)),
+      Math.max(0, iniciadaEn - (Date.now() + desfase.current)),
     );
     return () => {
-      window.clearTimeout(timer);
+      window.clearTimeout(temporizador);
       audio.current?.pause();
     };
-  }, [id, round, startedAt, settings.autoplay]);
+  }, [id, ronda, iniciadaEn, preferencias.reproduccionAutomatica]);
   useEffect(() => {
     if (audio.current) {
-      audio.current.volume = ((settings.volume / 100) * settings.music) / 100;
+      audio.current.volume = ((preferencias.volumen / 100) * preferencias.musica) / 100;
       audio.current.playbackRate = 1;
     }
-    if (previewAudio.current)
-      previewAudio.current.volume = ((settings.volume / 100) * settings.music) / 100;
-  }, [settings.volume, settings.music, round]);
-  const remaining = game ? remainingRoundSeconds(game, user.id, now + offset.current) : 0;
-  const waiting = game ? now + offset.current < game.startedAt : true;
+    if (audioMuestra.current)
+      audioMuestra.current.volume = ((preferencias.volumen / 100) * preferencias.musica) / 100;
+  }, [preferencias.volumen, preferencias.musica, ronda]);
+  const restante = partida
+    ? segundosRestantesRonda(partida, usuario.id, ahora + desfase.current)
+    : 0;
+  const esperando = partida ? ahora + desfase.current < partida.iniciadaEn : true;
   useEffect(() => {
-    const term = answer.trim();
-    if (!searchOpen || term.length < 2 || !game || waiting || game.answered) {
-      setSuggestions([]);
-      setSearchLoading(false);
+    const termino = respuesta.trim();
+    if (!busquedaAbierta || termino.length < 2 || !partida || esperando || partida.respondida) {
+      fijarSugerencias([]);
+      fijarBuscando(false);
       return;
     }
-    let active = true;
-    const timer = window.setTimeout(() => {
-      setSearchLoading(true);
-      void api<{ tracks: MusicSearchTrack[] }>(`/music/search?q=${encodeURIComponent(term)}`)
-        .then((result) => {
-          if (active) setSuggestions(result.tracks);
+    let activo = true;
+    const temporizador = window.setTimeout(() => {
+      fijarBuscando(true);
+      void api<{ pistas: PistaBusquedaMusica[] }>(`/musica/buscar?q=${encodeURIComponent(termino)}`)
+        .then((resultado) => {
+          if (activo) fijarSugerencias(resultado.pistas);
         })
         .catch(() => {
-          if (active) setSuggestions([]);
+          if (activo) fijarSugerencias([]);
         })
         .finally(() => {
-          if (active) setSearchLoading(false);
+          if (activo) fijarBuscando(false);
         });
     }, 250);
     return () => {
-      active = false;
-      window.clearTimeout(timer);
+      activo = false;
+      window.clearTimeout(temporizador);
     };
-  }, [answer, searchOpen, game?.answered, game?.status, waiting]);
-  const lastBeep = useRef('');
+  }, [respuesta, busquedaAbierta, partida?.respondida, partida?.estado, esperando]);
+  const ultimoPitido = useRef('');
   useEffect(() => {
-    const second = Math.ceil(remaining),
-      key = `${round}:${second}`;
+    const segundo = Math.ceil(restante),
+      clave = `${ronda}:${segundo}`;
     if (
-      settings.countdown &&
-      !waiting &&
-      !game?.answered &&
-      second > 0 &&
-      second <= 3 &&
-      key !== lastBeep.current
+      preferencias.cuentaRegresiva &&
+      !esperando &&
+      !partida?.respondida &&
+      segundo > 0 &&
+      segundo <= 3 &&
+      clave !== ultimoPitido.current
     ) {
-      lastBeep.current = key;
-      countdownBeep(((settings.volume / 100) * settings.effects) / 100);
+      ultimoPitido.current = clave;
+      pitidoCuentaRegresiva(((preferencias.volumen / 100) * preferencias.efectos) / 100);
     }
-  }, [remaining, waiting, game?.answered, round, settings]);
+  }, [restante, esperando, partida?.respondida, ronda, preferencias]);
   useEffect(() => {
     if (
-      !game ||
-      game.status !== 'playing' ||
-      waiting ||
-      remaining > 0 ||
-      game.answered ||
-      busy ||
-      submittedTimeout.current === game.round
+      !partida ||
+      partida.estado !== 'en_curso' ||
+      esperando ||
+      restante > 0 ||
+      partida.respondida ||
+      ocupado ||
+      tiempoEnvio.current === partida.ronda
     )
       return;
-    submittedTimeout.current = game.round;
-    void run(async () => {
+    tiempoEnvio.current = partida.ronda;
+    void ejecutar(async () => {
       audio.current?.pause();
-      previewAudio.current?.pause();
-      setSearchOpen(false);
-      setData(
-        await api<GameSnapshot>(`/games/${id}/answer`, 'POST', { answer: '', round: game.round }),
+      audioMuestra.current?.pause();
+      fijarBusquedaAbierta(false);
+      fijarDatos(
+        await api<EstadoPartida>(`/partidas/${id}/respuesta`, 'POST', {
+          respuesta: '',
+          ronda: partida.ronda,
+        }),
       );
     });
-  }, [game, remaining, waiting, busy, id, run, setData]);
+  }, [partida, restante, esperando, ocupado, id, ejecutar, fijarDatos]);
 
   /** Envía una respuesta o un pase y detiene el audio hasta la siguiente ronda. */
-  async function submit(event?: FormEvent, skip = false): Promise<void> {
-    event?.preventDefault();
-    if (!game || game.answered) return;
-    setSearchOpen(false);
-    previewAudio.current?.pause();
-    await run(async () => {
-      const next = await api<GameSnapshot>(`/games/${id}/answer`, 'POST', {
-        answer: skip ? '' : answer,
-        round: game.round,
+  async function enviarFormulario(evento?: FormEvent, omitir = false): Promise<void> {
+    evento?.preventDefault();
+    if (!partida || partida.respondida) return;
+    fijarBusquedaAbierta(false);
+    audioMuestra.current?.pause();
+    await ejecutar(async () => {
+      const siguiente = await api<EstadoPartida>(`/partidas/${id}/respuesta`, 'POST', {
+        respuesta: omitir ? '' : respuesta,
+        ronda: partida.ronda,
       });
       audio.current?.pause();
-      setData(next);
+      fijarDatos(siguiente);
     });
   }
   /** Reproduce una muestra de una coincidencia, respetando la sesión de audio del juego. */
-  async function toggleSearchPreview(track: MusicSearchTrack): Promise<void> {
-    const element = previewAudio.current;
-    if (!element) return;
+  async function alternarMuestraBusqueda(pista: PistaBusquedaMusica): Promise<void> {
+    const nodo = audioMuestra.current;
+    if (!nodo) return;
     audio.current?.pause();
-    if (previewTrackId === track.id && previewPlaying) {
-      element.pause();
+    if (idPistaMuestra === pista.id && muestraReproduciendo) {
+      nodo.pause();
       return;
     }
-    element.pause();
-    element.src = `/api/music/search/${encodeURIComponent(track.id)}/audio`;
-    element.currentTime = 0;
-    setPreviewTrackId(track.id);
+    nodo.pause();
+    nodo.src = `/api/musica/buscar/${encodeURIComponent(pista.id)}/audio`;
+    nodo.currentTime = 0;
+    fijarIdPistaMuestra(pista.id);
     try {
-      await element.play();
+      await nodo.play();
     } catch {
-      notify('No se pudo reproducir la muestra de esta canción.');
+      notificar('No se pudo reproducir la muestra de esta canción.');
     }
   }
   /** Alterna pausa y reproducción y respeta la restricción de no repetir el fragmento. */
-  async function toggleAudio(): Promise<void> {
-    if (!audio.current || !game) return;
-    if (playing) audio.current.pause();
+  async function alternarAudio(): Promise<void> {
+    if (!audio.current || !partida) return;
+    if (reproduciendo) audio.current.pause();
     else {
-      if (ended) {
-        audio.current.currentTime = game.audioStart;
-        setEnded(false);
+      if (terminada) {
+        audio.current.currentTime = partida.inicioAudio;
+        fijarTerminada(false);
       }
       try {
         await audio.current.play();
-        setBlocked(false);
+        fijarBloqueado(false);
       } catch {
-        setAudioError(true);
+        fijarErrorAudio(true);
       }
     }
   }
   /** Confirma el abandono en el servidor y devuelve al menú. */
-  async function leave(): Promise<void> {
-    await api(`/games/${id}/abandon`, 'POST');
-    sessionStorage.removeItem('beat-game');
-    navigate('inicio');
+  async function salir(): Promise<void> {
+    await api(`/partidas/${id}/abandonar`, 'POST');
+    sessionStorage.removeItem('beat-partida');
+    navegar('inicio');
   }
-  if (!game)
+  if (!partida)
     return (
       <div className="loading" role="status">
         {error || 'Preparando el escenario…'}
       </div>
     );
-  const me = game.players.find((player) => player.id === user.id)!,
-    mine = game.results.filter((result) => result.userId === user.id),
-    result = mine.find((item) => item.round === game.round),
-    correct = mine.filter((item) => item.correct).length;
-  const solo = game.mode === 'solo';
-  const score0 = game.players.filter((p) => p.team === 0).reduce((sum, p) => sum + p.score, 0),
-    score1 = game.players.filter((p) => p.team === 1).reduce((sum, p) => sum + p.score, 0);
+  const yo = partida.jugadores.find((jugador) => jugador.id === usuario.id)!,
+    propios = partida.resultados.filter((resultado) => resultado.usuarioId === usuario.id),
+    resultado = propios.find((elemento) => elemento.ronda === partida.ronda),
+    correcta = propios.filter((elemento) => elemento.correcta).length;
+  const individual = partida.modo === 'individual';
+  const puntuacion0 = partida.jugadores
+      .filter((p) => p.equipo === 0)
+      .reduce((suma, p) => suma + p.puntuacion, 0),
+    puntuacion1 = partida.jugadores
+      .filter((p) => p.equipo === 1)
+      .reduce((suma, p) => suma + p.puntuacion, 0);
   return (
     <>
-      <Heading
-        eyebrow={
-          solo
+      <Encabezado
+        antetitulo={
+          individual
             ? 'Partida en curso'
-            : `Ronda ${game.round + 1} de ${game.total} · ${game.mode === 'teams' ? 'Equipos 2 vs 2' : 'Duelo 1 vs 1'}`
+            : `Ronda ${partida.ronda + 1} de ${partida.total} · ${partida.modo === 'equipos' ? 'Equipos 2 vs 2' : 'Duelo 1 vs 1'}`
         }
-        title={
-          solo
-            ? `${game.config.genre === 'Todas' ? 'MIX DE MELODÍAS' : game.config.genre.toUpperCase()}`
-            : game.mode === 'teams'
+        titulo={
+          individual
+            ? `${partida.configuracion.genero === 'Todas' ? 'MIX DE MELODÍAS' : partida.configuracion.genero.toUpperCase()}`
+            : partida.modo === 'equipos'
               ? 'BATALLA DE EQUIPOS'
               : 'DUELO EN DIRECTO'
         }
       />
-      {!solo && (
+      {!individual && (
         <div className="scoreboard">
           <div className="team-score">
             <span>
               <strong>
-                {game.mode === 'teams' ? 'EQUIPO 1' : game.players.find((p) => p.team === 0)?.name}
+                {partida.modo === 'equipos'
+                  ? 'EQUIPO 1'
+                  : partida.jugadores.find((p) => p.equipo === 0)?.nombre}
               </strong>
               <small>
-                {game.players
-                  .filter((p) => p.team === 0)
-                  .map((p) => p.name)
+                {partida.jugadores
+                  .filter((p) => p.equipo === 0)
+                  .map((p) => p.nombre)
                   .join(' + ')}
               </small>
             </span>
-            <strong>{points(score0)}</strong>
+            <strong>{puntos(puntuacion0)}</strong>
           </div>
           <div className="timer-box">
             <small>TIEMPO</small>
-            <strong>{waiting ? '…' : remaining.toFixed(1).padStart(4, '0')}</strong>
+            <strong>{esperando ? '…' : restante.toFixed(1).padStart(4, '0')}</strong>
           </div>
           <div className="team-score purple">
-            <strong>{points(score1)}</strong>
+            <strong>{puntos(puntuacion1)}</strong>
             <span>
               <strong>
-                {game.mode === 'teams' ? 'EQUIPO 2' : game.players.find((p) => p.team === 1)?.name}
+                {partida.modo === 'equipos'
+                  ? 'EQUIPO 2'
+                  : partida.jugadores.find((p) => p.equipo === 1)?.nombre}
               </strong>
               <small>
-                {game.players
-                  .filter((p) => p.team === 1)
-                  .map((p) => p.name)
+                {partida.jugadores
+                  .filter((p) => p.equipo === 1)
+                  .map((p) => p.nombre)
                   .join(' + ')}
               </small>
             </span>
@@ -300,260 +314,277 @@ export function GamePage({ id }: { id: string }): ReactNode {
       <div className="split-layout">
         <div className="stack">
           <div className="round-top">
-            <Progress
-              label={`Ronda ${game.round + 1} de ${game.total}`}
-              value={game.round + 1}
-              total={game.total}
+            <Progreso
+              etiqueta={`Ronda ${partida.ronda + 1} de ${partida.total}`}
+              valor={partida.ronda + 1}
+              total={partida.total}
             />
-            {solo && (
-              <div className={`timer-box ${remaining < 5 && !waiting ? 'urgent' : ''}`}>
-                <Icon name="timer" />
-                <strong>{waiting ? '…' : remaining.toFixed(1).padStart(4, '0')}</strong>
+            {individual && (
+              <div className={`timer-box ${restante < 5 && !esperando ? 'urgent' : ''}`}>
+                <Icono nombre="timer" />
+                <strong>{esperando ? '…' : restante.toFixed(1).padStart(4, '0')}</strong>
               </div>
             )}
           </div>
-          <Card className={`audio-card ${playing ? 'active' : ''}`}>
+          <Tarjeta className={`audio-card ${reproduciendo ? 'active' : ''}`}>
             <div className="row between">
               <div className="row gap">
                 <button
                   className="audio-toggle"
-                  onClick={() => void toggleAudio()}
-                  disabled={waiting || game.answered}
-                  aria-label={playing ? 'Pausar fragmento' : 'Reproducir fragmento'}
+                  onClick={() => void alternarAudio()}
+                  disabled={esperando || partida.respondida}
+                  aria-label={reproduciendo ? 'Pausar fragmento' : 'Reproducir fragmento'}
                 >
-                  <Icon name={playing ? 'pause' : 'play'} />
+                  <Icono nombre={reproduciendo ? 'pause' : 'play'} />
                 </button>
                 <div>
                   <h2>
-                    FRAGMENTO {solo ? `#${String(game.round + 1).padStart(2, '0')}` : 'MISTERIOSO'}
+                    FRAGMENTO{' '}
+                    {individual ? `#${String(partida.ronda + 1).padStart(2, '0')}` : 'MISTERIOSO'}
                   </h2>
                   <small>
-                    {waiting ? 'Prepárate, la ronda está por comenzar…' : 'Escucha con atención…'}
+                    {esperando ? 'Prepárate, la ronda está por comenzar…' : 'Escucha con atención…'}
                   </small>
                 </div>
               </div>
               <small>
-                {Math.floor(audioTime).toString().padStart(2, '0')} / 00:
-                {String(game.audioDuration).padStart(2, '0')}
+                {Math.floor(tiempoAudio).toString().padStart(2, '0')} / 00:
+                {String(partida.duracionAudio).padStart(2, '0')}
               </small>
             </div>
-            <Waveform playing={playing} progress={audioTime / game.audioDuration} />
+            <FormaOnda
+              reproduciendo={reproduciendo}
+              progreso={tiempoAudio / partida.duracionAudio}
+            />
             <div className="row between audio-footer">
               <small className="cyan-text">
                 ●{' '}
-                {game.answered
+                {partida.respondida
                   ? 'RESPUESTA ENVIADA'
-                  : waiting
+                  : esperando
                     ? 'PREPARANDO'
-                    : playing
+                    : reproduciendo
                       ? 'REPRODUCIENDO'
-                      : ended
+                      : terminada
                         ? 'FRAGMENTO FINALIZADO'
                         : 'EN PAUSA'}
               </small>
               <div className="row gap">
-                <Icon name="volume" />
-                <small>{settings.volume}%</small>
+                <Icono nombre="volume" />
+                <small>{preferencias.volumen}%</small>
               </div>
             </div>
             <audio
               ref={audio}
-              src={`/api/games/${id}/audio?r=${game.round}`}
+              src={`/api/partidas/${id}/audio?r=${partida.ronda}`}
               preload="auto"
-              onLoadedMetadata={(event) => {
-                event.currentTarget.currentTime = game.audioStart;
+              onLoadedMetadata={(evento) => {
+                evento.currentTarget.currentTime = partida.inicioAudio;
               }}
               onPlay={() => {
-                setPlaying(true);
+                fijarReproduciendo(true);
               }}
-              onPause={() => setPlaying(false)}
+              onPause={() => fijarReproduciendo(false)}
               onEnded={() => {
-                setPlaying(false);
-                setEnded(true);
+                fijarReproduciendo(false);
+                fijarTerminada(true);
               }}
               onTimeUpdate={() => {
-                const element = audio.current;
-                if (!element) return;
-                setAudioTime(Math.max(0, element.currentTime - game.audioStart));
-                if (element.currentTime >= game.audioStart + game.audioDuration) {
-                  element.pause();
-                  setEnded(true);
+                const nodo = audio.current;
+                if (!nodo) return;
+                fijarTiempoAudio(Math.max(0, nodo.currentTime - partida.inicioAudio));
+                if (nodo.currentTime >= partida.inicioAudio + partida.duracionAudio) {
+                  nodo.pause();
+                  fijarTerminada(true);
                 }
               }}
-              onError={() => setAudioError(true)}
+              onError={() => fijarErrorAudio(true)}
             />
-            {game.audioSource === 'deezer' && (
+            {partida.fuenteAudio === 'deezer' && (
               <small className="subtle-note">
                 Grabación oficial · Muestra de Deezer · Créditos al revelar la canción.
               </small>
             )}
-            {blocked && !game.answered && (
-              <button className="text-button audio-notice" onClick={() => void toggleAudio()}>
+            {bloqueado && !partida.respondida && (
+              <button className="text-button audio-notice" onClick={() => void alternarAudio()}>
                 Pulsa reproducir para activar el audio
               </button>
             )}
-            {audioError && (
+            {errorAudio && (
               <p className="form-error">El audio no está disponible. Puedes pasar esta ronda.</p>
             )}
-          </Card>
-          <Card>
-            <form onSubmit={(event) => void submit(event)}>
+          </Tarjeta>
+          <Tarjeta>
+            <form onSubmit={(evento) => void enviarFormulario(evento)}>
               <h2 className="answer-title">¿QUÉ CANCIÓN ESTÁ SONANDO?</h2>
               <div className="answer-search">
                 <div className="answer-row">
                   <div className="input-shell">
-                    <Icon name="search" />
+                    <Icono nombre="search" />
                     <input
-                      ref={input}
+                      ref={entrada}
                       aria-label="Tu respuesta"
                       aria-autocomplete="list"
-                      aria-expanded={searchOpen && suggestions.length > 0}
+                      aria-expanded={busquedaAbierta && sugerencias.length > 0}
                       aria-controls="music-search-results"
                       placeholder={
-                        game.config.answerMode === 'both'
+                        partida.configuracion.modoRespuesta === 'ambos'
                           ? 'Escribe canción o artista…'
                           : 'Escribe el nombre de la canción…'
                       }
-                      value={answer}
-                      onChange={(event) => {
-                        setAnswer(event.target.value);
-                        setSearchOpen(true);
+                      value={respuesta}
+                      onChange={(evento) => {
+                        fijarRespuesta(evento.target.value);
+                        fijarBusquedaAbierta(true);
                       }}
                       maxLength={200}
                       autoComplete="off"
-                      disabled={busy || waiting || game.answered || remaining <= 0}
+                      disabled={ocupado || esperando || partida.respondida || restante <= 0}
                     />
                   </div>
-                  <Button
+                  <Boton
                     type="submit"
-                    icon="send"
-                    disabled={busy || waiting || game.answered || !answer.trim() || remaining <= 0}
+                    icono="send"
+                    disabled={
+                      ocupado ||
+                      esperando ||
+                      partida.respondida ||
+                      !respuesta.trim() ||
+                      restante <= 0
+                    }
                   >
-                    {busy ? 'Enviando…' : 'Enviar respuesta'}
-                  </Button>
+                    {ocupado ? 'Enviando…' : 'Enviar respuesta'}
+                  </Boton>
                 </div>
-                {searchOpen && answer.trim().length >= 2 && !waiting && !game.answered && (
-                  <div
-                    className="answer-suggestions"
-                    id="music-search-results"
-                    aria-label="Coincidencias musicales"
-                  >
-                    {searchLoading ? (
-                      <p className="answer-search-message">Buscando canciones…</p>
-                    ) : suggestions.length > 0 ? (
-                      suggestions.map((track) => (
-                        <div className="answer-suggestion" key={track.id}>
-                          <button
-                            type="button"
-                            className="answer-suggestion-select"
-                            onClick={() => {
-                              setAnswer(track.title);
-                              setSearchOpen(false);
-                              setSuggestions([]);
-                            }}
-                          >
-                            <strong>{track.title}</strong>
-                            <small>{track.artist}</small>
-                          </button>
-                          <button
-                            type="button"
-                            className="answer-suggestion-preview"
-                            aria-label={`${previewTrackId === track.id && previewPlaying ? 'Pausar' : 'Previsualizar'} ${track.title} de ${track.artist}`}
-                            title={
-                              previewTrackId === track.id && previewPlaying
-                                ? 'Pausar muestra'
-                                : 'Previsualizar muestra'
-                            }
-                            onClick={() => void toggleSearchPreview(track)}
-                          >
-                            <Icon
-                              name={
-                                previewTrackId === track.id && previewPlaying ? 'pause' : 'play'
+                {busquedaAbierta &&
+                  respuesta.trim().length >= 2 &&
+                  !esperando &&
+                  !partida.respondida && (
+                    <div
+                      className="answer-suggestions"
+                      id="music-search-results"
+                      aria-label="Coincidencias musicales"
+                    >
+                      {buscando ? (
+                        <p className="answer-search-message">Buscando canciones…</p>
+                      ) : sugerencias.length > 0 ? (
+                        sugerencias.map((pista) => (
+                          <div className="answer-suggestion" key={pista.id}>
+                            <button
+                              type="button"
+                              className="answer-suggestion-select"
+                              onClick={() => {
+                                fijarRespuesta(pista.titulo);
+                                fijarBusquedaAbierta(false);
+                                fijarSugerencias([]);
+                              }}
+                            >
+                              <strong>{pista.titulo}</strong>
+                              <small>{pista.artista}</small>
+                            </button>
+                            <button
+                              type="button"
+                              className="answer-suggestion-preview"
+                              aria-label={`${idPistaMuestra === pista.id && muestraReproduciendo ? 'Pausar' : 'Previsualizar'} ${pista.titulo} de ${pista.artista}`}
+                              title={
+                                idPistaMuestra === pista.id && muestraReproduciendo
+                                  ? 'Pausar muestra'
+                                  : 'Previsualizar muestra'
                               }
-                            />
-                          </button>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="answer-search-message">
-                        No encontramos canciones con ese nombre.
-                      </p>
-                    )}
-                  </div>
-                )}
+                              onClick={() => void alternarMuestraBusqueda(pista)}
+                            >
+                              <Icono
+                                nombre={
+                                  idPistaMuestra === pista.id && muestraReproduciendo
+                                    ? 'pause'
+                                    : 'play'
+                                }
+                              />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="answer-search-message">
+                          No encontramos canciones con ese nombre.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 <audio
-                  ref={previewAudio}
+                  ref={audioMuestra}
                   className="search-preview-audio"
                   preload="none"
-                  onPlay={() => setPreviewPlaying(true)}
-                  onPause={() => setPreviewPlaying(false)}
-                  onEnded={() => setPreviewPlaying(false)}
+                  onPlay={() => fijarMuestraReproduciendo(true)}
+                  onPause={() => fijarMuestraReproduciendo(false)}
+                  onEnded={() => fijarMuestraReproduciendo(false)}
                   onError={() => {
-                    setPreviewPlaying(false);
-                    notify('La muestra de esta canción no está disponible.');
+                    fijarMuestraReproduciendo(false);
+                    notificar('La muestra de esta canción no está disponible.');
                   }}
                 />
               </div>
               <div className="row between answer-footer">
                 <small>Pulsa Enter para responder</small>
-                {!game.answered && (
+                {!partida.respondida && (
                   <button
                     type="button"
                     className="text-button muted"
-                    disabled={busy || waiting}
-                    onClick={() => void submit(undefined, true)}
+                    disabled={ocupado || esperando}
+                    onClick={() => void enviarFormulario(undefined, true)}
                   >
                     Pasar ronda →
                   </button>
                 )}
               </div>
             </form>
-          </Card>
-          {result && (
-            <div className={`notice ${result.correct ? 'success' : 'error'}`} role="status">
+          </Tarjeta>
+          {resultado && (
+            <div className={`notice ${resultado.correcta ? 'success' : 'error'}`} role="status">
               <strong>
-                {result.correct
+                {resultado.correcta
                   ? '¡Respuesta correcta!'
-                  : result.answer
+                  : resultado.respuesta
                     ? 'Esta vez no fue…'
                     : 'Ronda finalizada'}
               </strong>
               <span>
-                {result.title} · {result.artist}
+                {resultado.titulo} · {resultado.artista}
               </span>
-              {result.sourceUrl && (
+              {resultado.urlFuente && (
                 <small>
-                  <a href={result.sourceUrl} target="_blank" rel="noreferrer">
+                  <a href={resultado.urlFuente} target="_blank" rel="noreferrer">
                     Artista y canción en Deezer ↗
                   </a>{' '}
                   ·{' '}
-                  <a href={result.licenseUrl!} target="_blank" rel="noreferrer">
+                  <a href={resultado.urlLicencia!} target="_blank" rel="noreferrer">
                     Condiciones del proveedor ↗
                   </a>
                 </small>
               )}
               <small>
-                {result.correct
-                  ? `+${points(result.points)} puntos · ${(result.elapsed / 1000).toFixed(1)} s`
+                {resultado.correcta
+                  ? `+${puntos(resultado.puntos)} puntos · ${(resultado.transcurrido / 1000).toFixed(1)} s`
                   : '+0 puntos · ¡A por la siguiente!'}
               </small>
             </div>
           )}
-          {game.answered &&
-            (solo ? (
-              <Button
-                icon="arrow"
-                disabled={busy}
+          {partida.respondida &&
+            (individual ? (
+              <Boton
+                icono="arrow"
+                disabled={ocupado}
                 onClick={() =>
-                  void run(async () =>
-                    setData(
-                      await api<GameSnapshot>(`/games/${id}/next`, 'POST', { round: game.round }),
+                  void ejecutar(async () =>
+                    fijarDatos(
+                      await api<EstadoPartida>(`/partidas/${id}/siguiente`, 'POST', {
+                        ronda: partida.ronda,
+                      }),
                     ),
                   )
                 }
               >
-                {game.round === game.total - 1 ? 'Ver resultados' : 'Siguiente canción'}
-              </Button>
+                {partida.ronda === partida.total - 1 ? 'Ver resultados' : 'Siguiente canción'}
+              </Boton>
             ) : (
               <p className="subtle-note">
                 Esperando a los demás. La siguiente ronda comienza automáticamente.
@@ -566,40 +597,40 @@ export function GamePage({ id }: { id: string }): ReactNode {
           )}
         </div>
         <aside className="stack">
-          <Card>
-            <small className="eyebrow muted">{solo ? 'PUNTUACIÓN' : 'TUS PUNTOS'}</small>
-            <strong className="big-score cyan-text">{points(me.score)}</strong>
+          <Tarjeta>
+            <small className="eyebrow muted">{individual ? 'PUNTUACIÓN' : 'TUS PUNTOS'}</small>
+            <strong className="big-score cyan-text">{puntos(yo.puntuacion)}</strong>
             <div className="row between">
               <small>Precisión</small>
               <small className="green-text">
-                {correct}/{mine.length} ·{' '}
-                {mine.length ? Math.round((correct / mine.length) * 100) : 0}%
+                {correcta}/{propios.length} ·{' '}
+                {propios.length ? Math.round((correcta / propios.length) * 100) : 0}%
               </small>
             </div>
-          </Card>
-          {!solo && (
-            <Card>
+          </Tarjeta>
+          {!individual && (
+            <Tarjeta>
               <h2 className="card-heading">JUGADORES</h2>
-              {game.players.map((player) => (
-                <div className="player compact" key={player.id}>
-                  <Avatar name={player.name} purple={player.team === 1} />
+              {partida.jugadores.map((jugador) => (
+                <div className="player compact" key={jugador.id}>
+                  <Avatar nombre={jugador.nombre} purple={jugador.equipo === 1} />
                   <span>
-                    {player.name}
-                    {player.id === user.id ? ' · Tú' : ''}
+                    {jugador.nombre}
+                    {jugador.id === usuario.id ? ' · Tú' : ''}
                   </span>
-                  <strong className={player.team === 1 ? 'purple-text' : 'cyan-text'}>
-                    {points(player.score)}
+                  <strong className={jugador.equipo === 1 ? 'purple-text' : 'cyan-text'}>
+                    {puntos(jugador.puntuacion)}
                   </strong>
                 </div>
               ))}
-            </Card>
+            </Tarjeta>
           )}
-          <Button tone="ghost" icon="logout" onClick={() => setConfirmLeave(true)}>
+          <Boton tono="ghost" icono="logout" onClick={() => fijarConfirmarSalida(true)}>
             Abandonar partida
-          </Button>
+          </Boton>
         </aside>
       </div>
-      {confirmLeave && (
+      {confirmarSalida && (
         <div className="modal-backdrop">
           <section
             className="modal card"
@@ -609,16 +640,16 @@ export function GamePage({ id }: { id: string }): ReactNode {
           >
             <h2 id="leave-title">¿Abandonar la partida?</h2>
             <p>
-              La sesión terminará{!solo ? ' para todos los participantes' : ''} y no contará como
-              completada.
+              La sesión terminará{!individual ? ' para todos los participantes' : ''} y no contará
+              como completada.
             </p>
             <div className="row gap">
-              <Button tone="ghost" onClick={() => setConfirmLeave(false)}>
+              <Boton tono="ghost" onClick={() => fijarConfirmarSalida(false)}>
                 Seguir jugando
-              </Button>
-              <Button tone="danger" disabled={busy} onClick={() => void run(leave)}>
+              </Boton>
+              <Boton tono="danger" disabled={ocupado} onClick={() => void ejecutar(salir)}>
                 Abandonar
-              </Button>
+              </Boton>
             </div>
           </section>
         </div>
@@ -628,167 +659,190 @@ export function GamePage({ id }: { id: string }): ReactNode {
 }
 
 /** Presenta los resultados definitivos del servidor, con estadísticas y tabla de respuestas reales. */
-export function ResultsPage({ id }: { id: string }): ReactNode {
-  const { user, refresh } = useApp();
-  const { data: game, error } = useLive<GameSnapshot>(`game:${id}`, () => api(`/games/${id}`));
+export function PaginaResultados({ id }: { id: string }): ReactNode {
+  const { usuario, actualizar } = useAplicacion();
+  const { datos: partida, error } = useEnVivo<EstadoPartida>(`partida:${id}`, () =>
+    api(`/partidas/${id}`),
+  );
   useEffect(() => {
-    void refresh().catch(() => {});
-    sessionStorage.removeItem('beat-game');
-  }, [id, refresh]);
-  if (!game) return <div className="loading">{error || 'Cargando resultados…'}</div>;
-  if (game.status !== 'finished')
+    void actualizar().catch(() => {});
+    sessionStorage.removeItem('beat-partida');
+  }, [id, actualizar]);
+  if (!partida) return <div className="loading">{error || 'Cargando resultados…'}</div>;
+  if (partida.estado !== 'terminada')
     return (
-      <Card>
+      <Tarjeta>
         <h2>ESTA PARTIDA NO ESTÁ COMPLETADA</h2>
         <p>Vuelve a la partida para continuar.</p>
-        <Button onClick={() => navigate(`partida/${id}`)}>Continuar</Button>
-      </Card>
+        <Boton onClick={() => navegar(`partida/${id}`)}>Continuar</Boton>
+      </Tarjeta>
     );
-  const mine = game.results.filter((item) => item.userId === user.id),
-    correct = mine.filter((item) => item.correct),
-    me = game.players.find((player) => player.id === user.id)!;
-  const total0 = game.players.filter((p) => p.team === 0).reduce((sum, p) => sum + p.score, 0),
-    total1 = game.players.filter((p) => p.team === 1).reduce((sum, p) => sum + p.score, 0),
-    tie = total0 === total1;
-  const win = me.team === 0 ? total0 >= total1 : total1 >= total0,
-    solo = game.mode === 'solo';
-  let streak = 0,
-    best = 0;
-  for (const result of mine) {
-    streak = result.correct ? streak + 1 : 0;
-    best = Math.max(best, streak);
+  const propios = partida.resultados.filter((elemento) => elemento.usuarioId === usuario.id),
+    correcta = propios.filter((elemento) => elemento.correcta),
+    yo = partida.jugadores.find((jugador) => jugador.id === usuario.id)!;
+  const total0 = partida.jugadores
+      .filter((p) => p.equipo === 0)
+      .reduce((suma, p) => suma + p.puntuacion, 0),
+    total1 = partida.jugadores
+      .filter((p) => p.equipo === 1)
+      .reduce((suma, p) => suma + p.puntuacion, 0),
+    empate = total0 === total1;
+  const victoria = yo.equipo === 0 ? total0 >= total1 : total1 >= total0,
+    individual = partida.modo === 'individual';
+  let racha = 0,
+    mejor = 0;
+  for (const resultado of propios) {
+    racha = resultado.correcta ? racha + 1 : 0;
+    mejor = Math.max(mejor, racha);
   }
   return (
     <>
-      <Heading
-        eyebrow={`Resultados · ${solo ? 'Un jugador' : game.mode === 'duel' ? 'Duelo 1 vs 1' : 'Equipos 2 vs 2'}`}
-        title={solo ? 'SESIÓN COMPLETADA' : tie ? '¡EMPATE!' : win ? '¡VICTORIA!' : 'BIEN JUGADO'}
+      <Encabezado
+        antetitulo={`Resultados · ${individual ? 'Un jugador' : partida.modo === 'duelo' ? 'Duelo 1 vs 1' : 'Equipos 2 vs 2'}`}
+        titulo={
+          individual
+            ? 'SESIÓN COMPLETADA'
+            : empate
+              ? '¡EMPATE!'
+              : victoria
+                ? '¡VICTORIA!'
+                : 'BIEN JUGADO'
+        }
       />
       <div className="split-layout">
         <div className="stack">
-          <Card className="result-hero">
+          <Tarjeta className="result-hero">
             <div className="result-trophy">
-              <Icon name={solo ? 'trophy' : 'crown'} />
+              <Icono nombre={individual ? 'trophy' : 'crown'} />
             </div>
             <div>
-              <Badge tone="green">
-                {solo ? 'Nuevo ritmo personal' : win ? 'Gran partida' : 'Sigue practicando'}
-              </Badge>
+              <Insignia tono="green">
+                {individual
+                  ? 'Nuevo ritmo personal'
+                  : victoria
+                    ? 'Gran partida'
+                    : 'Sigue practicando'}
+              </Insignia>
               <h2>
-                {solo
+                {individual
                   ? '¡BUEN OÍDO!'
-                  : game.mode === 'teams'
+                  : partida.modo === 'equipos'
                     ? `EQUIPO ${total0 >= total1 ? '1' : '2'}`
-                    : game.players.slice().sort((a, b) => b.score - a.score)[0].name}
+                    : partida.jugadores.slice().sort((a, b) => b.puntuacion - a.puntuacion)[0]
+                        .nombre}
               </h2>
               <p>
-                {solo
+                {individual
                   ? 'Tu siguiente récord está a unas notas.'
                   : 'Cada segundo y cada respuesta cuentan.'}
               </p>
             </div>
             <div className="result-score">
-              <small>PUNTUACIÓN {solo ? 'FINAL' : 'PERSONAL'}</small>
-              <strong>{points(me.score)}</strong>
+              <small>PUNTUACIÓN {individual ? 'FINAL' : 'PERSONAL'}</small>
+              <strong>{puntos(yo.puntuacion)}</strong>
             </div>
-          </Card>
+          </Tarjeta>
           <div className="metrics three">
-            <Metric icon="correct" label="Precisión" value={`${correct.length}/${mine.length}`} />
-            <Metric
-              icon="clock"
-              label="Respuesta media"
-              value={`${mine.length ? (mine.reduce((sum, item) => sum + item.elapsed, 0) / mine.length / 1000).toFixed(1) : '0'} s`}
+            <Metrica
+              icono="correct"
+              etiqueta="Precisión"
+              valor={`${correcta.length}/${propios.length}`}
             />
-            <Metric icon="flame" label="Mejor racha" value={best} />
+            <Metrica
+              icono="clock"
+              etiqueta="Respuesta media"
+              valor={`${propios.length ? (propios.reduce((suma, elemento) => suma + elemento.transcurrido, 0) / propios.length / 1000).toFixed(1) : '0'} s`}
+            />
+            <Metrica icono="flame" etiqueta="Mejor racha" valor={mejor} />
           </div>
-          {!solo && (
+          {!individual && (
             <div className="teams-result">
-              {[0, 1].map((team) => (
-                <Card key={team}>
-                  <h2 className={team ? 'purple-text' : 'cyan-text'}>
-                    {game.mode === 'teams' ? `EQUIPO ${team + 1}` : 'JUGADOR'} ·{' '}
-                    {points(team ? total1 : total0)} pts
+              {[0, 1].map((equipo) => (
+                <Tarjeta key={equipo}>
+                  <h2 className={equipo ? 'purple-text' : 'cyan-text'}>
+                    {partida.modo === 'equipos' ? `EQUIPO ${equipo + 1}` : 'JUGADOR'} ·{' '}
+                    {puntos(equipo ? total1 : total0)} pts
                   </h2>
-                  {game.players
-                    .filter((p) => p.team === team)
-                    .map((player) => (
-                      <div className="player" key={player.id}>
-                        <Avatar name={player.name} purple={team === 1} />
-                        <span>{player.name}</span>
-                        <strong>{points(player.score)}</strong>
+                  {partida.jugadores
+                    .filter((p) => p.equipo === equipo)
+                    .map((jugador) => (
+                      <div className="player" key={jugador.id}>
+                        <Avatar nombre={jugador.nombre} purple={equipo === 1} />
+                        <span>{jugador.nombre}</span>
+                        <strong>{puntos(jugador.puntuacion)}</strong>
                       </div>
                     ))}
-                </Card>
+                </Tarjeta>
               ))}
             </div>
           )}
-          <Card className="results-table">
+          <Tarjeta className="results-table">
             <div className="row between card-heading">
               <h2>RESUMEN DE RONDAS</h2>
               <small>Tu respuesta en cada fragmento</small>
             </div>
-            {mine.map((item) => (
-              <div className="result-row" key={item.round}>
-                <span className="round-number">{String(item.round + 1).padStart(2, '0')}</span>
+            {propios.map((elemento) => (
+              <div className="result-row" key={elemento.ronda}>
+                <span className="round-number">{String(elemento.ronda + 1).padStart(2, '0')}</span>
                 <div>
-                  <strong>{item.title}</strong>
-                  <small>{item.artist}</small>
-                  {item.sourceUrl && (
+                  <strong>{elemento.titulo}</strong>
+                  <small>{elemento.artista}</small>
+                  {elemento.urlFuente && (
                     <small>
-                      <a href={item.sourceUrl} target="_blank" rel="noreferrer">
+                      <a href={elemento.urlFuente} target="_blank" rel="noreferrer">
                         Créditos de artista y canción ↗
                       </a>{' '}
                       ·{' '}
-                      <a href={item.licenseUrl!} target="_blank" rel="noreferrer">
+                      <a href={elemento.urlLicencia!} target="_blank" rel="noreferrer">
                         Condiciones del proveedor ↗
                       </a>
                     </small>
                   )}
                   <small className="answer-detail">
-                    Tu respuesta: {item.answer || 'Sin respuesta'}
+                    Tu respuesta: {elemento.respuesta || 'Sin respuesta'}
                   </small>
                 </div>
-                <Badge tone={item.correct ? 'green' : 'pink'}>
-                  {item.correct ? 'CORRECTA' : 'INCORRECTA'}
-                </Badge>
-                <strong className={item.correct ? 'green-text' : 'muted'}>
-                  +{points(item.points)}
+                <Insignia tono={elemento.correcta ? 'green' : 'pink'}>
+                  {elemento.correcta ? 'CORRECTA' : 'INCORRECTA'}
+                </Insignia>
+                <strong className={elemento.correcta ? 'green-text' : 'muted'}>
+                  +{puntos(elemento.puntos)}
                 </strong>
               </div>
             ))}
-          </Card>
+          </Tarjeta>
         </div>
         <aside className="stack">
-          <Card>
-            <Badge tone="purple">Resumen personal</Badge>
+          <Tarjeta>
+            <Insignia tono="purple">Resumen personal</Insignia>
             <h2 className="level-title">TU SESIÓN</h2>
             <p>Escucha, practica y descubre más melodías en tu próxima sesión.</p>
-            <Progress
-              label="Canciones reconocidas"
-              value={correct.length}
-              total={mine.length || 1}
+            <Progreso
+              etiqueta="Canciones reconocidas"
+              valor={correcta.length}
+              total={propios.length || 1}
             />
-          </Card>
-          <Button
-            icon="rotate"
+          </Tarjeta>
+          <Boton
+            icono="rotate"
             onClick={() =>
-              navigate(solo ? 'un-jugador' : game.mode === 'duel' ? 'duelo' : 'equipos')
+              navegar(individual ? 'un-jugador' : partida.modo === 'duelo' ? 'duelo' : 'equipos')
             }
           >
             Jugar otra vez
-          </Button>
-          {!solo && (
-            <Button
-              tone="secondary"
-              icon="users"
-              onClick={() => navigate(game.mode === 'duel' ? 'duelo' : 'equipos')}
+          </Boton>
+          {!individual && (
+            <Boton
+              tono="secondary"
+              icono="users"
+              onClick={() => navegar(partida.modo === 'duelo' ? 'duelo' : 'equipos')}
             >
               Nueva sala
-            </Button>
+            </Boton>
           )}
-          <Button tone="secondary" icon="home" onClick={() => navigate('inicio')}>
+          <Boton tono="secondary" icono="home" onClick={() => navegar('inicio')}>
             Volver al inicio
-          </Button>
+          </Boton>
         </aside>
       </div>
     </>

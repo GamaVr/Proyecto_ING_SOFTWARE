@@ -13,15 +13,15 @@
     "dev:server": "tsx watch servidor/principal.ts",
     "build": "tsc --noEmit && vite build",
     "start": "tsx servidor/principal.ts",
-    "db:setup": "tsx scripts/preparar-base-datos.ts",
-    "db:migrate:recovery": "tsx scripts/migrar-codigo-recuperacion.ts",
-    "music:sync": "tsx scripts/sincronizar-musica.ts",
+    "bd:preparar": "tsx scripts/preparar-base-datos.ts",
+    "musica:sincronizar": "tsx scripts/sincronizar-musica.ts",
     "test": "tsx --test pruebas/unitarias/*.test.ts",
-    "test:integration": "tsx scripts/probar-integracion.ts",
+    "test:integracion": "tsx scripts/probar-integracion.ts",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "mysql:stop": "tsx scripts/detener-mysql-local.ts"
+    "mysql:detener": "tsx scripts/detener-mysql-local.ts",
+    "bd:migrar": "tsx scripts/migrar-local.ts"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",

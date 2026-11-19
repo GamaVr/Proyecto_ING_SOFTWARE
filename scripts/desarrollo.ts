@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 
 /** Arranca cliente y API con el mismo ejecutable Node y termina ambos al cerrar la sesión. */
-function start(): void {
+function inicio(): void {
   const children = [
     spawn(process.execPath, ['--watch', '--import', 'tsx', 'servidor/principal.ts'], {
       stdio: 'inherit',
@@ -16,17 +16,17 @@ function start(): void {
     ),
   ];
   /** Detiene únicamente los procesos creados por este lanzador. */
-  function stop(): void {
-    for (const child of children) child.kill();
+  function detener(): void {
+    for (const hijo of children) hijo.kill();
   }
-  process.on('SIGINT', stop);
-  process.on('SIGTERM', stop);
-  for (const child of children)
-    child.on('exit', (code) => {
-      if (code) {
-        stop();
-        process.exitCode = code;
+  process.on('SIGINT', detener);
+  process.on('SIGTERM', detener);
+  for (const hijo of children)
+    hijo.on('exit', (codigo) => {
+      if (codigo) {
+        detener();
+        process.exitCode = codigo;
       }
     });
 }
-start();
+inicio();

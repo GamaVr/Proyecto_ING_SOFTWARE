@@ -1,72 +1,82 @@
 /** Muestra amigos, solicitudes e invitaciones a salas. */
 import { useState, type ReactNode, type FormEvent } from 'react';
 import { api } from '../servicios/api';
-import { useApp, navigate } from '../estado/contexto';
+import { useAplicacion, navegar } from '../estado/contexto';
 import { useSocial } from '../estado/social';
-import { Heading, Card, Badge, Button, Avatar, Icon, useAction } from '../componentes/comunes';
 import {
-  DEFAULT_CONFIG,
-  type PublicUser,
-  type RoomSnapshot,
-  type UserSearchResult,
+  Encabezado,
+  Tarjeta,
+  Insignia,
+  Boton,
+  Avatar,
+  Icono,
+  useAccion,
+} from '../componentes/comunes';
+import {
+  CONFIGURACION_PREDETERMINADA,
+  type UsuarioPublico,
+  type EstadoSala,
+  type ResultadoBusquedaUsuario,
 } from '../../compartido/tipos';
 
 /** Busca usuarios de esta instalación y administra solicitudes e invitaciones recibidas. */
-export function FriendsPage(): ReactNode {
-  const { notify } = useApp(),
-    { data, error, refresh } = useSocial(),
-    { busy, run } = useAction(notify);
-  const [term, setTerm] = useState(''),
-    [results, setResults] = useState<UserSearchResult[] | null>(null);
+export function PaginaAmigos(): ReactNode {
+  const { notificar } = useAplicacion(),
+    { datos, error, actualizar } = useSocial(),
+    { ocupado, ejecutar } = useAccion(notificar);
+  const [termino, fijarTermino] = useState(''),
+    [resultados, fijarResultados] = useState<ResultadoBusquedaUsuario[] | null>(null);
   /** Busca perfiles por nombre o correo exacto sin publicar los correos de otras cuentas. */
-  async function search(event: FormEvent): Promise<void> {
-    event.preventDefault();
-    await run(async () => {
-      const result = await api<{ users: UserSearchResult[] }>(
-        `/users/search?q=${encodeURIComponent(term.trim())}`,
+  async function buscar(evento: FormEvent): Promise<void> {
+    evento.preventDefault();
+    await ejecutar(async () => {
+      const resultado = await api<{ usuarios: ResultadoBusquedaUsuario[] }>(
+        `/usuarios/buscar?q=${encodeURIComponent(termino.trim())}`,
       );
-      setResults(result.users);
+      fijarResultados(resultado.usuarios);
     });
   }
   /** Ejecuta un cambio de amistad y refresca el buzón después de confirmarlo en MySQL. */
-  async function change(
-    path: string,
-    method: string,
-    body?: unknown,
-    message?: string,
+  async function cambiar(
+    ruta: string,
+    metodo: string,
+    cuerpo?: unknown,
+    mensaje?: string,
   ): Promise<void> {
-    await run(async () => {
-      await api(path, method, body);
-      await refresh();
-      if (message) notify(message);
+    await ejecutar(async () => {
+      await api(ruta, metodo, cuerpo);
+      await actualizar();
+      if (mensaje) notificar(mensaje);
     });
   }
   /** Crea una sala del modo elegido y envía al amigo una invitación interna a esa sala. */
-  async function invite(friend: PublicUser, mode: 'duel' | 'teams'): Promise<void> {
-    await run(async () => {
-      const room = await api<RoomSnapshot>('/rooms', 'POST', {
-        name: mode === 'duel' ? `Duelo con ${friend.name}` : `Equipo con ${friend.name}`,
-        mode,
-        config: { ...DEFAULT_CONFIG, rounds: mode === 'duel' ? 8 : 10 },
+  async function invitar(amigo: UsuarioPublico, modo: 'duelo' | 'equipos'): Promise<void> {
+    await ejecutar(async () => {
+      const sala = await api<EstadoSala>('/salas', 'POST', {
+        nombre: modo === 'duelo' ? `Duelo con ${amigo.nombre}` : `Equipo con ${amigo.nombre}`,
+        modo,
+        configuracion: { ...CONFIGURACION_PREDETERMINADA, rondas: modo === 'duelo' ? 8 : 10 },
       });
-      navigate(`sala/${room.code}`);
-      await api(`/rooms/${room.code}/invitations`, 'POST', { userId: friend.id });
-      await refresh();
-      notify(`Invitación enviada a ${friend.name}.`);
+      navegar(`sala/${sala.codigo}`);
+      await api(`/salas/${sala.codigo}/invitaciones`, 'POST', { usuarioId: amigo.id });
+      await actualizar();
+      notificar(`Invitación enviada a ${amigo.nombre}.`);
     });
   }
   /** Acepta la invitación únicamente con la cuenta destinataria y abre su sala. */
-  async function respond(id: string, accept: boolean): Promise<void> {
-    await run(async () => {
-      const result = await api<{ code: string }>(`/invitations/${id}/respond`, 'POST', { accept });
-      await refresh();
-      if (accept) navigate(`sala/${result.code}`);
-      else notify('Invitación rechazada.');
+  async function responder(id: string, aceptar: boolean): Promise<void> {
+    await ejecutar(async () => {
+      const resultado = await api<{ codigo: string }>(`/invitaciones/${id}/responder`, 'POST', {
+        aceptar,
+      });
+      await actualizar();
+      if (aceptar) navegar(`sala/${resultado.codigo}`);
+      else notificar('Invitación rechazada.');
     });
   }
   return (
     <>
-      <Heading eyebrow="La música se disfruta en compañía" title="AMIGOS E INVITACIONES" />
+      <Encabezado antetitulo="La música se disfruta en compañía" titulo="AMIGOS E INVITACIONES" />
       {error && (
         <p className="notice error" role="alert">
           {error}
@@ -74,55 +84,59 @@ export function FriendsPage(): ReactNode {
       )}
       <div className="friends-layout">
         <div className="stack">
-          <Card>
+          <Tarjeta>
             <h2 className="card-heading">AGREGAR USUARIOS</h2>
             <p>
               Busca por nombre de jugador o escribe su correo completo. Deben tener una cuenta en
               esta aplicación.
             </p>
-            <form className="friend-search" onSubmit={(event) => void search(event)}>
+            <form className="friend-search" onSubmit={(evento) => void buscar(evento)}>
               <div className="input-shell">
-                <Icon name="search" />
+                <Icono nombre="search" />
                 <input
                   aria-label="Buscar usuarios"
                   placeholder="Nombre o correo completo…"
-                  value={term}
-                  onChange={(event) => {
-                    setTerm(event.target.value);
-                    setResults(null);
+                  value={termino}
+                  onChange={(evento) => {
+                    fijarTermino(evento.target.value);
+                    fijarResultados(null);
                   }}
                   minLength={2}
                   maxLength={254}
                   required
                 />
               </div>
-              <Button icon="search" type="submit" disabled={busy || term.trim().length < 2}>
+              <Boton icono="search" type="submit" disabled={ocupado || termino.trim().length < 2}>
                 Buscar
-              </Button>
+              </Boton>
             </form>
-            {results && (
+            {resultados && (
               <div className="social-list" aria-live="polite">
-                {results.length ? (
-                  results.map((person) => {
-                    const friend = data?.friends.some((item) => item.id === person.id),
-                      incoming = data?.incomingRequests.some((item) => item.id === person.id),
-                      outgoing = data?.outgoingRequests.some((item) => item.id === person.id);
+                {resultados.length ? (
+                  resultados.map((persona) => {
+                    const amigo = datos?.amigos.some((elemento) => elemento.id === persona.id),
+                      recibida = datos?.solicitudesRecibidas.some(
+                        (elemento) => elemento.id === persona.id,
+                      ),
+                      enviada = datos?.solicitudesEnviadas.some(
+                        (elemento) => elemento.id === persona.id,
+                      );
                     return (
-                      <div className="social-person" key={person.id}>
-                        <Avatar name={person.name} />
+                      <div className="social-person" key={persona.id}>
+                        <Avatar nombre={persona.nombre} />
                         <div>
-                          <strong>{person.name}</strong>
-                          <small>Usuario · {person.id.slice(0, 8)}</small>
+                          <strong>{persona.nombre}</strong>
+                          <small>Usuario · {persona.id.slice(0, 8)}</small>
                         </div>
-                        {friend ? (
-                          <Badge>Amigo</Badge>
-                        ) : incoming ? (
-                          <Button
-                            tone="secondary"
-                            disabled={busy}
+                        {amigo ? (
+                          <Insignia>Amigo</Insignia>
+                        ) : recibida ? (
+                          <Boton
+                            tono="secondary"
+                            disabled={ocupado}
                             onClick={() =>
-                              void change(
-                                `/friends/${person.id}/accept`,
+                              void cambiar(
+                                `/amigos/${persona.id}/aceptar`,
                                 'POST',
                                 undefined,
                                 'Amistad aceptada.',
@@ -130,24 +144,24 @@ export function FriendsPage(): ReactNode {
                             }
                           >
                             Aceptar
-                          </Button>
-                        ) : outgoing ? (
-                          <Badge tone="purple">Solicitud enviada</Badge>
+                          </Boton>
+                        ) : enviada ? (
+                          <Insignia tono="purple">Solicitud enviada</Insignia>
                         ) : (
-                          <Button
-                            icon="plus"
-                            disabled={busy || !data}
+                          <Boton
+                            icono="plus"
+                            disabled={ocupado || !datos}
                             onClick={() =>
-                              void change(
-                                '/friends',
+                              void cambiar(
+                                '/amigos',
                                 'POST',
-                                { userId: person.id },
+                                { usuarioId: persona.id },
                                 'Solicitud de amistad enviada.',
                               )
                             }
                           >
                             Agregar
-                          </Button>
+                          </Boton>
                         )}
                       </div>
                     );
@@ -159,30 +173,30 @@ export function FriendsPage(): ReactNode {
                 )}
               </div>
             )}
-          </Card>
-          <Card>
+          </Tarjeta>
+          <Tarjeta>
             <div className="row between card-heading">
               <h2>TUS AMIGOS</h2>
-              <Badge>{data?.friends.length || 0}</Badge>
+              <Insignia>{datos?.amigos.length || 0}</Insignia>
             </div>
-            {!data ? (
+            {!datos ? (
               <p>Cargando amigos…</p>
-            ) : data.friends.length ? (
+            ) : datos.amigos.length ? (
               <div className="social-list">
-                {data.friends.map((friend) => (
-                  <div className="friend-card" key={friend.id}>
+                {datos.amigos.map((amigo) => (
+                  <div className="friend-card" key={amigo.id}>
                     <div className="social-person">
-                      <Avatar name={friend.name} />
+                      <Avatar nombre={amigo.nombre} />
                       <div>
-                        <strong>{friend.name}</strong>
+                        <strong>{amigo.nombre}</strong>
                         <small>Listo para recibir invitaciones</small>
                       </div>
                       <button
                         className="text-button muted"
-                        disabled={busy}
+                        disabled={ocupado}
                         onClick={() =>
-                          void change(
-                            `/friends/${friend.id}`,
+                          void cambiar(
+                            `/amigos/${amigo.id}`,
                             'DELETE',
                             undefined,
                             'Usuario retirado de tus amigos.',
@@ -193,22 +207,22 @@ export function FriendsPage(): ReactNode {
                       </button>
                     </div>
                     <div className="friend-actions">
-                      <Button
-                        tone="secondary"
-                        icon="duel"
-                        disabled={busy}
-                        onClick={() => void invite(friend, 'duel')}
+                      <Boton
+                        tono="secondary"
+                        icono="duel"
+                        disabled={ocupado}
+                        onClick={() => void invitar(amigo, 'duelo')}
                       >
                         Invitar a duelo 1 vs 1
-                      </Button>
-                      <Button
-                        tone="ghost"
-                        icon="users"
-                        disabled={busy}
-                        onClick={() => void invite(friend, 'teams')}
+                      </Boton>
+                      <Boton
+                        tono="ghost"
+                        icono="users"
+                        disabled={ocupado}
+                        onClick={() => void invitar(amigo, 'equipos')}
                       >
                         Invitar a equipos 2 vs 2
-                      </Button>
+                      </Boton>
                     </div>
                   </div>
                 ))}
@@ -218,38 +232,38 @@ export function FriendsPage(): ReactNode {
                 Agrega a tus amigos y acepta sus solicitudes para invitarlos a jugar.
               </p>
             )}
-          </Card>
+          </Tarjeta>
         </div>
         <aside className="stack">
-          <Card>
+          <Tarjeta>
             <div className="row between card-heading">
               <h2>INVITACIONES RECIBIDAS</h2>
-              <Badge tone="purple">{data?.invitations.length || 0}</Badge>
+              <Insignia tono="purple">{datos?.invitaciones.length || 0}</Insignia>
             </div>
-            {data?.invitations.length ? (
+            {datos?.invitaciones.length ? (
               <div className="social-list">
-                {data.invitations.map((invitation) => (
-                  <article className="invitation-card" key={invitation.id}>
-                    <Badge tone={invitation.mode === 'duel' ? 'purple' : 'cyan'}>
-                      {invitation.mode === 'duel' ? 'Duelo 1 vs 1' : 'Equipos 2 vs 2'}
-                    </Badge>
-                    <h3>{invitation.sender.name} te invita</h3>
-                    <p>{invitation.roomName}</p>
+                {datos.invitaciones.map((invitacion) => (
+                  <article className="invitation-card" key={invitacion.id}>
+                    <Insignia tono={invitacion.modo === 'duelo' ? 'purple' : 'cyan'}>
+                      {invitacion.modo === 'duelo' ? 'Duelo 1 vs 1' : 'Equipos 2 vs 2'}
+                    </Insignia>
+                    <h3>{invitacion.remitente.nombre} te invita</h3>
+                    <p>{invitacion.nombreSala}</p>
                     <small>
-                      Caduca en{' '}
-                      {Math.max(1, Math.ceil((invitation.expiresAt - Date.now()) / 60000))} min
+                      Caduca en {Math.max(1, Math.ceil((invitacion.expiraEn - Date.now()) / 60000))}{' '}
+                      min
                     </small>
                     <div className="friend-actions">
-                      <Button disabled={busy} onClick={() => void respond(invitation.id, true)}>
+                      <Boton disabled={ocupado} onClick={() => void responder(invitacion.id, true)}>
                         Aceptar invitación
-                      </Button>
-                      <Button
-                        tone="ghost"
-                        disabled={busy}
-                        onClick={() => void respond(invitation.id, false)}
+                      </Boton>
+                      <Boton
+                        tono="ghost"
+                        disabled={ocupado}
+                        onClick={() => void responder(invitacion.id, false)}
                       >
                         Rechazar
-                      </Button>
+                      </Boton>
                     </div>
                   </article>
                 ))}
@@ -257,22 +271,22 @@ export function FriendsPage(): ReactNode {
             ) : (
               <p className="empty-social">Las invitaciones de tus amigos aparecerán aquí.</p>
             )}
-          </Card>
-          <Card>
+          </Tarjeta>
+          <Tarjeta>
             <h2 className="card-heading">SOLICITUDES DE AMISTAD</h2>
-            {data?.incomingRequests.length ? (
-              data.incomingRequests.map((person) => (
-                <div className="request-card" key={person.id}>
+            {datos?.solicitudesRecibidas.length ? (
+              datos.solicitudesRecibidas.map((persona) => (
+                <div className="request-card" key={persona.id}>
                   <div className="social-person">
-                    <Avatar name={person.name} />
-                    <strong>{person.name}</strong>
+                    <Avatar nombre={persona.nombre} />
+                    <strong>{persona.nombre}</strong>
                   </div>
                   <div className="friend-actions">
-                    <Button
-                      disabled={busy}
+                    <Boton
+                      disabled={ocupado}
                       onClick={() =>
-                        void change(
-                          `/friends/${person.id}/accept`,
+                        void cambiar(
+                          `/amigos/${persona.id}/aceptar`,
                           'POST',
                           undefined,
                           'Amistad aceptada.',
@@ -280,30 +294,30 @@ export function FriendsPage(): ReactNode {
                       }
                     >
                       Aceptar
-                    </Button>
-                    <Button
-                      tone="ghost"
-                      disabled={busy}
-                      onClick={() => void change(`/friends/${person.id}`, 'DELETE')}
+                    </Boton>
+                    <Boton
+                      tono="ghost"
+                      disabled={ocupado}
+                      onClick={() => void cambiar(`/amigos/${persona.id}`, 'DELETE')}
                     >
                       Rechazar
-                    </Button>
+                    </Boton>
                   </div>
                 </div>
               ))
             ) : (
               <p className="empty-social">No tienes solicitudes pendientes.</p>
             )}
-            {!!data?.outgoingRequests.length && (
+            {!!datos?.solicitudesEnviadas.length && (
               <>
                 <h3 className="social-subtitle">SOLICITUDES ENVIADAS</h3>
-                {data.outgoingRequests.map((person) => (
-                  <div className="social-person" key={person.id}>
-                    <span>{person.name}</span>
+                {datos.solicitudesEnviadas.map((persona) => (
+                  <div className="social-person" key={persona.id}>
+                    <span>{persona.nombre}</span>
                     <button
                       className="text-button muted"
-                      disabled={busy}
-                      onClick={() => void change(`/friends/${person.id}`, 'DELETE')}
+                      disabled={ocupado}
+                      onClick={() => void cambiar(`/amigos/${persona.id}`, 'DELETE')}
                     >
                       Cancelar solicitud
                     </button>
@@ -311,7 +325,7 @@ export function FriendsPage(): ReactNode {
                 ))}
               </>
             )}
-          </Card>
+          </Tarjeta>
         </aside>
       </div>
     </>
@@ -319,78 +333,78 @@ export function FriendsPage(): ReactNode {
 }
 
 /** Invita amigos a la sala abierta e indica las invitaciones que siguen pendientes. */
-export function FriendInvitePanel({ room }: { room: RoomSnapshot }): ReactNode {
-  const { notify } = useApp(),
-    { data, error, refresh } = useSocial(),
-    { busy, run } = useAction(notify);
-  const [selected, setSelected] = useState('');
-  const pending =
-    data?.sentInvitations.filter((invitation) => invitation.roomCode === room.code) || [];
-  const available =
-    data?.friends.filter(
-      (friend) =>
-        !room.players.some((player) => player.id === friend.id) &&
-        !pending.some((invitation) => invitation.recipient.id === friend.id),
+export function PanelInvitarAmigos({ sala }: { sala: EstadoSala }): ReactNode {
+  const { notificar } = useAplicacion(),
+    { datos, error, actualizar } = useSocial(),
+    { ocupado, ejecutar } = useAccion(notificar);
+  const [seleccionado, fijarSeleccionado] = useState('');
+  const pendiente =
+    datos?.invitacionesEnviadas.filter((invitacion) => invitacion.codigoSala === sala.codigo) || [];
+  const disponibles =
+    datos?.amigos.filter(
+      (amigo) =>
+        !sala.jugadores.some((jugador) => jugador.id === amigo.id) &&
+        !pendiente.some((invitacion) => invitacion.destinatario.id === amigo.id),
     ) || [];
-  const full = room.players.length >= (room.mode === 'duel' ? 2 : 4),
-    valid = available.some((friend) => friend.id === selected);
+  const completo = sala.jugadores.length >= (sala.modo === 'duelo' ? 2 : 4),
+    valido = disponibles.some((amigo) => amigo.id === seleccionado);
   /** Envía la invitación elegida y conserva visible su confirmación pendiente. */
-  async function send(event: FormEvent): Promise<void> {
-    event.preventDefault();
-    await run(async () => {
-      await api(`/rooms/${room.code}/invitations`, 'POST', { userId: selected });
-      setSelected('');
-      await refresh();
-      notify('Invitación enviada. Tu amigo puede aceptarla desde Amigos.');
+  async function enviar(evento: FormEvent): Promise<void> {
+    evento.preventDefault();
+    await ejecutar(async () => {
+      await api(`/salas/${sala.codigo}/invitaciones`, 'POST', { usuarioId: seleccionado });
+      fijarSeleccionado('');
+      await actualizar();
+      notificar('Invitación enviada. Tu amigo puede aceptarla desde Amigos.');
     });
   }
   return (
-    <Card className="invite-friends-panel">
+    <Tarjeta className="invite-friends-panel">
       <h2 className="card-heading">INVITAR AMIGOS</h2>
       {error && <p className="form-error">{error}</p>}
-      {full ? (
+      {completo ? (
         <p>La sala ya está completa.</p>
-      ) : available.length ? (
-        <form onSubmit={(event) => void send(event)}>
+      ) : disponibles.length ? (
+        <form onSubmit={(evento) => void enviar(evento)}>
           <label className="field">
             ELIGE UN AMIGO
             <div className="input-shell">
-              <Icon name="users" />
+              <Icono nombre="users" />
               <select
                 aria-label="Amigo para invitar"
-                value={valid ? selected : ''}
-                onChange={(event) => setSelected(event.target.value)}
+                value={valido ? seleccionado : ''}
+                onChange={(evento) => fijarSeleccionado(evento.target.value)}
                 required
               >
                 <option value="">Selecciona un amigo</option>
-                {available.map((friend) => (
-                  <option key={friend.id} value={friend.id}>
-                    {friend.name}
+                {disponibles.map((amigo) => (
+                  <option key={amigo.id} value={amigo.id}>
+                    {amigo.nombre}
                   </option>
                 ))}
               </select>
             </div>
           </label>
-          <Button icon="send" type="submit" disabled={busy || !valid}>
+          <Boton icono="send" type="submit" disabled={ocupado || !valido}>
             Enviar invitación
-          </Button>
+          </Boton>
         </form>
       ) : (
         <p>
-          {data?.friends.length
+          {datos?.amigos.length
             ? 'Tus amigos ya están en la sala o tienen una invitación pendiente.'
             : 'Agrega usuarios desde Amigos para invitarlos directamente.'}
         </p>
       )}
-      {pending.map((invitation) => (
-        <div className="pending-invite" key={invitation.id}>
-          <span>{invitation.recipient.name}</span>
+      {pendiente.map((invitacion) => (
+        <div className="pending-invite" key={invitacion.id}>
+          <span>{invitacion.destinatario.nombre}</span>
           <small>Invitación pendiente</small>
         </div>
       ))}
       <a className="text-button friends-link" href="#/amigos">
         Ir a mis amigos →
       </a>
-    </Card>
+    </Tarjeta>
   );
 }
