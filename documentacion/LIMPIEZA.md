@@ -40,3 +40,9 @@ En la revisión del 21 de octubre de 2026 se retiraron además la copia temporal
 - Las pruebas de integración se actualizaron al registro con código de recuperación y a la pausa de 2,2 s entre rondas; antes fallaban las 21.
 - Se retiraron restos sin uso: la tabla `music_settings` (configuración del antiguo administrador de Jamendo), las columnas `jugadores_partida.hints_used` y `current_hint` (pistas), `medios_cancion.hash_contenido` (archivos subidos) y `canciones.archivo_audio` (audio local). `scripts/aplicar-esquema.ts` las elimina si existen.
 - En el cliente se quitaron cuatro reglas CSS sin referencias (`.badge.gold`, `.full`, `.check-box`, `.selected .check-box`) y el icono `sparkles` con su SVG.
+
+## Catálogo por listas (19 de noviembre de 2026)
+
+- El catálogo ya no se descarga por artistas: se retiraron `servidor/servicios/musica/artistas.ts` (315 artistas), la descarga automática del servidor, `scripts/sincronizar-musica.ts`, la tabla `sincronizacion_catalogo` y los documentos `CATALOGO-ARTISTAS.md` y `catalogo-oficial.csv`, que describían ese repertorio.
+- En su lugar, `base-datos/listas/` guarda las listas de canciones y `pnpm musica:importar` las busca en Deezer.
+- Rock, Metal y Alternativa pasan a ser un solo género: "Rock, Metal y Alternativa".

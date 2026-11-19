@@ -115,7 +115,7 @@ Las pruebas de integración requieren una base separada terminada en `_test` y u
 - **Access denied:** comprueba la contraseña y el usuario MySQL para `127.0.0.1`.
 - **No existe la base o una tabla:** prepara el esquema con el administrador como se indica arriba.
 - **EADDRINUSE en 3001:** ya hay otro servidor en ese puerto; detén el anterior antes de iniciar otro.
-- **No aparecen canciones:** revisa Internet y los mensajes de Deezer. Para forzar la sincronización usa `npm.cmd run musica:sincronizar` con la cuenta de aplicación.
+- **No aparecen canciones:** revisa Internet y los mensajes de Deezer. Para volver a importar las listas usa `npm.cmd run musica:importar` con la cuenta de aplicación.
 
 ## Jugar entre dispositivos
 

@@ -4,9 +4,9 @@ Juego web de reconocimiento musical en español basado en el [diseño de Figma](
 
 ## Canciones reales dentro del juego
 
-Individual, duelo 1 vs 1 y equipos 2 vs 2 utilizan **muestras de grabaciones oficiales de Deezer**, reproducidas en fragmentos de 12 segundos. El servidor obtiene los géneros y las referencias de las canciones automáticamente. No se necesita cargar archivos ni configurar una clave privada para el acceso público comprobado durante el desarrollo.
+Individual, duelo 1 vs 1 y equipos 2 vs 2 utilizan **muestras de grabaciones oficiales de Deezer**, reproducidas en fragmentos de 12 segundos. Las canciones se eligen con listas guardadas en `base-datos/listas/` (la actual viene de una lista de Spotify) y el audio se busca en Deezer con `pnpm musica:importar`. No se necesita una clave privada de Deezer.
 
-Los géneros consultados incluyen Rock, Pop, Hip hop/Rap, Electrónica, Latina, Reggae, R&B/Soul, Metal y Alternativa. Solo se muestran categorías con suficientes pistas reproducibles. Incluye Linkin Park, Deftones, Imagine Dragons, Katy Perry y muchos más. Cada género reúne **35 artistas con cinco canciones por artista: 315 artistas y 1.575 canciones** en la carga verificada. Las canciones se seleccionan por popularidad en Deezer; la lista de artistas es representativa. Blues, Jazz y Country están retirados. [Ver repertorio](documentacion/CATALOGO-ARTISTAS.md). Deezer ofrece muestras de hasta 30 segundos; el juego usa 12 segundos por ronda y requiere una partida nueva después de actualizar.
+Los géneros posibles son Rock, Metal y Alternativa (un solo género), Pop, Hip hop / Rap, Electrónica, Latina, Reggae y R&B / Soul; solo se muestran los que tienen al menos cinco canciones. Hoy el catálogo tiene **88 canciones de 44 artistas en Rock, Metal y Alternativa**. Blues, Jazz y Country están retirados. Deezer ofrece muestras de hasta 30 segundos; el juego usa 12 segundos por ronda.
 
 **No hay sección Música, biblioteca, reproductor independiente, cargas ni CSV.** Las melodías sintetizadas del catálogo anterior quedan excluidas de nuevas partidas y no se reproducen como respaldo. El audio requiere Internet. Consulta [la integración de audio](documentacion/INTEGRACION-MUSICAL.md).
 
@@ -31,7 +31,7 @@ La instalación preparada utiliza MySQL Community Server 8.4.6 portátil en `127
 ```powershell
 ./scripts/iniciar-mysql-local.ps1
 pnpm bd:migrar
-pnpm musica:sincronizar
+pnpm musica:importar
 pnpm build
 pnpm start
 ```
@@ -51,7 +51,7 @@ pnpm install
 Copy-Item .env.example .env
 ```
 
-Configura MySQL según [documentacion/MYSQL.md](documentacion/MYSQL.md). Una cuenta de instalación ejecuta `pnpm bd:preparar` para crear el esquema y sincronizar referencias del proveedor; después configura una cuenta de aplicación con permisos limitados. No se utiliza SQLite ni almacenamiento simulado como sustituto de MySQL.
+Configura MySQL según [documentacion/MYSQL.md](documentacion/MYSQL.md). Una cuenta de instalación ejecuta `pnpm bd:preparar` para crear el esquema e importar las listas de canciones; después configura una cuenta de aplicación con permisos limitados. No se utiliza SQLite ni almacenamiento simulado como sustituto de MySQL.
 
 También se incluye `compose.yaml` con la imagen oficial `mysql:8.4`. Define sus contraseñas en tu entorno antes de `docker compose up -d mysql`.
 

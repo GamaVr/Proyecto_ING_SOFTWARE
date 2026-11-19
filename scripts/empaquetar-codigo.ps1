@@ -30,10 +30,10 @@ try {
     $sourceHash = (Get-FileHash -LiteralPath (Join-Path $sourceRoot $entry.FullName) -Algorithm SHA256).Hash
     if ($archiveHash -ne $sourceHash) { throw "Contenido diferente: $($entry.FullName)" }
   }
-  foreach ($required in @('servidor/principal.ts','servidor/aplicacion.ts','servidor/tiempo-real.ts','servidor/validacion.ts','servidor/rutas/partidas.ts','servidor/servicios/partidas.ts','servidor/servicios/musica/deezer.ts','servidor/servicios/musica/catalogo.ts','servidor/servicios/musica/artistas.ts','compartido/musica.ts','compartido/reloj-partida.ts','src/servicios/musica.ts','src/Aplicacion.tsx','src/principal.tsx','pruebas/integracion/musica.test.ts','pruebas/unitarias/reloj-partida.test.ts','base-datos/esquema.sql','base-datos/migraciones/011_nombres_en_espanol.sql','scripts/aplicar-esquema.ts','scripts/sincronizar-musica.ts','documentacion/INTEGRACION-MUSICAL.md','documentacion/CATALOGO-ARTISTAS.md','documentacion/catalogo-oficial.csv','documentacion/GUIA-ARCHIVOS.md')) {
+  foreach ($required in @('servidor/principal.ts','servidor/aplicacion.ts','servidor/tiempo-real.ts','servidor/validacion.ts','servidor/rutas/partidas.ts','servidor/servicios/partidas.ts','servidor/servicios/musica/deezer.ts','servidor/servicios/musica/catalogo.ts','servidor/servicios/musica/listas.ts','base-datos/listas/rock-metal.json','compartido/musica.ts','compartido/reloj-partida.ts','src/servicios/musica.ts','src/Aplicacion.tsx','src/principal.tsx','pruebas/integracion/musica.test.ts','pruebas/unitarias/reloj-partida.test.ts','base-datos/esquema.sql','base-datos/migraciones/011_nombres_en_espanol.sql','scripts/aplicar-esquema.ts','scripts/importar-listas.ts','documentacion/INTEGRACION-MUSICAL.md','documentacion/GUIA-ARCHIVOS.md')) {
     if (-not $archive.GetEntry($required)) { throw "Falta $required" }
   }
-  foreach ($retired in @('server/aplicacion.ts','server/matchmaking.ts','src/pages/Duel.tsx','src/pages/Music.tsx','src/music.css','scripts/migrar-codigo-recuperacion.ts','public/plantilla-musica.csv','scripts/music-admin.ts')) {
+  foreach ($retired in @('server/aplicacion.ts','server/matchmaking.ts','src/pages/Duel.tsx','src/pages/Music.tsx','src/music.css','scripts/migrar-codigo-recuperacion.ts','servidor/servicios/musica/artistas.ts','scripts/sincronizar-musica.ts','public/plantilla-musica.csv','scripts/music-admin.ts')) {
     if ($archive.GetEntry($retired)) { throw "Archivo retirado presente: $retired" }
   }
   foreach ($required in @('iniciar-juego.cmd','documentacion/INSTALAR-EN-LAPTOP.md')) {

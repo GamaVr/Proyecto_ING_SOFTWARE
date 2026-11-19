@@ -25,8 +25,8 @@ Carpetas, archivos, funciones, variables, tipos, rutas de la API, tablas y colum
 | `servicios/social.ts`          | Amistades e invitaciones con sus permisos.                                  |
 | `servicios/puntuacion.ts`      | Normalización de respuestas, puntos y barajado.                             |
 | `servicios/musica/deezer.ts`   | Cliente de Deezer y transmisión segura de las muestras.                     |
-| `servicios/musica/catalogo.ts` | Sincronización y publicación del catálogo por género.                       |
-| `servicios/musica/artistas.ts` | Artistas principales y suplentes de cada género.                            |
+| `servicios/musica/catalogo.ts` | Guardado de canciones y géneros disponibles para jugar.                     |
+| `servicios/musica/listas.ts`   | Importación de listas: busca cada canción en Deezer y le asigna su género.  |
 
 ## Código compartido (`compartido/`)
 
@@ -67,19 +67,19 @@ Carpetas, archivos, funciones, variables, tipos, rutas de la API, tablas y colum
 
 ## Scripts (`scripts/`)
 
-| Archivo                     | Qué hace                                                                    |
-| --------------------------- | --------------------------------------------------------------------------- |
-| `aplicar-esquema.ts`        | Crea el esquema o convierte una base antigua (lo usan los dos siguientes).  |
-| `preparar-base-datos.ts`    | `pnpm bd:preparar`: esquema y catálogo inicial (o datos de prueba).         |
-| `migrar-local.ts`           | `pnpm bd:migrar`: actualiza el MySQL portátil con la cuenta administrativa. |
-| `preparar-entorno-local.ts` | Prepara una instancia local nueva y sus credenciales.                       |
-| `iniciar-mysql-local.ps1`   | Inicia MySQL portátil sin instalar un servicio de Windows.                  |
-| `detener-mysql-local.ts`    | `pnpm mysql:detener`.                                                       |
-| `sincronizar-musica.ts`     | `pnpm musica:sincronizar`: actualiza el catálogo de Deezer.                 |
-| `restablecer-contrasena.ts` | Recupera una cuenta desde la consola de administración.                     |
-| `probar-integracion.ts`     | `pnpm test:integracion`: pruebas contra una base MySQL aislada `_test`.     |
-| `desarrollo.ts`             | `pnpm dev`: cliente Vite y servidor con recarga.                            |
-| `empaquetar-codigo.ps1`     | Genera un ZIP de entrega sin credenciales y lo verifica por SHA-256.        |
+| Archivo                     | Qué hace                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `aplicar-esquema.ts`        | Crea el esquema o convierte una base antigua (lo usan los dos siguientes).      |
+| `preparar-base-datos.ts`    | `pnpm bd:preparar`: esquema y catálogo inicial (o datos de prueba).             |
+| `migrar-local.ts`           | `pnpm bd:migrar`: actualiza el MySQL portátil con la cuenta administrativa.     |
+| `preparar-entorno-local.ts` | Prepara una instancia local nueva y sus credenciales.                           |
+| `iniciar-mysql-local.ps1`   | Inicia MySQL portátil sin instalar un servicio de Windows.                      |
+| `detener-mysql-local.ts`    | `pnpm mysql:detener`.                                                           |
+| `importar-listas.ts`        | `pnpm musica:importar`: importa al catálogo las listas de `base-datos/listas/`. |
+| `restablecer-contrasena.ts` | Recupera una cuenta desde la consola de administración.                         |
+| `probar-integracion.ts`     | `pnpm test:integracion`: pruebas contra una base MySQL aislada `_test`.         |
+| `desarrollo.ts`             | `pnpm dev`: cliente Vite y servidor con recarga.                                |
+| `empaquetar-codigo.ps1`     | Genera un ZIP de entrega sin credenciales y lo verifica por SHA-256.            |
 
 ## Pruebas (`pruebas/`)
 

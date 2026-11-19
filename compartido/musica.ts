@@ -1,4 +1,16 @@
-/** Define las opciones del catálogo y los géneros retirados. */
+/** Define los géneros del juego, las opciones del catálogo y los géneros retirados. */
+/** Géneros en los que se pueden guardar canciones. */
+export const GENEROS = [
+  'Rock, Metal y Alternativa',
+  'Pop',
+  'Hip hop / Rap',
+  'Electrónica',
+  'Latina',
+  'Reggae',
+  'R&B / Soul',
+] as const;
+export type Genero = (typeof GENEROS)[number];
+
 /** Categorías retiradas: no aparecen en opciones ni se seleccionan, aunque queden datos históricos. */
 export const GENEROS_RETIRADOS = ['Blues', 'Jazz', 'Country'] as const;
 

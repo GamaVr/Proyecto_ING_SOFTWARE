@@ -3,7 +3,6 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { transaccion } from '../datos/base-datos.js';
 import { ErrorHttp } from '../errores.js';
-import { prepararGrabaciones } from '../servicios/musica/catalogo.js';
 import { transmitirAudioMusica } from '../servicios/musica/deezer.js';
 import { type ConsultaMusica } from '../servicios/musica/deezer.js';
 import { esquemaConfiguracion } from '../validacion.js';
@@ -24,7 +23,6 @@ export function rutasPartidas(
   const enrutador = Router();
   enrutador.post('/partidas', async (req, res) => {
     const configuracion = esquemaConfiguracion.parse(req.body);
-    await prepararGrabaciones(consultarMusica);
     const id = await transaccion(async (bd) =>
       crearPartida(configuracion, 'individual', [{ id: req.usuario!.id, equipo: 0 }], bd),
     );

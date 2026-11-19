@@ -147,12 +147,3 @@ CREATE TABLE IF NOT EXISTS medios_cancion (
   UNIQUE KEY pista_proveedor (fuente,id_externo),
   FOREIGN KEY (cancion_id) REFERENCES canciones(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Publicaciones completas por género; la huella cambia al modificar artistas o selección de éxitos.
-CREATE TABLE IF NOT EXISTS sincronizacion_catalogo (
-  genero VARCHAR(40) PRIMARY KEY,
-  version CHAR(64) NOT NULL,
-  cantidad_artistas SMALLINT UNSIGNED NOT NULL,
-  cantidad_pistas SMALLINT UNSIGNED NOT NULL,
-  actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

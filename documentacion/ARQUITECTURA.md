@@ -27,8 +27,8 @@ servidor/
     social.ts            Búsqueda, amistades e invitaciones.
     puntuacion.ts        Normalización de respuestas y cálculo de puntos.
     musica/deezer.ts     Cliente de Deezer y transmisión de muestras.
-    musica/catalogo.ts   Sincronización y publicación del catálogo por género.
-    musica/artistas.ts   Lista de artistas por género.
+    musica/catalogo.ts   Guardado de canciones y géneros disponibles.
+    musica/listas.ts     Importación de listas de canciones al catálogo.
 compartido/            Tipos y funciones que usan el cliente y el servidor.
 src/
   paginas/             Una pantalla por archivo.
@@ -67,9 +67,7 @@ El contador personal usa `compartido/reloj-partida.ts`: al responder conserva el
 
 ## Grabaciones oficiales
 
-`servicios/musica/deezer.ts` consulta la API pública de Deezer: exige el perfil exacto del artista, su identificador, muestras reproducibles y títulos únicos. `servicios/musica/artistas.ts` define 35 artistas principales por cada uno de los nueve géneros y suplentes. Las cinco canciones de cada artista son las más populares (`rank`), sin versiones en vivo, remixes ni duplicados: 315 artistas y 1.575 canciones. Las solicitudes reales se separan al menos 140 ms y tienen tiempo límite.
-
-`servicios/musica/catalogo.ts` publica solo lotes completos de 35 artistas y 175 canciones por género en una transacción; desactiva la selección anterior sin borrar el historial. `sincronizacion_catalogo` guarda una huella por género para reutilizar publicaciones de menos de doce horas. `pnpm musica:sincronizar` fuerza una actualización.
+El catálogo sale de las listas de `base-datos/listas/` (por ejemplo, una lista de Spotify). `servicios/musica/listas.ts` busca cada canción en Deezer con `servicios/musica/deezer.ts` (mismo artista y título, sin versiones en vivo, remixes ni tributos, con muestra disponible) y la guarda en el género que Deezer asigna a su álbum, dentro de los que permite la lista. `pnpm musica:importar` reemplaza el catálogo en una transacción: las canciones que ya no están en ninguna lista quedan desactivadas sin borrar el historial. Las solicitudes a Deezer se separan al menos 140 ms y tienen tiempo límite. El servidor no descarga canciones por su cuenta.
 
 Los tres modos usan solo `medios_cancion.fuente = 'deezer'` activas. La URL firmada de cada muestra se resuelve al reproducir la ronda; los MP3 no se guardan en disco. El navegador reproduce 12 segundos de una muestra de hasta 30. No es un sistema DRM: quien tenga herramientas de desarrollo puede capturar un audio que ya recibió. Consulta [audio y condiciones](INTEGRACION-MUSICAL.md).
 

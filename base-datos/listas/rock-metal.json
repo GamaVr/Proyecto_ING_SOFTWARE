@@ -1,0 +1,508 @@
+{
+  "nombre": "Rock/Metal",
+  "fuente": "https://open.spotify.com/playlist/6JPqiEUlyNVvmdqB06CPYG",
+  "generoPredeterminado": "Rock, Metal y Alternativa",
+  "generosPermitidos": ["Rock, Metal y Alternativa"],
+  "pistas": [
+    {
+      "titulo": "Monster",
+      "artista": "Skillet",
+      "spotify": "2UREu1Y8CO4jXkbvqAtP7g"
+    },
+    {
+      "titulo": "Animal I Have Become",
+      "artista": "Three Days Grace",
+      "spotify": "56sk7jBpZV0CD31G9hEU3b"
+    },
+    {
+      "titulo": "Afterlife (from the Netflix Series \"Devil May Cry\")",
+      "artista": "Evanescence",
+      "spotify": "3GAqddcV0nwMHQI5RfMXoI"
+    },
+    {
+      "titulo": "Time of Dying",
+      "artista": "Three Days Grace",
+      "spotify": "7piw04hPQZ1OHZ9Fq9JOXR"
+    },
+    {
+      "titulo": "Through The Fire And Flames",
+      "artista": "DragonForce",
+      "spotify": "6UVk4ZRmWKTqIgPFPOK0QD"
+    },
+    {
+      "titulo": "Bleed It Out",
+      "artista": "Linkin Park",
+      "spotify": "0UFDKFqW2oGspYeYqo9wjA"
+    },
+    {
+      "titulo": "Going Under",
+      "artista": "Evanescence",
+      "spotify": "3UygY7qW2cvG9Llkay6i1i"
+    },
+    {
+      "titulo": "If You Can't Hang",
+      "artista": "Sleeping With Sirens",
+      "spotify": "2Tc9VznHtQUmfOgE3L1RdN"
+    },
+    {
+      "titulo": "Before I Forget",
+      "artista": "Slipknot",
+      "spotify": "6wqJeItl3Vc3az4ZicSQAB"
+    },
+    {
+      "titulo": "Rollin' (Air Raid Vehicle)",
+      "artista": "Limp Bizkit",
+      "spotify": "3IV4swNduIRunHREK80owz"
+    },
+    {
+      "titulo": "Helena",
+      "artista": "My Chemical Romance",
+      "spotify": "5dTHtzHFPyi8TlTtzoz1J9"
+    },
+    {
+      "titulo": "Sextape",
+      "artista": "Deftones",
+      "spotify": "1EryAkZ0VHstC6haIxVBiE"
+    },
+    {
+      "titulo": "The Emptiness Machine",
+      "artista": "Linkin Park",
+      "spotify": "2PnlsTsOTLE5jnBnNe2K0A"
+    },
+    {
+      "titulo": "Bring Me To Life - Remastered 2023",
+      "artista": "Evanescence",
+      "spotify": "6pjWON6NgnSv1nU5inUlaf"
+    },
+    {
+      "titulo": "Radioactive",
+      "artista": "Imagine Dragons",
+      "spotify": "58rFzMvW9kxNwMtGTgBQoP"
+    },
+    {
+      "titulo": "One Last Breath",
+      "artista": "Creed",
+      "spotify": "42T2QQv3xgBlpQxaSP7lnK"
+    },
+    {
+      "titulo": "Decode - Twilight Soundtrack Version",
+      "artista": "Paramore",
+      "spotify": "59GgbFYUQBDwJ6DB2ljPZe"
+    },
+    {
+      "titulo": "Chop Suey!",
+      "artista": "System Of A Down",
+      "spotify": "2DlHlPMa4M17kufBvI2lEN"
+    },
+    {
+      "titulo": "Sonne",
+      "artista": "Rammstein",
+      "spotify": "6VS4C2HnOQPivcjcAAlUMj"
+    },
+    {
+      "titulo": "Faint",
+      "artista": "Linkin Park",
+      "spotify": "4Yf5bqU3NK4kNOypcrLYwU"
+    },
+    {
+      "titulo": "Change (In the House of Flies)",
+      "artista": "Deftones",
+      "spotify": "51c94ac31swyDQj9B3Lzs3"
+    },
+    {
+      "titulo": "Papercut",
+      "artista": "Linkin Park",
+      "spotify": "1Vej0qeQ3ioKwpI6FUbRv1"
+    },
+    {
+      "titulo": "Be Quiet and Drive (Far Away)",
+      "artista": "Deftones",
+      "spotify": "4Uiw0Sl9yskBaC6P4DcdVD"
+    },
+    {
+      "titulo": "Evil Angel",
+      "artista": "Breaking Benjamin",
+      "spotify": "6HDBZFpozQsnYZ88ic250y"
+    },
+    {
+      "titulo": "New Divide",
+      "artista": "Linkin Park",
+      "spotify": "6Wx88Mv6b9ofjKMKkdwOJd"
+    },
+    {
+      "titulo": "Given Up",
+      "artista": "Linkin Park",
+      "spotify": "1fLlRApgzxWweF1JTf8yM5"
+    },
+    {
+      "titulo": "Breaking the Habit",
+      "artista": "Linkin Park",
+      "spotify": "3dxiWIBVJRlqh9xk144rf4"
+    },
+    {
+      "titulo": "Blow Me Away",
+      "artista": "Breaking Benjamin",
+      "spotify": "0H9GCscgdkzigJGtOAJi4A"
+    },
+    {
+      "titulo": "Lonely Day",
+      "artista": "System Of A Down",
+      "spotify": "1VNWaY3uNfoeWqb5U8x2QX"
+    },
+    {
+      "titulo": "Hero",
+      "artista": "Skillet",
+      "spotify": "4CbKVDZkYKdv69I4bCaKUq"
+    },
+    {
+      "titulo": "Aerials",
+      "artista": "System Of A Down",
+      "spotify": "4e9eGQYsOiBcftrWXwsVco"
+    },
+    {
+      "titulo": "I Hate Everything About You",
+      "artista": "Three Days Grace",
+      "spotify": "6rUp7v3l8yC4TKxAAR5Bmx"
+    },
+    {
+      "titulo": "Awake and Alive",
+      "artista": "Skillet",
+      "spotify": "0nkzd3yNniB767zSDDdLZ3"
+    },
+    {
+      "titulo": "Can You Feel My Heart",
+      "artista": "Bring Me The Horizon",
+      "spotify": "0WSa1sucoNRcEeULlZVQXj"
+    },
+    {
+      "titulo": "Youngest Daughter",
+      "artista": "Superheaven",
+      "spotify": "3tYxhPqkioZEV5el3DJxLQ"
+    },
+    {
+      "titulo": "Paranoid",
+      "artista": "Black Sabbath",
+      "spotify": "1jzDzZWeSDBg5fhNc3tczV"
+    },
+    {
+      "titulo": "Smells Like Teen Spirit",
+      "artista": "Nirvana",
+      "spotify": "5ghIJDpPoe3CfHMGu71E6T"
+    },
+    {
+      "titulo": "Miss Murder",
+      "artista": "AFI",
+      "spotify": "0Ti2dlF2xLjXblvdU5fCxM"
+    },
+    {
+      "titulo": "Sweet Child O' Mine",
+      "artista": "Guns N' Roses",
+      "spotify": "7snQQk1zcKl8gZ92AnueZW"
+    },
+    {
+      "titulo": "Welcome To The Jungle",
+      "artista": "Guns N' Roses",
+      "spotify": "0G21yYKMZoHa30cYVi1iA8"
+    },
+    {
+      "titulo": "Down with the Sickness",
+      "artista": "Disturbed",
+      "spotify": "40rvBMQizxkIqnjPdEWY1v"
+    },
+    {
+      "titulo": "Heart-Shaped Box",
+      "artista": "Nirvana",
+      "spotify": "11LmqTE2naFULdEP94AUBa"
+    },
+    {
+      "titulo": "Paint It, Black",
+      "artista": "The Rolling Stones",
+      "spotify": "1Xdhp215nsdETJ17AtC7ve"
+    },
+    {
+      "titulo": "Stricken",
+      "artista": "Disturbed",
+      "spotify": "6RJdYpFQwLyNfDc5FbjkgV"
+    },
+    {
+      "titulo": "Psychosocial",
+      "artista": "Slipknot",
+      "spotify": "3RAFcUBrCNaboRXoP3S5t1"
+    },
+    {
+      "titulo": "Thunderstruck",
+      "artista": "AC/DC",
+      "spotify": "57bgtoPSgt236HzfBOd8kj"
+    },
+    {
+      "titulo": "Dumb",
+      "artista": "Nirvana",
+      "spotify": "5gRcv46AMTrosmTOqrOV3Q"
+    },
+    {
+      "titulo": "Blitzkrieg Bop - 2016 Remaster",
+      "artista": "Ramones",
+      "spotify": "4KcH1ZRV2W1q7Flq0QqC76"
+    },
+    {
+      "titulo": "Highway to Hell",
+      "artista": "AC/DC",
+      "spotify": "2zYzyRzz6pRmhPzyfMEC8s"
+    },
+    {
+      "titulo": "scars",
+      "artista": "Novulent",
+      "spotify": "0c683aCGn2mXMU1I9Js449"
+    },
+    {
+      "titulo": "What I've Done",
+      "artista": "Linkin Park",
+      "spotify": "18lR4BzEs7e3qzc0KVkTpU"
+    },
+    {
+      "titulo": "Paint It, Black",
+      "artista": "The Rolling Stones",
+      "spotify": "63T7DJ1AFDD6Bn8VzG6JE8"
+    },
+    {
+      "titulo": "Toxicity",
+      "artista": "System Of A Down",
+      "spotify": "0snQkGI5qnAmohLE7jTsTn"
+    },
+    {
+      "titulo": "savior",
+      "artista": "Novulent",
+      "spotify": "1AuUzHA3mUAoCt4TofdyP9"
+    },
+    {
+      "titulo": "In the End",
+      "artista": "Linkin Park",
+      "spotify": "60a0Rd6pjrkxjPbaKzXjfq"
+    },
+    {
+      "titulo": "I Was Made For Lovin' You",
+      "artista": "KISS",
+      "spotify": "07q0QVgO56EorrSGHC48y3"
+    },
+    {
+      "titulo": "Somewhere I Belong",
+      "artista": "Linkin Park",
+      "spotify": "3fjmSxt0PskST13CSdBUFx"
+    },
+    {
+      "titulo": "Zombie",
+      "artista": "The Cranberries",
+      "spotify": "7EZC6E7UjZe63f1jRmkWxt"
+    },
+    {
+      "titulo": "Throne",
+      "artista": "Bring Me The Horizon",
+      "spotify": "0M3adYbGtyRHACP86dey1H"
+    },
+    {
+      "titulo": "My Demons",
+      "artista": "STARSET",
+      "spotify": "4HOLHB86ctpgSwWasOLD2z"
+    },
+    {
+      "titulo": "Creep",
+      "artista": "Radiohead",
+      "spotify": "70LcF31zb1H0PyJoS1Sx1r"
+    },
+    {
+      "titulo": "Burning Heart - From \"Rocky IV\" Soundtrack",
+      "artista": "Survivor",
+      "spotify": "2avaSeKHI5l4sLruVfLdi2"
+    },
+    {
+      "titulo": "Knights of Cydonia",
+      "artista": "Muse",
+      "spotify": "7ouMYWpwJ422jRcDASZB7P"
+    },
+    {
+      "titulo": "Something In The Way",
+      "artista": "Nirvana",
+      "spotify": "1nFtiJxYdhtFfFtfXBv06s"
+    },
+    {
+      "titulo": "Prayer Of The Refugee",
+      "artista": "Rise Against",
+      "spotify": "4OSbctVD37ycS0H3rwRm72"
+    },
+    {
+      "titulo": "Where Is My Mind?",
+      "artista": "Pixies",
+      "spotify": "0KzAbK6nItSqNh8q70tb0K"
+    },
+    {
+      "titulo": "Crawling",
+      "artista": "Linkin Park",
+      "spotify": "57BrRMwf9LrcmuOsyGilwr"
+    },
+    {
+      "titulo": "Last Resort",
+      "artista": "Papa Roach",
+      "spotify": "5W8YXBz9MTIDyrpYaCg2Ky"
+    },
+    {
+      "titulo": "Break Stuff",
+      "artista": "Limp Bizkit",
+      "spotify": "5cZqsjVs6MevCnAkasbEOX"
+    },
+    {
+      "titulo": "Lying from You",
+      "artista": "Linkin Park",
+      "spotify": "4qVR3CF8FuFvHN4L6vXlB1"
+    },
+    {
+      "titulo": "Numb",
+      "artista": "Linkin Park",
+      "spotify": "2nLtzopw4rPReszdYBJU6h"
+    },
+    {
+      "titulo": "From the Inside",
+      "artista": "Linkin Park",
+      "spotify": "697M5JB8FDIyRXEXgl1pBZ"
+    },
+    {
+      "titulo": "The Kids Aren't Alright",
+      "artista": "The Offspring",
+      "spotify": "4EchqUKQ3qAQuRNKmeIpnf"
+    },
+    {
+      "titulo": "Song 2 - 2012 Remaster",
+      "artista": "Blur",
+      "spotify": "1FTSo4v6BOZH9QxKc3MbVM"
+    },
+    {
+      "titulo": "Pushing Me Away",
+      "artista": "Linkin Park",
+      "spotify": "1gAaRSN57UYVRI4eWRyAvP"
+    },
+    {
+      "titulo": "Forgotten",
+      "artista": "Linkin Park",
+      "spotify": "7kxM3UJwN6rHAW5kwdlAHK"
+    },
+    {
+      "titulo": "Decadence",
+      "artista": "Disturbed",
+      "spotify": "0jY829pCMnstlNtaE72vSB"
+    },
+    {
+      "titulo": "I Hate Everything About You",
+      "artista": "Three Days Grace",
+      "spotify": "0M955bMOoilikPXwKLYpoi"
+    },
+    {
+      "titulo": "Savior",
+      "artista": "Rise Against",
+      "spotify": "1vcxF91pWs9uNwDROuiCPB"
+    },
+    {
+      "titulo": "Dear Maria, Count Me In",
+      "artista": "All Time Low",
+      "spotify": "0JJP0IS4w0fJx01EcrfkDe"
+    },
+    {
+      "titulo": "Courtesy Call",
+      "artista": "Thousand Foot Krutch",
+      "spotify": "0AOmbw8AwDnwXhHC3OhdVB"
+    },
+    {
+      "titulo": "Not Gonna Die",
+      "artista": "Skillet",
+      "spotify": "2jfk3m8nq5IvB35s2xIs1O"
+    },
+    {
+      "titulo": "Paranoid - 2009 Remaster",
+      "artista": "Black Sabbath",
+      "spotify": "3Jnxngdff0lVu2rza1GVx6"
+    },
+    {
+      "titulo": "So Cold",
+      "artista": "Breaking Benjamin",
+      "spotify": "3xXKwkmkrpZmGpIof83xbE"
+    },
+    {
+      "titulo": "Prayer Of The Refugee",
+      "artista": "Rise Against",
+      "spotify": "2VGQ342iuqj6aSaYbyBQVJ"
+    },
+    {
+      "titulo": "Burning Heart - From \"Rocky IV\" Soundtrack",
+      "artista": "Survivor",
+      "spotify": "2VN7uPrbryJ7nE2MXX3f9a"
+    },
+    {
+      "titulo": "Californication",
+      "artista": "Red Hot Chili Peppers",
+      "spotify": "48UPSzbZjgc449aqz8bxox"
+    },
+    {
+      "titulo": "Eye of the Tiger",
+      "artista": "Survivor",
+      "spotify": "2KH16WveTQWT6KOG9Rg6e2"
+    },
+    {
+      "titulo": "Lying from You",
+      "artista": "Linkin Park",
+      "spotify": "4zP2e2aIzOZGEFTq1MDJmm"
+    },
+    {
+      "titulo": "Easier to Run",
+      "artista": "Linkin Park",
+      "spotify": "17bgialGAwoiGj1STY4cnR"
+    },
+    {
+      "titulo": "Breaking the Habit",
+      "artista": "Linkin Park",
+      "spotify": "6n8TMVyFKoUmDc4apxceRD"
+    },
+    {
+      "titulo": "From the Inside",
+      "artista": "Linkin Park",
+      "spotify": "60IkVf7UfQXmt5CwkpcX8a"
+    },
+    {
+      "titulo": "Through The Fire And Flames",
+      "artista": "DragonForce",
+      "spotify": "1UMdbkqX19OiwfExH7gzYA"
+    },
+    {
+      "titulo": "When You Were Young",
+      "artista": "The Killers",
+      "spotify": "70wYA8oYHoMzhRRkARoMhU"
+    },
+    {
+      "titulo": "Even Flow",
+      "artista": "Pearl Jam",
+      "spotify": "6QewNVIDKdSl8Y3ycuHIei"
+    },
+    {
+      "titulo": "Hail to the King",
+      "artista": "Avenged Sevenfold",
+      "spotify": "5anCkDvJ17aznvK5TED5uo"
+    },
+    {
+      "titulo": "Rock And Roll All Nite - 2025 Remaster",
+      "artista": "KISS",
+      "spotify": "1Buwv1iql0YsxftE5LHIgq"
+    },
+    {
+      "titulo": "Smells Like Teen Spirit",
+      "artista": "Nirvana",
+      "spotify": "4CeeEOM32jQcH3eN9Q2dGj"
+    },
+    {
+      "titulo": "Something In The Way",
+      "artista": "Nirvana",
+      "spotify": "4gHnSNHs8RyVukKoWdS99f"
+    },
+    {
+      "titulo": "Song 2",
+      "artista": "Blur",
+      "spotify": "3GfOAdcoc3X5GPiiXmpBjK"
+    }
+  ]
+}

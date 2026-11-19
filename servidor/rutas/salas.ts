@@ -1,8 +1,6 @@
 /** Rutas de salas privadas: crear, unirse, confirmar, chatear, iniciar y salir. */
 import { Router } from 'express';
 import { z } from 'zod';
-import { prepararGrabaciones } from '../servicios/musica/catalogo.js';
-import { type ConsultaMusica } from '../servicios/musica/deezer.js';
 import { esquemaConfiguracion } from '../validacion.js';
 import {
   obtenerSala,
@@ -15,10 +13,7 @@ import {
 } from '../servicios/salas.js';
 
 /** Crea las rutas de salas multijugador. */
-export function rutasSalas(
-  notificar: (canal: string) => void,
-  consultarMusica?: ConsultaMusica,
-): Router {
+export function rutasSalas(notificar: (canal: string) => void): Router {
   const enrutador = Router();
   enrutador.post('/salas', async (req, res) => {
     const entrada = z
@@ -64,7 +59,6 @@ export function rutasSalas(
     res.json(await obtenerSala(codigo, req.usuario!.id));
   });
   enrutador.post('/salas/:codigo/iniciar', async (req, res) => {
-    await prepararGrabaciones(consultarMusica);
     const codigo = String(req.params.codigo);
     const partidaId = await iniciarSala(codigo, req.usuario!.id);
     notificar(`sala:${codigo}`);

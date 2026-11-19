@@ -14,7 +14,7 @@
     "build": "tsc --noEmit && vite build",
     "start": "tsx servidor/principal.ts",
     "bd:preparar": "tsx scripts/preparar-base-datos.ts",
-    "musica:sincronizar": "tsx scripts/sincronizar-musica.ts",
+    "musica:importar": "tsx scripts/importar-listas.ts",
     "test": "tsx --test pruebas/unitarias/*.test.ts",
     "test:integracion": "tsx scripts/probar-integracion.ts",
     "check": "tsc --noEmit",

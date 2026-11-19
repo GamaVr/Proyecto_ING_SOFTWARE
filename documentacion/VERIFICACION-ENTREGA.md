@@ -19,6 +19,6 @@ La verificación se hizo con Node.js 24.19.0 en esta computadora Windows. La ins
 
 Se volvieron a revisar los 46 archivos TypeScript del proyecto: no se detectaron módulos ni exportaciones sin uso. Los 56 SVG restantes tienen referencias y todas las dependencias de producción se utilizan. Se retiró la copia temporal de la instalación de pruebas anterior, con 5.541 archivos y unos 102 MB, sus dos registros y el ZIP reemplazado. Se conservan las migraciones, las pruebas y las herramientas de instalación y mantenimiento por su uso documentado.
 
-El código incluye el nombre de sala inicialmente vacío, las invitaciones entre amigos y la retirada de los códigos y del acceso manual por código en la interfaz. Se mantienen MySQL, los nueve géneros configurados y la selección de hasta cinco canciones oficiales para cada uno de los 35 artistas por género, según su disponibilidad en Deezer.
+El código incluye el nombre de sala inicialmente vacío, las invitaciones entre amigos y la retirada de los códigos y del acceso manual por código en la interfaz. Se mantiene MySQL; desde el 19 de noviembre de 2026 el catálogo se arma con listas de canciones importadas desde Deezer (consulta INTEGRACION-MUSICAL.md).
 
 Las pruebas no garantizan ausencia de cualquier error en todos los dispositivos. Esta entrega no incorpora datos personales ni convierte las dos instalaciones en un servidor compartido: para jugar juntos, todos deben acceder a la misma instancia.

@@ -40,22 +40,21 @@ Espera a que el contenedor esté healthy. Ejecuta `pnpm bd:preparar` con una cue
 
 ## Tablas
 
-| Tabla                   | Contenido                                                                     |
-| ----------------------- | ----------------------------------------------------------------------------- |
-| usuarios                | Perfiles, hash bcrypt de la contraseña y del código de recuperación.          |
-| sesiones                | Hash SHA-256 del token y vencimiento.                                         |
-| preferencias_usuario    | Preferencias JSON por usuario.                                                |
-| canciones               | Título, artista, alias, género y año.                                         |
-| medios_cancion          | Fuente del audio, referencia de Deezer, licencia, fragmento y disponibilidad. |
-| sincronizacion_catalogo | Huella y conteos de la última publicación de cada género.                     |
-| partidas                | Modo, estado, configuración, canciones elegidas, ronda y reloj.               |
-| jugadores_partida       | Integrantes y equipos de cada partida.                                        |
-| respuestas              | Una respuesta por persona y ronda, corrección, puntos y tiempo.               |
-| salas                   | Código, nombre, anfitrión, reglas y partida asociada.                         |
-| jugadores_sala          | Integrantes, equipo y confirmación.                                           |
-| mensajes_sala           | Historial del chat.                                                           |
-| amistades               | Solicitudes y amistades aceptadas, una relación por par.                      |
-| invitaciones_sala       | Invitaciones con remitente, destinatario, estado y vencimiento.               |
+| Tabla                | Contenido                                                                     |
+| -------------------- | ----------------------------------------------------------------------------- |
+| usuarios             | Perfiles, hash bcrypt de la contraseña y del código de recuperación.          |
+| sesiones             | Hash SHA-256 del token y vencimiento.                                         |
+| preferencias_usuario | Preferencias JSON por usuario.                                                |
+| canciones            | Título, artista, alias, género y año.                                         |
+| medios_cancion       | Fuente del audio, referencia de Deezer, licencia, fragmento y disponibilidad. |
+| partidas             | Modo, estado, configuración, canciones elegidas, ronda y reloj.               |
+| jugadores_partida    | Integrantes y equipos de cada partida.                                        |
+| respuestas           | Una respuesta por persona y ronda, corrección, puntos y tiempo.               |
+| salas                | Código, nombre, anfitrión, reglas y partida asociada.                         |
+| jugadores_sala       | Integrantes, equipo y confirmación.                                           |
+| mensajes_sala        | Historial del chat.                                                           |
+| amistades            | Solicitudes y amistades aceptadas, una relación por par.                      |
+| invitaciones_sala    | Invitaciones con remitente, destinatario, estado y vencimiento.               |
 
 Todas las relaciones usan claves foráneas y la intercalación `utf8mb4_unicode_ci`. La clave primaria compuesta de `respuestas` evita duplicados incluso con solicitudes simultáneas. El índice `partidas_estado` acelera la consulta que hace el reloj cada segundo.
 
@@ -78,5 +77,3 @@ MySQL no revierte cambios de estructura dentro de una transacción. **Haz una co
 - No ejecutes `bd:preparar` con una cuenta CRUD esperando que pueda crear tablas. En la instancia portátil usa la migración administrativa indicada arriba.
 
 Para compartir el proyecto conserva el código y su configuración de ejemplo. Las grabaciones se transmiten desde Deezer; no se distribuye un catálogo de audio. No distribuyas el directorio de datos ni secretos administrativos. Un respaldo de producción debe hacerse con las herramientas de MySQL y una política de recuperación propia.
-
-`sincronizacion_catalogo` guarda género, huella de configuración, número de artistas y canciones y fecha. Una publicación completa y sus referencias de audio se confirman en la misma transacción. Consulta [el catálogo de artistas](CATALOGO-ARTISTAS.md).

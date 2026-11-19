@@ -12,7 +12,7 @@ import { transmitirAudioMusica, type ConsultaMusica } from '../servicios/musica/
 export function rutasMusica(consultarProveedor: ConsultaMusica = fetch): Router {
   const enrutador = Router();
   enrutador.get('/opciones', async (_req, res) => {
-    res.json(await opcionesMusica(consultarProveedor));
+    res.json(await opcionesMusica());
   });
   enrutador.get('/buscar', async (req, res) => {
     const { q } = z.object({ q: z.string().trim().min(2).max(80) }).parse(req.query);

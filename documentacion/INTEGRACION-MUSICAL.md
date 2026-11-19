@@ -1,52 +1,54 @@
-# Canciones oficiales durante las partidas
+# Canciones del juego
 
-## Repertorio
+## De dónde salen las canciones
 
-Los tres modos usan muestras de las **grabaciones originales del catálogo de Deezer**. Se consulta el perfil exacto de cada artista y se comprueba su identificador en cada canción; no se sustituye por un artista de tributos, covers o karaoke. Se prefieren versiones de estudio.
+El catálogo se arma con **listas de canciones** guardadas en `base-datos/listas/`, un archivo JSON por lista. Cada lista dice qué canciones quieres (título y artista) y en qué géneros se pueden repartir. La lista actual, `rock-metal.json`, viene de una lista pública de Spotify.
 
-La configuración incluye nueve categorías: Rock, Pop, Hip hop / Rap, Electrónica, Latina, Reggae, R&B / Soul, Metal y Alternativa. Son categorías del juego asignadas al repertorio de artistas, no una clasificación automática de cada canción.
+El audio no sale de Spotify sino de **Deezer**: para cada canción se busca la grabación original en Deezer y se guarda su referencia. Spotify solo se usa para saber qué canciones elegir.
 
-Entre los artistas preparados están **Linkin Park e Imagine Dragons (Rock), Deftones (Alternativa) y Katy Perry (Pop)**, además de Radiohead, Nirvana, Coldplay, Metallica, Lady Gaga, Dua Lipa, Eminem, Daft Punk, Shakira y muchos más. El repertorio concreto depende de las muestras disponibles en la región. Blues, Jazz y Country y sus canciones están retirados del catálogo jugable y de futuras sincronizaciones. Los conteos se calculan desde MySQL.
+Formato de una lista:
 
-El catálogo objetivo reúne **35 artistas por cada uno de los nueve géneros y cinco canciones por artista: 315 artistas y 1.575 canciones**. Es una selección representativa de artistas conocidos, no una clasificación universal de fama. La [lista de artistas verificada](CATALOGO-ARTISTAS.md) y el [listado completo de canciones](catalogo-oficial.csv) documentan la carga comprobada.
-
-La búsqueda compara el nombre exacto entre hasta cien perfiles y elige el de más seguidores para evitar homónimos. Se normalizan acentos y nombres estilizados como KoЯn. Cada resultado se valida por separado para que una coincidencia inválida no descarte el perfil correcto. Consulta hasta cien pistas populares del perfil, exige muestra disponible y coincidencia del intérprete, descarta versiones en vivo y remixes, elimina títulos duplicados y selecciona cinco por `rank` descendente de Deezer. Ese indicador aproxima la popularidad actual del proveedor, no necesariamente los mayores éxitos históricos.
-
-Si un artista no ofrece cinco muestras, utiliza un suplente reconocido del mismo género. Solo publica cuando reúne exactamente 35 artistas distintos y 175 canciones en ese género. La publicación desactiva las selecciones anteriores del género y activa las cinco elegidas por artista dentro de una única transacción; conserva el historial. Si falta disponibilidad o falla la API, mantiene el repertorio anterior de ese género. Para refrescar los metadatos sin editar canciones en el código: Para refrescar los metadatos sin editar canciones en el código:
-
-```powershell
-pnpm musica:sincronizar
+```json
+{
+  "nombre": "Rock/Metal",
+  "fuente": "https://open.spotify.com/playlist/...",
+  "generoPredeterminado": "Rock, Metal y Alternativa",
+  "generosPermitidos": ["Rock, Metal y Alternativa"],
+  "pistas": [{ "titulo": "Monster", "artista": "Skillet", "spotify": "2UREu1Y8CO4jXkbvqAtP7g" }]
+}
 ```
 
-La configuración está en `servidor/servicios/musica/artistas.ts`. MySQL conserva una huella de la selección en `sincronizacion_catalogo`; una modificación del repertorio o el paso de doce horas provoca su actualización. Las actualizaciones automáticas se comparten y ocurren en segundo plano cuando ya hay canciones, para permitir seguir jugando. La primera instalación y `pnpm musica:sincronizar` esperan a completar la carga; esta operación puede tardar varios minutos. El comando informa de los géneros que no se completaron y termina con error en esos casos. Las canciones se obtienen de la API, no se escriben manualmente.
+Los géneros válidos están en `compartido/musica.ts`: Rock, Metal y Alternativa (un solo género), Pop, Hip hop / Rap, Electrónica, Latina, Reggae y R&B / Soul. Blues, Jazz y Country están retirados. Un género aparece en el juego cuando tiene al menos cinco canciones.
+
+## Importar o actualizar las listas
+
+```powershell
+pnpm musica:importar
+```
+
+`scripts/importar-listas.ts` lee todas las listas y, por cada canción (`servidor/servicios/musica/listas.ts` y `deezer.ts`):
+
+1. Busca en Deezer el mismo artista principal y el mismo título. El título se compara sin sufijos de edición (" - Remastered 2023", " - From ... Soundtrack"), sin paréntesis, signos ni tildes.
+2. Descarta versiones en vivo, remixes, karaoke, tributos y pistas sin muestra; entre las coincidencias elige la más popular.
+3. Consulta el álbum para obtener el año y su género en Deezer, y asigna el primer género del álbum que la lista permita (Rock, Metal y Alternativo de Deezer van a "Rock, Metal y Alternativa"); si ninguno corresponde, usa `generoPredeterminado`.
+4. Guarda una sola vez las canciones repetidas y muestra al final las que no tienen equivalente en Deezer.
+
+La importación **reemplaza el catálogo**: deja activas solo las canciones de las listas actuales y desactiva las demás sin borrar el historial de partidas. Para quitar canciones, bórralas de la lista y vuelve a importar. El servidor ya no descarga canciones por su cuenta.
+
+Para agregar una lista nueva, crea otro archivo en `base-datos/listas/` con el mismo formato y ejecuta `pnpm musica:importar`.
 
 ## Cómo suena
 
-Deezer ofrece muestras de **hasta 30 segundos**, no archivos completos de las canciones. La ronda reproduce **12 segundos de esa muestra oficial**, con el mismo corte para todos sus participantes. No se generan melodías. No hay sección Música, biblioteca, cargas ni reproductor independiente.
+Deezer ofrece muestras de **hasta 30 segundos**, no las canciones completas. Cada ronda reproduce **12 segundos de esa muestra**, con el mismo corte para todos los participantes.
 
-MySQL almacena identificadores, título, artista, alias, género y fecha del álbum. Para ediciones remasterizadas o recopilaciones, la fecha del proveedor puede ser la de esa edición.
-
-Solo se guarda la referencia estable `https://api.deezer.com/track/ID`, nunca una URL firmada de audio como referencia permanente. Al reproducir, el servidor consulta una muestra vigente, comprueba que siga siendo reproducible y transmite el MP3 sin guardarlo en disco. Los nombres se revelan al responder, con el enlace a la canción y las condiciones del proveedor.
+MySQL guarda identificadores, título, artista, alias, género y año del álbum. Solo se guarda la referencia estable `https://api.deezer.com/track/ID`, nunca una URL firmada de audio. Al reproducir, el servidor pide una muestra vigente, comprueba que siga disponible y transmite el MP3 sin guardarlo en disco. Título, artista y enlaces se revelan al responder.
 
 ## Acceso y errores
 
-`GET /api/partidas/:id/audio` requiere sesión, pertenencia a la partida y estado activo. Respeta Range y valida HTTPS y los dominios del CDN de Deezer en cada redirección. La muestra sigue siendo un recurso del proveedor: este mecanismo no es DRM ni una autorización para descargar o distribuir un catálogo.
+`GET /api/partidas/:id/audio` requiere sesión, participar en la partida y que esté en curso. Respeta `Range` y valida HTTPS y los dominios del CDN de Deezer en cada redirección. No es un sistema DRM ni una autorización para descargar o distribuir canciones.
 
-Se necesita Internet. Si Deezer bloquea una muestra o deja de ofrecerla, el juego informa del error y permite pasar la ronda. No recurre al catálogo anterior ni a una melodía sintetizada. Solo se muestran géneros con al menos cinco canciones; los filtros deben reunir tantas canciones como rondas elegidas.
+Se necesita Internet. Si Deezer deja de ofrecer una muestra, el juego avisa y permite pasar la ronda. El uso de Deezer debe respetar sus [condiciones](https://developers.deezer.com/termsofuse); un proyecto universitario sin ingresos no queda exento.
 
-El acceso público a metadatos y muestras fue comprobado sin clave privada. Esto no garantiza disponibilidad permanente ni acceso a canciones completas. La integración técnica no concede derechos sobre las grabaciones. Un proyecto universitario sin ingresos debe respetar igualmente las [condiciones de Deezer](https://developers.deezer.com/termsofuse); para usos fuera de su alcance es necesaria la autorización correspondiente.
+## Pruebas
 
-## Actualización y pruebas
-
-La migración `005_grabaciones_oficiales.sql` habilita `deezer`, conserva el historial y desactiva todas las fuentes anteriores, incluido Audius. La migración 004 también es compatible con el nuevo origen al repetir la instalación. La migración 006 desactiva Blues, Jazz y Country; conserva las respuestas históricas y cambia a Todas las salas pendientes que tenían una de esas categorías. Las consultas excluyen esas canciones incluso si una fila antigua vuelve a estar activa. La migración 007 incorpora las versiones y conteos de publicaciones completas del catálogo.
-
-```powershell
-pnpm bd:migrar
-pnpm musica:sincronizar
-pnpm build
-pnpm start
-```
-
-**Crea una partida nueva** después de actualizar: las partidas antiguas conservan sus canciones históricas y no se sustituyen mientras alguien juega.
-
-Las pruebas unitarias verifican perfiles exactos, exclusión de tributos y pistas bloqueadas, títulos duplicados, CDN y renovación de enlaces. La integración comprueba selección en los tres modos, filtros, permisos, Range y ausencia de biblioteca con MySQL real y una frontera HTTP simulada. La comprobación del proveedor real verifica además muestras MP3 de los cuatro artistas solicitados y la decodificación del navegador en una base aislada.
+Las pruebas unitarias comprueban la comparación de títulos, la búsqueda (mismo artista y título, sin versiones en vivo ni tributos), el reparto por género, las repetidas y las canciones no encontradas, además de la seguridad del audio. La integración importa una lista de prueba contra MySQL real con un Deezer simulado y verifica el catálogo en los tres modos.

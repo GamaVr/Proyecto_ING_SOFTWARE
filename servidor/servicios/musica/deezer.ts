@@ -1,10 +1,9 @@
-/** Cliente de Deezer: valida respuestas, obtiene canciones por artista y transmite las muestras de audio. */
+/** Cliente de Deezer: valida respuestas, busca canciones y álbumes y transmite las muestras de audio. */
 import type { Request, Response } from 'express';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { z } from 'zod';
 import { ErrorHttp } from '../../errores.js';
-import { PISTAS_POR_ARTISTA } from './artistas.js';
 
 export type ConsultaMusica = typeof fetch;
 const esquemaArtista = z.object({
@@ -26,7 +25,7 @@ const esquemaGrabacion = z.object({
 });
 export type Grabacion = z.infer<typeof esquemaGrabacion>;
 export const TERMINOS_DEEZER = 'https://developers.deezer.com/termsofuse';
-const fechasAlbum = new Map<number, Promise<string | undefined>>();
+const albumes = new Map<number, Promise<DatosAlbum>>();
 let siguienteSolicitud = 0;
 /** Normaliza nombres para exigir el perfil exacto y excluir artistas de covers o tributos. */
 function claveArtista(nombre: string): string {
@@ -112,58 +111,74 @@ async function consultarJsonProveedor(
     );
   }
 }
-/** Reutiliza la fecha del álbum publicada por Deezer; no inventa fechas si faltan metadatos. */
+/** Fecha de publicación y géneros (identificadores de Deezer, el principal primero) de un álbum. */
+export interface DatosAlbum {
+  fecha?: string;
+  generos: number[];
+}
+const esquemaAlbum = z.object({
+  release_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  genres: z.object({ data: z.array(z.object({ id: z.number().int() })) }).optional(),
+});
 
-async function fechaAlbum(
+/** Consulta una sola vez cada álbum; si faltan metadatos no inventa fecha ni género. */
+export async function datosAlbum(
   id: number,
-  consultarProveedor: ConsultaMusica,
-): Promise<string | undefined> {
-  const previo = fechasAlbum.get(id);
+  consultarProveedor: ConsultaMusica = fetch,
+): Promise<DatosAlbum> {
+  const previo = albumes.get(id);
   if (previo) return previo;
   const operacion = consultarJsonProveedor(`/album/${id}`, consultarProveedor)
     .then((datos) => {
-      const analizado = z
-        .object({ release_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) })
-        .safeParse(datos);
-      return analizado.success ? analizado.data.release_date : undefined;
+      const analizado = esquemaAlbum.safeParse(datos);
+      if (!analizado.success) return { generos: [] };
+      return {
+        fecha: analizado.data.release_date,
+        generos: analizado.data.genres?.data.map((genero) => genero.id) ?? [],
+      };
     })
     .catch(() => {
-      fechasAlbum.delete(id);
-      return undefined;
+      albumes.delete(id);
+      return { generos: [] };
     });
-  fechasAlbum.set(id, operacion);
+  albumes.set(id, operacion);
   return operacion;
 }
-/** Obtiene canciones del artista original, sin aceptar coincidencias aproximadas con otros intérpretes. */
 
-export async function obtenerGrabacionesArtista(
-  nombre: string,
+/**
+ * Título comparable: sin sufijos de edición (" - Remastered 2023", " - From ... Soundtrack")
+ * ni partes entre paréntesis o corchetes, en minúsculas y sin signos ni tildes.
+ */
+export function claveTitulo(titulo: string): string {
+  return claveArtista(titulo.split(' - ')[0].replace(/\s*[([][^)\]]*[)\]]/g, ''));
+}
+
+/**
+ * Busca en Deezer la grabación original de una canción concreta (por ejemplo, de una lista de
+ * Spotify). Exige el mismo artista principal y el mismo título, descarta versiones en vivo,
+ * remezclas y pistas sin muestra, y entre las coincidencias elige la más popular.
+ */
+export async function buscarGrabacion(
+  titulo: string,
+  artista: string,
   consultarProveedor: ConsultaMusica = fetch,
-): Promise<Grabacion[]> {
-  const respuestaHttp = await consultarJsonProveedor(
-    `/search/artist?q=${encodeURIComponent(nombre)}&limit=100&order=RANKING`,
+): Promise<Grabacion | undefined> {
+  const tituloBase =
+    titulo
+      .split(' - ')[0]
+      .replace(/\s*[([][^)\]]*[)\]]/g, '')
+      .trim() || titulo;
+  const datos = await consultarJsonProveedor(
+    `/search?q=${encodeURIComponent(`${artista} ${tituloBase}`)}&limit=50`,
     consultarProveedor,
   );
-  const artistas = z.object({ data: z.array(z.unknown()).max(100) }).safeParse(respuestaHttp);
-  const artista = artistas.success
-    ? artistas.data.data
-        .flatMap((valor) => {
-          const analizado = esquemaArtista.safeParse(valor);
-          return analizado.success ? [analizado.data] : [];
-        })
-        .filter((elemento) => claveArtista(elemento.name) === claveArtista(nombre))
-        .sort((a, b) => b.nb_fan - a.nb_fan)[0]
-    : undefined;
-  if (!artista) throw new ErrorHttp(502, `No se encontró el perfil original de ${nombre}.`);
-  const pistas = interpretarGrabaciones(
-    await consultarJsonProveedor(`/artist/${artista.id}/top?limit=100`, consultarProveedor),
-    artista.id,
-  ).slice(0, PISTAS_POR_ARTISTA);
-  return Promise.all(
-    pistas.map(async (pista) => ({
-      ...pista,
-      release_date: await fechaAlbum(pista.album.id, consultarProveedor),
-    })),
+  return interpretarGrabaciones(datos).find(
+    (pista) =>
+      claveArtista(pista.artist.name) === claveArtista(artista) &&
+      claveTitulo(pista.title_short || pista.title) === claveTitulo(titulo),
   );
 }
 /** Resuelve una muestra vigente desde el identificador oficial, evitando enlaces firmados caducados. */

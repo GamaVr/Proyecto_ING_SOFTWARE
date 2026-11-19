@@ -1,42 +1,52 @@
-/** Comprueba perfiles, popularidad, catálogo y seguridad del audio. */
+/** Comprueba las listas de canciones, la búsqueda en Deezer, el catálogo y la seguridad del audio. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readdir } from 'node:fs/promises';
+import { almacenarGrabaciones } from '../../servidor/servicios/musica/catalogo.js';
 import {
-  RECORDING_GENRES,
-  almacenarGrabaciones,
-  ARTISTS_PER_GENRE,
-  TRACKS_PER_ARTIST,
-} from '../../servidor/servicios/musica/catalogo.js';
-import { resolverMuestraGrabacion } from '../../servidor/servicios/musica/deezer.js';
+  CARPETA_LISTAS,
+  generoDeAlbum,
+  leerLista,
+  resolverListas,
+  type ListaCanciones,
+} from '../../servidor/servicios/musica/listas.js';
 import {
+  buscarGrabacion,
+  claveTitulo,
   interpretarGrabaciones,
+  resolverMuestraGrabacion,
   validarAudioGrabacion,
-  obtenerGrabacionesArtista,
 } from '../../servidor/servicios/musica/deezer.js';
-import { GENEROS_RETIRADOS } from '../../compartido/musica.js';
+import { GENEROS, GENEROS_RETIRADOS } from '../../compartido/musica.js';
 
-test('cada uno de los nueve géneros tiene 35 artistas principales distintos y cinco canciones por artista', () => {
-  assert.equal(RECORDING_GENRES.length, 9);
-  assert.equal(ARTISTS_PER_GENRE, 35);
-  assert.equal(TRACKS_PER_ARTIST, 5);
-  const todos = new Set<string>();
-  for (const genero of RECORDING_GENRES) {
-    assert.equal(genero.artistas.length, 35, genero.nombre);
-    for (const nombre of genero.artistas) {
-      const clave = nombre.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
-      assert.equal(todos.has(clave), false, `Artista repetido: ${nombre}`);
-      todos.add(clave);
-    }
+test('las listas del proyecto son válidas y solo usan géneros del juego', async () => {
+  const archivos = (await readdir(CARPETA_LISTAS)).filter((archivo) => archivo.endsWith('.json'));
+  assert.ok(archivos.length > 0);
+  for (const archivo of archivos) {
+    const lista = await leerLista(`${CARPETA_LISTAS}/${archivo}`);
+    assert.ok(lista.generosPermitidos.includes(lista.generoPredeterminado), archivo);
+    for (const genero of lista.generosPermitidos) assert.ok(GENEROS.includes(genero), genero);
   }
-  assert.equal(todos.size, 315);
 });
 
-test('las categorías retiradas no se sincronizan ni se pueden reactivar al importar', async () => {
+test('las categorías retiradas no se pueden guardar ni asignar al importar', async () => {
+  const lista: ListaCanciones = {
+    nombre: 'Prueba',
+    generoPredeterminado: 'Rock, Metal y Alternativa',
+    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop'],
+    pistas: [{ titulo: 'x', artista: 'y' }],
+  };
+  // 153 = Blues en Deezer: no corresponde a ningún género del juego.
+  assert.equal(generoDeAlbum([153], lista), 'Rock, Metal y Alternativa');
+  // Rock (152), Metal (464) y Alternativo (85) de Deezer van al mismo género del juego.
+  for (const id of [152, 464, 85])
+    assert.equal(generoDeAlbum([id], lista), 'Rock, Metal y Alternativa');
+  assert.equal(generoDeAlbum([132, 152], lista), 'Pop');
+  assert.equal(generoDeAlbum([116], lista), 'Rock, Metal y Alternativa'); // Rap no está permitido en esta lista.
+  for (const separado of ['Rock', 'Metal', 'Alternativa'])
+    assert.equal((GENEROS as readonly string[]).includes(separado), false);
   for (const genero of GENEROS_RETIRADOS) {
-    assert.equal(
-      RECORDING_GENRES.some((elemento) => elemento.nombre === genero),
-      false,
-    );
+    assert.equal((GENEROS as readonly string[]).includes(genero), false);
     await assert.rejects(
       () => almacenarGrabaciones(genero.toLowerCase(), []),
       /categoría fue retirada/,
@@ -86,64 +96,78 @@ test('solo se aceptan HTTPS y CDN oficiales en todas las redirecciones', () => {
   ])
     assert.throws(() => validarAudioGrabacion(url));
 });
-test('la búsqueda encuentra el perfil exacto aunque un tributo aparezca primero', async () => {
-  const pistas = await obtenerGrabacionesArtista('Linkin Park', async (entrada) => {
+test('los títulos se comparan sin sufijos de edición, paréntesis, signos ni tildes', () => {
+  assert.equal(claveTitulo('Bring Me To Life - Remastered 2023'), claveTitulo('Bring Me To Life'));
+  assert.equal(
+    claveTitulo('Burning Heart - From "Rocky IV" Soundtrack'),
+    claveTitulo('Burning Heart'),
+  );
+  assert.equal(claveTitulo("Rollin' (Air Raid Vehicle)"), claveTitulo('Rollin'));
+  assert.equal(claveTitulo('Chop Suey!'), 'chopsuey');
+  assert.notEqual(claveTitulo('Numb'), claveTitulo('Numb / Encore'));
+});
+
+test('la búsqueda exige el mismo artista y título y elige la versión más popular', async () => {
+  const consultarProveedor: typeof fetch = async (entrada) => {
     const url = new URL(String(entrada));
-    if (url.pathname === '/search/artist') {
-      assert.equal(url.searchParams.get('q'), 'Linkin Park');
-      assert.equal(url.searchParams.get('limit'), '100');
-      return Response.json({
-        data: [
-          { id: 999, name: 'Linkin Park Tribute', nb_fan: 500 },
-          { id: 888, name: 'Linkin Park', nb_fan: 5 },
-          { id: 777, name: 'x'.repeat(151), nb_fan: 10 },
-          { ...grabacion.artist, nb_fan: 12000000 },
-        ],
-      });
-    }
-    if (url.pathname === '/artist/92/top') return Response.json({ data: [grabacion] });
-    assert.equal(url.pathname, '/album/81763');
-    return Response.json({ release_date: '2000-10-24' });
-  });
-  assert.equal(pistas[0].artist.name, 'Linkin Park');
-  assert.equal(pistas[0].release_date, '2000-10-24');
-  await assert.rejects(
-    () =>
-      obtenerGrabacionesArtista('Linkin Park', async () =>
-        Response.json({ data: [{ id: 999, name: 'Linkin Park Tribute' }] }),
-      ),
-    /perfil original/,
+    assert.equal(url.pathname, '/search');
+    assert.equal(url.searchParams.get('q'), 'Linkin Park In the End');
+    return Response.json({
+      data: [
+        { ...grabacion, id: 1, rank: 9000, artist: { id: 999, name: 'Linkin Park Tribute' } },
+        { ...grabacion, id: 2, rank: 8000, title_version: '(Live)' },
+        { ...grabacion, id: 3, rank: 7000, readable: false },
+        { ...grabacion, id: 4, rank: 6000, title: 'Numb', title_short: 'Numb' },
+        { ...grabacion, id: 5, rank: 100 },
+        { ...grabacion, id: 6, rank: 500, album: { id: 2 } },
+      ],
+    });
+  };
+  const pista = await buscarGrabacion('In the End - Remastered', 'Linkin Park', consultarProveedor);
+  assert.equal(pista?.id, 6);
+  assert.equal(
+    await buscarGrabacion('In the End', 'Linkin Park', async () =>
+      Response.json({ data: [{ ...grabacion, artist: { id: 999, name: 'Otro' } }] }),
+    ),
+    undefined,
   );
 });
-test('elige solo cinco éxitos por popularidad, sin duplicados ni canciones de otros intérpretes', async () => {
-  const fuente = Array.from({ length: 7 }, (_, i) => ({
+
+test('una lista se reparte por el género del álbum, sin repetidas, e informa lo que no existe', async () => {
+  const lista: ListaCanciones = {
+    nombre: 'Prueba',
+    generoPredeterminado: 'Rock, Metal y Alternativa',
+    generosPermitidos: ['Rock, Metal y Alternativa', 'Pop'],
+    pistas: [
+      { titulo: 'In the End', artista: 'Linkin Park' },
+      { titulo: 'Psychosocial', artista: 'Slipknot' },
+      { titulo: 'In the End', artista: 'Linkin Park' },
+      { titulo: 'Inexistente', artista: 'Nadie' },
+    ],
+  };
+  const slipknot = {
     ...grabacion,
-    id: 900 + i,
-    title: `Hit ${i}`,
-    title_short: `Hit ${i}`,
-    rank: 100 - i,
-  }));
-  const pistas = await obtenerGrabacionesArtista('Linkin Park', async (entrada) => {
+    id: 10,
+    title: 'Psychosocial',
+    title_short: 'Psychosocial',
+    artist: { id: 7, name: 'Slipknot' },
+    album: { id: 70 },
+  };
+  const { porGenero, resumen } = await resolverListas([lista], async (entrada) => {
     const url = new URL(String(entrada));
-    if (url.pathname === '/search/artist') return Response.json({ data: [grabacion.artist] });
-    if (url.pathname === '/artist/92/top') {
-      assert.equal(url.searchParams.get('limit'), '100');
-      return Response.json({
-        data: [
-          ...[...fuente].reverse(),
-          { ...fuente[0], id: 999, rank: 50 },
-          { ...grabacion, id: 1000, rank: 1000, title_version: 'Live' },
-          { ...grabacion, id: 1001, rank: 2000, readable: false },
-          { ...grabacion, id: 1002, rank: 3000, artist: { id: 999, name: 'Tributo' } },
-        ],
-      });
-    }
-    return Response.json({ release_date: '2000-10-24' });
+    if (url.pathname === '/album/81763')
+      return Response.json({ release_date: '2000-10-24', genres: { data: [{ id: 85 }] } });
+    if (url.pathname === '/album/70')
+      return Response.json({ release_date: '2008-06-23', genres: { data: [{ id: 132 }] } });
+    const consulta = url.searchParams.get('q') ?? '';
+    if (consulta.includes('Slipknot')) return Response.json({ data: [slipknot] });
+    if (consulta.includes('Linkin')) return Response.json({ data: [grabacion] });
+    return Response.json({ data: [] });
   });
-  assert.deepEqual(
-    pistas.map((pista) => pista.id),
-    [900, 901, 902, 903, 904],
-  );
+  assert.deepEqual(resumen.porGenero, { 'Rock, Metal y Alternativa': 1, Pop: 1 });
+  assert.equal(resumen.repetidas, 1);
+  assert.deepEqual(resumen.noEncontradas, ['Nadie – Inexistente']);
+  assert.equal(porGenero.get('Rock, Metal y Alternativa')?.[0].release_date, '2000-10-24');
 });
 test('se resuelve una muestra vigente en cada reproducción y no se aceptan pistas bloqueadas ni otros identificadores', async () => {
   let version = 0;

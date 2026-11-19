@@ -5,13 +5,12 @@ import { createServer, type Server } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { crearAplicacion } from '../../servidor/aplicacion.js';
 import { consultar, escribir, conexiones } from '../../servidor/datos/base-datos.js';
-import {
-  almacenarGrabaciones,
-  asegurarGeneroGrabaciones,
-  RECORDING_GENRES,
-} from '../../servidor/servicios/musica/catalogo.js';
-import { obtenerGrabacionesArtista } from '../../servidor/servicios/musica/deezer.js';
-import { type ConsultaMusica } from '../../servidor/servicios/musica/deezer.js';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { almacenarGrabaciones } from '../../servidor/servicios/musica/catalogo.js';
+import { importarListas } from '../../servidor/servicios/musica/listas.js';
+import { type ConsultaMusica, type Grabacion } from '../../servidor/servicios/musica/deezer.js';
 import { CONFIGURACION_PREDETERMINADA, type EstadoPartida } from '../../compartido/tipos.js';
 import { GENEROS_RETIRADOS } from '../../compartido/musica.js';
 
@@ -27,31 +26,12 @@ let redireccionInsegura = false;
 /** Simula únicamente la frontera del proveedor; permisos, selección y persistencia usan la API y MySQL reales. */
 const proveedor: ConsultaMusica = async (entrada, init) => {
   const url = new URL(String(entrada));
-  if (url.pathname === '/search/artist')
-    return Response.json({ data: [{ id: 92, name: 'Linkin Park' }] });
   if (url.pathname.startsWith('/album/')) return Response.json({ release_date: '2024-01-01' });
   if (url.pathname.startsWith('/track/'))
     return Response.json({
       id: Number(url.pathname.split('/').pop()),
       readable: true,
       preview: 'https://cdnt-preview.dzcdn.net/qa.mp3',
-    });
-  if (url.pathname === '/artist/92/top')
-    return Response.json({
-      data: Array.from({ length: 10 }, (_, i) => ({
-        id: Number(`${prefijo}${i}`),
-        title: `Canción de prueba ${i}`,
-        artist: { id: 92, name: 'Linkin Park' },
-        album: { id: 999999 },
-        readable: true,
-        preview: 'https://cdnt-preview.dzcdn.net/qa.mp3',
-        duration: 180,
-        permalink: `/qa/track-${i}`,
-        release_date: '2024-01-01',
-        is_streamable: true,
-        is_available: true,
-        is_stream_gated: false,
-      })),
     });
   if (redireccionInsegura)
     return new Response(null, { status: 302, headers: { Location: 'https://127.0.0.1/private' } });
@@ -81,7 +61,16 @@ async function llamar(rutaDestino: string, metodo = 'GET', cuerpo?: unknown, usu
   };
 }
 before(async () => {
-  const pistas = await obtenerGrabacionesArtista('Linkin Park', proveedor);
+  const pistas: Grabacion[] = Array.from({ length: 5 }, (_, i) => ({
+    id: Number(`${prefijo}${i}`),
+    title: `Canción de prueba ${i}`,
+    artist: { id: 92, name: 'Linkin Park', nb_fan: 0 },
+    album: { id: 999999 },
+    readable: true,
+    preview: 'https://cdnt-preview.dzcdn.net/qa.mp3',
+    release_date: '2024-01-01',
+    rank: 0,
+  }));
   await almacenarGrabaciones(genero, pistas);
   canciones.push(...pistas.map((pista) => `deezer-${pista.id}`));
   await escribir(
@@ -140,119 +129,78 @@ after(async () => {
 });
 test('las grabaciones reales se usan solo en los modos de juego', async (t) => {
   await t.test(
-    'un fallo de disponibilidad no reemplaza el catálogo anterior y un lote completo publica 35 artistas con cinco canciones',
+    'importar listas reemplaza el catálogo y reparte cada canción por el género de su álbum',
     async () => {
-      const correspondencia = RECORDING_GENRES.find((elemento) => elemento.nombre === 'Rock')!;
-      const nombres = [...correspondencia.artistas, ...correspondencia.alternativos];
       const previo = await consultar<{ cancion_id: string; habilitada: number }>(
-        "SELECT m.cancion_id,m.habilitada FROM medios_cancion m JOIN canciones s ON s.id=m.cancion_id WHERE s.genero='Rock' AND m.fuente='deezer'",
+        "SELECT cancion_id,habilitada FROM medios_cancion WHERE fuente='deezer'",
       );
-      const sincronizacionPrevia = await consultar<{
-        genero: string;
-        version: string;
-        cantidad_artistas: number;
-        cantidad_pistas: number;
-        actualizado_en: Date;
-      }>("SELECT * FROM sincronizacion_catalogo WHERE genero='Rock'");
-      const creada: string[] = [];
-      const proveedorCompleto: ConsultaMusica = async (entrada) => {
-        const url = new URL(String(entrada));
-        if (url.pathname === '/search/artist') {
-          const nombre = url.searchParams.get('q')!;
-          return Response.json({
-            data: [
-              {
-                id: Number(prefijo) + 1000 + nombres.indexOf(nombre),
-                name: nombre,
-                nb_fan: 100000,
-              },
-            ],
-          });
-        }
-        const coincidencia = /^\/artist\/(\d+)\/top$/.exec(url.pathname);
-        if (coincidencia) {
-          const artistaId = Number(coincidencia[1]);
-          return Response.json({
-            data: Array.from({ length: 7 }, (_, i) => ({
-              id: artistaId * 10 + i,
-              title: `Éxito ${i}`,
-              title_short: `Éxito ${i}`,
-              rank: 100 - i,
-              artist: { id: artistaId, name: nombres[artistaId - Number(prefijo) - 1000] },
-              album: { id: 55555555 },
-              readable: true,
-              preview: 'https://cdnt-preview.dzcdn.net/test.mp3',
-            })),
-          });
-        }
-        return Response.json({ release_date: '2024-01-01' });
-      };
-      const noDisponible: ConsultaMusica = async (entrada, init) => {
-        const url = new URL(String(entrada)),
-          nombre = url.searchParams.get('q');
-        if (
-          url.pathname === '/search/artist' &&
-          (nombre === 'Linkin Park' || correspondencia.alternativos.includes(nombre!))
-        )
-          return Response.json({ data: [] });
-        return proveedorCompleto(entrada, init);
-      };
+      const carpeta = await mkdtemp(path.join(tmpdir(), 'listas-qa-'));
+      const ids = { rock: Number(prefijo) * 10 + 7, metal: Number(prefijo) * 10 + 8 };
+      const creada = [`deezer-${ids.rock}`, `deezer-${ids.metal}`];
       try {
-        await assert.rejects(
-          () => asegurarGeneroGrabaciones('Rock', noDisponible, true),
-          /34\/35 artistas/,
+        await writeFile(
+          path.join(carpeta, 'qa.json'),
+          JSON.stringify({
+            nombre: 'QA',
+            generoPredeterminado: 'Rock, Metal y Alternativa',
+            generosPermitidos: ['Rock, Metal y Alternativa', 'Pop'],
+            pistas: [
+              { titulo: 'Tema Rock QA - Remastered', artista: 'Banda QA' },
+              { titulo: 'Tema Metal QA', artista: 'Banda QA' },
+              { titulo: 'Tema Rock QA', artista: 'Banda QA' },
+              { titulo: 'No Existe', artista: 'Nadie QA' },
+            ],
+          }),
+        );
+        const pista = (id: number, titulo: string, album: number) => ({
+          id,
+          title: titulo,
+          title_short: titulo,
+          artist: { id: 4242, name: 'Banda QA' },
+          album: { id: album },
+          readable: true,
+          preview: 'https://cdnt-preview.dzcdn.net/qa.mp3',
+        });
+        const resumen = await importarListas(async (entrada) => {
+          const url = new URL(String(entrada));
+          if (url.pathname === '/album/1')
+            return Response.json({ genres: { data: [{ id: 152 }] } });
+          if (url.pathname === '/album/2')
+            return Response.json({ genres: { data: [{ id: 132 }] } });
+          const consulta = url.searchParams.get('q') ?? '';
+          if (consulta.includes('Rock'))
+            return Response.json({ data: [pista(ids.rock, 'Tema Rock QA', 1)] });
+          if (consulta.includes('Metal'))
+            return Response.json({ data: [pista(ids.metal, 'Tema Metal QA', 2)] });
+          return Response.json({ data: [] });
+        }, carpeta);
+        assert.deepEqual(resumen.porGenero, { 'Rock, Metal y Alternativa': 1, Pop: 1 });
+        assert.equal(resumen.repetidas, 1);
+        assert.deepEqual(resumen.noEncontradas, ['Nadie QA – No Existe']);
+        const guardadas = await consultar<{ id: string; genero: string; habilitada: number }>(
+          'SELECT s.id,s.genero,m.habilitada FROM canciones s JOIN medios_cancion m ON m.cancion_id=s.id WHERE s.id IN (?,?) ORDER BY s.genero',
+          creada,
         );
         assert.deepEqual(
-          await consultar(
-            "SELECT m.cancion_id,m.habilitada FROM medios_cancion m JOIN canciones s ON s.id=m.cancion_id WHERE s.genero='Rock' AND m.fuente='deezer'",
-          ),
-          previo,
+          guardadas.map((fila) => [fila.genero, !!fila.habilitada]),
+          [
+            ['Pop', true],
+            ['Rock, Metal y Alternativa', true],
+          ],
         );
-        for (let i = 0; i < 35; i++)
-          for (let j = 0; j < 5; j++)
-            creada.push(`deezer-${(Number(prefijo) + 1000 + i) * 10 + j}`);
-        await asegurarGeneroGrabaciones('Rock', proveedorCompleto, true);
-        const artistas = await consultar<{ cantidad: number }>(
-          "SELECT s.artista,COUNT(*) AS cantidad FROM canciones s JOIN medios_cancion m ON m.cancion_id=s.id WHERE s.genero='Rock' AND m.fuente='deezer' AND m.habilitada=1 GROUP BY s.artista",
+        const [restantes] = await consultar<{ cantidad: number }>(
+          "SELECT COUNT(*) AS cantidad FROM medios_cancion WHERE fuente='deezer' AND habilitada=1 AND cancion_id NOT IN (?,?)",
+          creada,
         );
-        assert.equal(artistas.length, 35);
-        assert.ok(artistas.every((elemento) => Number(elemento.cantidad) === 5));
-        const opciones = await llamar('/musica/opciones');
-        assert.equal(
-          opciones.datos.generos.find((elemento: { nombre: string }) => elemento.nombre === 'Rock')
-            .artistas,
-          35,
-        );
-        assert.equal(
-          opciones.datos.generos.find((elemento: { nombre: string }) => elemento.nombre === 'Rock')
-            .cantidad,
-          175,
-        );
-        const anterior = await consultar<{ cancion_id: string; habilitada: number }>(
-          `SELECT cancion_id,habilitada FROM medios_cancion WHERE cancion_id IN (${previo.map(() => '?').join(',')})`,
-          previo.map((elemento) => elemento.cancion_id),
-        );
-        assert.equal(anterior.length, previo.length);
-        assert.ok(anterior.every((elemento) => !elemento.habilitada));
+        assert.equal(Number(restantes.cantidad), 0);
       } finally {
+        await rm(carpeta, { recursive: true, force: true });
         for (const id of creada) await escribir('DELETE FROM canciones WHERE id=?', [id]);
         for (const elemento of previo)
           await escribir('UPDATE medios_cancion SET habilitada=? WHERE cancion_id=?', [
             !!elemento.habilitada,
             elemento.cancion_id,
           ]);
-        await escribir("DELETE FROM sincronizacion_catalogo WHERE genero='Rock'");
-        for (const elemento of sincronizacionPrevia)
-          await escribir(
-            'INSERT INTO sincronizacion_catalogo(genero,version,cantidad_artistas,cantidad_pistas,actualizado_en) VALUES (?,?,?,?,?)',
-            [
-              elemento.genero,
-              elemento.version,
-              elemento.cantidad_artistas,
-              elemento.cantidad_pistas,
-              elemento.actualizado_en,
-            ],
-          );
       }
     },
   );

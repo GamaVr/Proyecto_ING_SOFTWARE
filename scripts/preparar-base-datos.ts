@@ -2,7 +2,7 @@
 import mysql from 'mysql2/promise';
 import { aplicarEsquema } from './aplicar-esquema.js';
 import { entorno } from '../servidor/configuracion.js';
-import { prepararGrabaciones } from '../servidor/servicios/musica/catalogo.js';
+import { importarListas } from '../servidor/servicios/musica/listas.js';
 import { conexiones } from '../servidor/datos/base-datos.js';
 
 /** Crea el esquema y obtiene referencias de canciones reales; no sintetiza ni genera grabaciones. */
@@ -30,7 +30,7 @@ async function preparar(): Promise<void> {
         const id = `deezer-${idExterno}`;
         await bd.execute(
           'INSERT IGNORE INTO canciones(id,titulo,artista,alias,genero,anio_lanzamiento) VALUES (?,?,?,?,?,?)',
-          [id, `Grabación de prueba ${i}`, 'Artista QA', '[]', 'Rock', 2024],
+          [id, `Grabación de prueba ${i}`, 'Artista QA', '[]', 'Rock, Metal y Alternativa', 2024],
         );
         await bd.execute(
           "INSERT INTO medios_cancion(cancion_id,fuente,id_externo,url_audio,url_licencia,url_fuente,duracion,inicio_fragmento) VALUES (?,'deezer',?,?,?,?,30,0) ON DUPLICATE KEY UPDATE habilitada=TRUE",
@@ -45,8 +45,10 @@ async function preparar(): Promise<void> {
       }
       console.log('MySQL de pruebas preparado con datos exclusivos de prueba.');
     } else {
-      await prepararGrabaciones(fetch, true);
-      console.log('MySQL preparado con referencias de grabaciones oficiales de Deezer.');
+      const resumen = await importarListas();
+      console.log('MySQL preparado. Canciones por género:', resumen.porGenero);
+      if (resumen.noEncontradas.length)
+        console.warn('Sin equivalente en Deezer:', resumen.noEncontradas.join('; '));
     }
   } finally {
     await bd.end();

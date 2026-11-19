@@ -86,7 +86,7 @@ export function crearAplicacion(
   aplicacion.use('/api', rutasPerfil());
   aplicacion.use('/api', rutasSocial(notificar));
   aplicacion.use('/api', rutasPartidas(notificar, consultarMusica));
-  aplicacion.use('/api', rutasSalas(notificar, consultarMusica));
+  aplicacion.use('/api', rutasSalas(notificar));
   aplicacion.use('/api', (_req, _res, siguiente) =>
     siguiente(new ErrorHttp(404, 'Ruta no encontrada.')),
   );

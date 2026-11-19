@@ -132,6 +132,8 @@ const COLUMNAS_RETIRADAS: [tabla: string, columna: string][] = [
 async function retirarRestos(bd: Connection): Promise<void> {
   // Configuración del antiguo administrador de música (Jamendo), sin uso en la aplicación.
   await bd.query('DROP TABLE IF EXISTS music_settings');
+  // Control de la antigua descarga automática por artistas; el catálogo ahora viene de listas.
+  await bd.query('DROP TABLE IF EXISTS sincronizacion_catalogo');
   for (const [tabla, columna] of COLUMNAS_RETIRADAS)
     if (await existe(bd, tabla, columna))
       await bd.query(`ALTER TABLE \`${tabla}\` DROP COLUMN \`${columna}\``);
