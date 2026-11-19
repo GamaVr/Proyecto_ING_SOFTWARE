@@ -1163,6 +1163,10 @@ aside.stack > .card > .button {
   font-size: 28px;
   margin-top: 7px;
 }
+/* Resultado individual con pocos aciertos. */
+.result-hero h2.titulo-fallo {
+  color: #e5484d;
+}
 .result-hero p {
   font-size: 11px;
   margin-top: 5px;

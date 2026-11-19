@@ -684,9 +684,10 @@ export function PaginaResultados({ id }: { id: string }): ReactNode {
     empate = total0 === total1;
   const victoria = yo.equipo === 0 ? total0 >= total1 : total1 >= total0,
     individual = partida.modo === 'individual';
-  // Nivel según la proporción de aciertos: en 10 rondas, 0–5 Mejora, 6–8 Buen oído y 9–10 GOAT.
+  // Nivel según la proporción de aciertos: en 10 rondas, 0–5 "No le sabes" (en rojo),
+  // 6–8 Buen oído y 9–10 GOAT.
   const proporcionAciertos = partida.total ? correcta.length / partida.total : 0,
-    nivel =
+    nivel: { insignia: string; titulo: string; texto: string; claseTitulo?: string } =
       proporcionAciertos >= 0.9
         ? { insignia: 'Nivel leyenda', titulo: '¡ERES EL GOAT!', texto: 'Casi nada se te escapa.' }
         : proporcionAciertos > 0.5
@@ -697,8 +698,9 @@ export function PaginaResultados({ id }: { id: string }): ReactNode {
             }
           : {
               insignia: 'Sigue practicando',
-              titulo: '¡MEJORA!',
+              titulo: 'NO LE SABES',
               texto: 'Escucha con atención y vuelve a intentarlo.',
+              claseTitulo: 'titulo-fallo',
             };
   let racha = 0,
     mejor = 0;
@@ -730,7 +732,7 @@ export function PaginaResultados({ id }: { id: string }): ReactNode {
               <Insignia tono="green">
                 {individual ? nivel.insignia : victoria ? 'Gran partida' : 'Sigue practicando'}
               </Insignia>
-              <h2>
+              <h2 className={individual ? nivel.claseTitulo : undefined}>
                 {individual
                   ? nivel.titulo
                   : partida.modo === 'equipos'
