@@ -2,9 +2,7 @@
 /** Géneros en los que se pueden guardar canciones. */
 export const GENEROS = [
   'Rock, Metal y Alternativa',
-  'Pop y R&B',
-  'Hip hop / Rap',
-  'Electrónica',
+  'Pop, Rap y Electrónica',
   'Latina y Reggae',
 ] as const;
 export type Genero = (typeof GENEROS)[number];
