@@ -71,6 +71,7 @@ test('API y MySQL: identidad, puntuación, aislamiento y salas de cuatro persona
         name: `QA ${i + 1}`,
         email,
         password,
+        recoveryCode: '1234',
       });
       assert.equal(result.status, 201);
       assert.match(result.cookie, /HttpOnly/);
@@ -78,8 +79,13 @@ test('API y MySQL: identidad, puntuación, aislamiento y salas de cuatro persona
       users.push({ user: result.data.user, cookie: result.cookie.split(';')[0], password });
     }
     assert.equal(
-      (await request('/auth/register', 'POST', { ...users[0].user, password: users[0].password }))
-        .status,
+      (
+        await request('/auth/register', 'POST', {
+          ...users[0].user,
+          password: users[0].password,
+          recoveryCode: '1234',
+        })
+      ).status,
       409,
     );
     assert.equal(
@@ -267,7 +273,8 @@ test('API y MySQL: identidad, puntuación, aislamiento y salas de cuatro persona
     }
     for (let round = 0; round < 5; round++) {
       await write('UPDATE games SET round_started_at=? WHERE id=?', [
-        Date.now() - 20000,
+        // Tiempo de ronda agotado más la pausa de 2,2 s entre rondas.
+        Date.now() - (DEFAULT_CONFIG.seconds * 1000 + 3000),
         start.data.gameId,
       ]);
       await advanceGame(start.data.gameId);
@@ -328,7 +335,8 @@ test('API y MySQL: identidad, puntuación, aislamiento y salas de cuatro persona
     games.push(started.data.gameId);
     for (let round = 0; round < 5; round++) {
       await write('UPDATE games SET round_started_at=? WHERE id=?', [
-        Date.now() - 20000,
+        // Tiempo de ronda agotado más la pausa de 2,2 s entre rondas.
+        Date.now() - (DEFAULT_CONFIG.seconds * 1000 + 3000),
         started.data.gameId,
       ]);
       await advanceGame(started.data.gameId);

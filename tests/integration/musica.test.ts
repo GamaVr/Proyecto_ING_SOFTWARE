@@ -115,6 +115,7 @@ before(async () => {
         name: `Audio QA ${i}`,
         email: `audio-${randomUUID()}@example.test`,
         password: `Qa-${randomUUID()}`,
+        recoveryCode: '1234',
       }),
     });
     assert.equal(response.status, 201);

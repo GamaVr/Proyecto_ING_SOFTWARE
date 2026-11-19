@@ -80,6 +80,7 @@ before(async () => {
         name: `Social QA ${i}`,
         email: `social-${randomUUID()}@example.test`,
         password: `Prueba-${randomUUID()}`,
+        recoveryCode: '1234',
       }),
     });
     assert.equal(response.status, 201);
